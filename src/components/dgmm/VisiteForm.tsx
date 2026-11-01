@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
+  Sparkles,
   Ear,
   Eye,
   FileSignature,
@@ -227,8 +228,42 @@ export function VisiteForm({
   const inapte = isInapte(v.stcw.verdict);
   const bmi = imc(v.examens.taille, v.examens.poids);
   const eligibles = marins.filter(
-    (m) => m.validationAdmin === "validee" || m.id === initial.marinId,
+    (m) => m.validationAdmin !== "rejetee" || m.id === initial.marinId,
   );
+  const [standard, setStandard] = useState(false);
+
+  /** Pré-remplit un examen normal : le médecin n'ajuste ensuite que les anomalies. */
+  const examenStandard = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    setV((s) => ({
+      ...s,
+      examens: {
+        ...s.examens,
+        tension: s.examens.tension || "12/8",
+        pouls: s.examens.pouls || "72",
+        vision: s.examens.vision || "10/10",
+        visionCorrigee: s.examens.visionCorrigee || "10/10",
+        audition: s.examens.audition || "Normale",
+        observations: s.examens.observations || "Examen clinique sans particularité.",
+      },
+      stcw: {
+        ...s.stcw,
+        identiteVerifiee: "oui",
+        acuiteVisuelle: "oui",
+        visionBinoculaire: "oui",
+        aidesVisuelles: "non",
+        couleurs: "oui",
+        dateTestCouleurs: s.stcw.dateTestCouleurs || today,
+        auditiveSansAide: "oui",
+        acuiteAuditive: "oui",
+        communicationUrgence: "oui",
+        veille: "oui",
+        exemptAffection: "oui",
+        verdict: s.stcw.verdict || "apte",
+      },
+    }));
+    setStandard(true);
+  };
 
   const ex = (k: keyof VisiteInput["examens"]) => ({
     id: `ex-${k}`,
@@ -412,7 +447,16 @@ export function VisiteForm({
 
       <Panel
         title="Contrôles sensoriels et aptitudes"
-        description="Section A-I/9 du Code STCW — normes minimales d'aptitude physique."
+        description={
+          standard
+            ? "Examen standard appliqué : ajustez uniquement les anomalies (lunettes, Ishihara…)."
+            : "Section A-I/9 du Code STCW — normes minimales d'aptitude physique."
+        }
+        actions={
+          <Button type="button" size="sm" variant="secondary" onClick={examenStandard}>
+            <Sparkles /> Examen standard sans anomalie
+          </Button>
+        }
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <Bloc icon={Eye} title="Vision">

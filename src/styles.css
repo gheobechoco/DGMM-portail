@@ -177,15 +177,39 @@
   }
 }
 
+/* Impression haute fidélité : A4 portrait, document seul, sans coupure ni artefact d'interface. */
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
 @media print {
-  .no-print {
-    display: none !important;
-  }
+  html,
   body {
-    background: white;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print,
+  [data-sonner-toaster] {
+    display: none !important;
   }
   .print-sheet {
     box-shadow: none !important;
-    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
+    max-width: 186mm !important;
+    width: 186mm !important;
+    font-size: 10.5pt;
+  }
+  .print-sheet section,
+  .print-sheet li,
+  .print-sheet dl > div,
+  .print-sheet table tr {
+    break-inside: avoid;
+  }
+  .print-sheet svg {
+    shape-rendering: geometricPrecision;
   }
 }

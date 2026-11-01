@@ -1,0 +1,57 @@
+import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { LogOut } from "lucide-react";
+import { DgmmLogo } from "@/components/dgmm/Logo";
+import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
+
+/** Cadre des espaces externes (marins, armateurs). */
+export function PublicShell({
+  titre,
+  utilisateur,
+  onLogout,
+  children,
+}: {
+  titre: string;
+  utilisateur?: ReactNode;
+  onLogout?: (() => void) | undefined;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Tricolor className="no-print" />
+      <header className="no-print bg-primary text-primary-foreground">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
+          <Link to="/" className="flex items-center gap-3">
+            <DgmmLogo className="size-10" />
+            <div className="leading-tight">
+              <div className="font-display text-sm font-bold">DGMM · {titre}</div>
+              <div className="text-[11px] text-primary-foreground/70">
+                Direction Générale de la Marine Marchande
+              </div>
+            </div>
+          </Link>
+          <div className="ml-auto flex items-center gap-3">
+            {utilisateur && <div className="hidden text-right text-xs sm:block">{utilisateur}</div>}
+            {onLogout ? (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary-foreground/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10"
+              >
+                <LogOut className="size-3.5" /> Déconnexion
+              </button>
+            ) : (
+              <RepubliqueBlock light className="hidden sm:block" />
+            )}
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-8 print:max-w-none print:p-0">
+        {children}
+      </main>
+      <footer className="no-print border-t px-4 py-4 text-center text-xs text-muted-foreground">
+        Direction Générale de la Marine Marchande · République Gabonaise
+      </footer>
+    </div>
+  );
+}

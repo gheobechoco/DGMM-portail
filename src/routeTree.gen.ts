@@ -11,7 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EspaceRouteImport } from './routes/espace'
+import { Route as ArmateurIndexRouteImport } from './routes/armateur/index'
 import { Route as EspaceIndexRouteImport } from './routes/espace/index'
+import { Route as EspaceAuditRouteImport } from './routes/espace/audit'
+import { Route as MonEspaceIndexRouteImport } from './routes/mon-espace/index'
 import { Route as VerifierNipRouteImport } from './routes/verifier.$nip'
 import { Route as EspaceLivretsIndexRouteImport } from './routes/espace/livrets/index'
 import { Route as EspaceLivretsIdRouteImport } from './routes/espace/livrets/$id'
@@ -21,6 +24,7 @@ import { Route as EspaceMarinsNouveauRouteImport } from './routes/espace/marins/
 import { Route as EspaceVisitesIndexRouteImport } from './routes/espace/visites/index'
 import { Route as EspaceVisitesIdRouteImport } from './routes/espace/visites/$id'
 import { Route as EspaceVisitesNouvelleRouteImport } from './routes/espace/visites/nouvelle'
+import { Route as MonEspaceCertificatIdRouteImport } from './routes/mon-espace/certificat.$id'
 import { Route as VerifierCertificatCodeRouteImport } from './routes/verifier.certificat.$code'
 import { Route as EspaceMarinsModifierIdRouteImport } from './routes/espace/marins/modifier.$id'
 import { Route as EspaceVisitesModifierIdRouteImport } from './routes/espace/visites/modifier.$id'
@@ -35,10 +39,25 @@ const EspaceRoute = EspaceRouteImport.update({
   path: '/espace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArmateurIndexRoute = ArmateurIndexRouteImport.update({
+  id: '/armateur/',
+  path: '/armateur/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EspaceIndexRoute = EspaceIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceAuditRoute = EspaceAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const MonEspaceIndexRoute = MonEspaceIndexRouteImport.update({
+  id: '/mon-espace/',
+  path: '/mon-espace/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const VerifierNipRoute = VerifierNipRouteImport.update({
   id: '/verifier/$nip',
@@ -85,6 +104,11 @@ const EspaceVisitesNouvelleRoute = EspaceVisitesNouvelleRouteImport.update({
   path: '/visites/nouvelle',
   getParentRoute: () => EspaceRoute,
 } as any)
+const MonEspaceCertificatIdRoute = MonEspaceCertificatIdRouteImport.update({
+  id: '/mon-espace/certificat/$id',
+  path: '/mon-espace/certificat/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VerifierCertificatCodeRoute = VerifierCertificatCodeRouteImport.update({
   id: '/verifier/certificat/$code',
   path: '/verifier/certificat/$code',
@@ -104,13 +128,17 @@ const EspaceVisitesModifierIdRoute = EspaceVisitesModifierIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/espace': typeof EspaceRouteWithChildren
+  '/espace/audit': typeof EspaceAuditRoute
   '/verifier/$nip': typeof VerifierNipRoute
+  '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
+  '/mon-espace/': typeof MonEspaceIndexRoute
   '/espace/livrets/$id': typeof EspaceLivretsIdRoute
   '/espace/marins/$id': typeof EspaceMarinsIdRoute
   '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
   '/espace/visites/$id': typeof EspaceVisitesIdRoute
   '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/mon-espace/certificat/$id': typeof MonEspaceCertificatIdRoute
   '/verifier/certificat/$code': typeof VerifierCertificatCodeRoute
   '/espace/livrets/': typeof EspaceLivretsIndexRoute
   '/espace/marins/': typeof EspaceMarinsIndexRoute
@@ -120,13 +148,17 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/espace/audit': typeof EspaceAuditRoute
   '/verifier/$nip': typeof VerifierNipRoute
+  '/armateur': typeof ArmateurIndexRoute
   '/espace': typeof EspaceIndexRoute
+  '/mon-espace': typeof MonEspaceIndexRoute
   '/espace/livrets/$id': typeof EspaceLivretsIdRoute
   '/espace/marins/$id': typeof EspaceMarinsIdRoute
   '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
   '/espace/visites/$id': typeof EspaceVisitesIdRoute
   '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/mon-espace/certificat/$id': typeof MonEspaceCertificatIdRoute
   '/verifier/certificat/$code': typeof VerifierCertificatCodeRoute
   '/espace/livrets': typeof EspaceLivretsIndexRoute
   '/espace/marins': typeof EspaceMarinsIndexRoute
@@ -138,13 +170,17 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/espace': typeof EspaceRouteWithChildren
+  '/espace/audit': typeof EspaceAuditRoute
   '/verifier/$nip': typeof VerifierNipRoute
+  '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
+  '/mon-espace/': typeof MonEspaceIndexRoute
   '/espace/livrets/$id': typeof EspaceLivretsIdRoute
   '/espace/marins/$id': typeof EspaceMarinsIdRoute
   '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
   '/espace/visites/$id': typeof EspaceVisitesIdRoute
   '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/mon-espace/certificat/$id': typeof MonEspaceCertificatIdRoute
   '/verifier/certificat/$code': typeof VerifierCertificatCodeRoute
   '/espace/livrets/': typeof EspaceLivretsIndexRoute
   '/espace/marins/': typeof EspaceMarinsIndexRoute
@@ -157,13 +193,17 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/espace'
+    | '/espace/audit'
     | '/verifier/$nip'
+    | '/armateur/'
     | '/espace/'
+    | '/mon-espace/'
     | '/espace/livrets/$id'
     | '/espace/marins/$id'
     | '/espace/marins/nouveau'
     | '/espace/visites/$id'
     | '/espace/visites/nouvelle'
+    | '/mon-espace/certificat/$id'
     | '/verifier/certificat/$code'
     | '/espace/livrets/'
     | '/espace/marins/'
@@ -173,13 +213,17 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/espace/audit'
     | '/verifier/$nip'
+    | '/armateur'
     | '/espace'
+    | '/mon-espace'
     | '/espace/livrets/$id'
     | '/espace/marins/$id'
     | '/espace/marins/nouveau'
     | '/espace/visites/$id'
     | '/espace/visites/nouvelle'
+    | '/mon-espace/certificat/$id'
     | '/verifier/certificat/$code'
     | '/espace/livrets'
     | '/espace/marins'
@@ -190,13 +234,17 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/espace'
+    | '/espace/audit'
     | '/verifier/$nip'
+    | '/armateur/'
     | '/espace/'
+    | '/mon-espace/'
     | '/espace/livrets/$id'
     | '/espace/marins/$id'
     | '/espace/marins/nouveau'
     | '/espace/visites/$id'
     | '/espace/visites/nouvelle'
+    | '/mon-espace/certificat/$id'
     | '/verifier/certificat/$code'
     | '/espace/livrets/'
     | '/espace/marins/'
@@ -209,6 +257,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EspaceRoute: typeof EspaceRouteWithChildren
   VerifierNipRoute: typeof VerifierNipRoute
+  ArmateurIndexRoute: typeof ArmateurIndexRoute
+  MonEspaceIndexRoute: typeof MonEspaceIndexRoute
+  MonEspaceCertificatIdRoute: typeof MonEspaceCertificatIdRoute
   VerifierCertificatCodeRoute: typeof VerifierCertificatCodeRoute
 }
 
@@ -228,12 +279,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/armateur/': {
+      id: '/armateur/'
+      path: '/armateur'
+      fullPath: '/armateur/'
+      preLoaderRoute: typeof ArmateurIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/espace/': {
       id: '/espace/'
       path: '/'
       fullPath: '/espace/'
       preLoaderRoute: typeof EspaceIndexRouteImport
       parentRoute: typeof EspaceRoute
+    }
+    '/espace/audit': {
+      id: '/espace/audit'
+      path: '/audit'
+      fullPath: '/espace/audit'
+      preLoaderRoute: typeof EspaceAuditRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/mon-espace/': {
+      id: '/mon-espace/'
+      path: '/mon-espace'
+      fullPath: '/mon-espace/'
+      preLoaderRoute: typeof MonEspaceIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/verifier/$nip': {
       id: '/verifier/$nip'
@@ -298,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceVisitesNouvelleRouteImport
       parentRoute: typeof EspaceRoute
     }
+    '/mon-espace/certificat/$id': {
+      id: '/mon-espace/certificat/$id'
+      path: '/mon-espace/certificat/$id'
+      fullPath: '/mon-espace/certificat/$id'
+      preLoaderRoute: typeof MonEspaceCertificatIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verifier/certificat/$code': {
       id: '/verifier/certificat/$code'
       path: '/verifier/certificat/$code'
@@ -323,6 +402,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface EspaceRouteChildren {
+  EspaceAuditRoute: typeof EspaceAuditRoute
   EspaceIndexRoute: typeof EspaceIndexRoute
   EspaceLivretsIdRoute: typeof EspaceLivretsIdRoute
   EspaceMarinsIdRoute: typeof EspaceMarinsIdRoute
@@ -337,6 +417,7 @@ interface EspaceRouteChildren {
 }
 
 const EspaceRouteChildren: EspaceRouteChildren = {
+  EspaceAuditRoute: EspaceAuditRoute,
   EspaceIndexRoute: EspaceIndexRoute,
   EspaceLivretsIdRoute: EspaceLivretsIdRoute,
   EspaceMarinsIdRoute: EspaceMarinsIdRoute,
@@ -357,6 +438,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EspaceRoute: EspaceRouteWithChildren,
   VerifierNipRoute: VerifierNipRoute,
+  ArmateurIndexRoute: ArmateurIndexRoute,
+  MonEspaceIndexRoute: MonEspaceIndexRoute,
+  MonEspaceCertificatIdRoute: MonEspaceCertificatIdRoute,
   VerifierCertificatCodeRoute: VerifierCertificatCodeRoute,
 }
 export const routeTree = rootRouteImport

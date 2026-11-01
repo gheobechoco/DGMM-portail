@@ -11,7 +11,9 @@ export type Permission =
   | "visites"
   | "visites.saisir"
   | "visites.signer"
-  | "certificats.imprimer";
+  | "certificats.imprimer"
+  | "audit"
+  | "embarquements";
 
 /**
  * Matrice des droits (RBAC) :
@@ -24,8 +26,8 @@ export type Permission =
  *   impression des certificats.
  */
 const PERMISSIONS: Record<Role, Permission[]> = {
-  gestionnaire_mm: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "marins.livret", "visites", "certificats.imprimer"],
-  rh_marine: ["dashboard", "marins", "marins.creer", "marins.valider_admin"],
+  gestionnaire_mm: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "marins.livret", "visites", "certificats.imprimer", "audit", "embarquements"],
+  rh_marine: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "embarquements"],
   medecin: ["dashboard", "marins", "visites", "visites.saisir", "visites.signer", "certificats.imprimer"],
   gestionnaire_medical: ["dashboard", "marins", "visites", "visites.saisir", "certificats.imprimer"],
 };

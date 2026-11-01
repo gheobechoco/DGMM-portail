@@ -23,7 +23,14 @@ import { toast } from "sonner";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { EmptyState, Info, Panel, textareaClass } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
-import { EtatCertificatPill, MarinPhoto, VerdictPill } from "@/components/dgmm/MarinBits";
+import {
+  EtatCertificatPill,
+  MarinPhoto,
+  StatutStepper,
+  VerdictPill,
+} from "@/components/dgmm/MarinBits";
+import { DocViewer } from "@/components/dgmm/DocViewer";
+import { SeaService } from "@/components/dgmm/SeaService";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { can } from "@/lib/dgmm/rules";
@@ -39,6 +46,7 @@ import {
   fullName,
   lastCertificate,
   manquants,
+  parseDoc,
   marinCertStatus,
   setValidationAdmin,
   useMarins,
@@ -128,7 +136,7 @@ function Fiche({ session }: { session: Account }) {
                   </Link>
                 </Button>
               )}
-              {can(session.role, "visites.saisir") && m.validationAdmin === "validee" && (
+              {can(session.role, "visites.saisir") && m.validationAdmin !== "rejetee" && (
                 <Button asChild size="sm" variant="gold">
                   {draft ? (
                     <Link to="/espace/visites/modifier/$id" params={{ id: String(draft.id) }}>
@@ -176,6 +184,9 @@ function Fiche({ session }: { session: Account }) {
             )}
           </StatusCell>
         </div>
+        <div className="border-t px-5 py-4">
+          <StatutStepper m={m} examenRealise={mv.some((v) => v.signee)} />
+        </div>
       </section>
 
       {can(session.role, "marins.valider_admin") && m.validationAdmin === "en_attente" && (
@@ -189,6 +200,7 @@ function Fiche({ session }: { session: Account }) {
             Pièces ({Object.values(m.documents).filter(Boolean).length})
           </TabsTrigger>
           <TabsTrigger value="visites">Visites médicales ({mv.length})</TabsTrigger>
+          <TabsTrigger value="navigation">Navigation ({m.embarquements?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="livret">Livret</TabsTrigger>
           <TabsTrigger value="historique">Historique ({m.historique?.length ?? 0})</TabsTrigger>
         </TabsList>
@@ -249,6 +261,10 @@ function Fiche({ session }: { session: Account }) {
           <VisitesTable visites={mv} />
         </TabsContent>
 
+        <TabsContent value="navigation" className="mt-4">
+          <SeaService m={m} canEdit={can(session.role, "embarquements")} auteur={session.nom} />
+        </TabsContent>
+
         <TabsContent value="livret" className="mt-4">
           <LivretPanel m={m} canIssue={can(session.role, "marins.livret")} auteur={session.nom} />
         </TabsContent>
@@ -276,35 +292,53 @@ function StatusCell({ label, children }: { label: string; children: ReactNode })
 }
 
 function DocsList({ m }: { m: Marin }) {
+  const [voir, setVoir] = useState<DocKey | null>(null);
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
-      {(Object.keys(DOC_LABELS) as DocKey[]).map((k) => {
-        const f = m.documents[k];
-        const photo = k === "photo" && f?.startsWith("data:");
-        return (
-          <li key={k} className="flex items-center gap-3 rounded-lg border p-3">
-            {photo ? (
-              <MarinPhoto m={m} className="size-10 rounded-md" />
-            ) : (
-              <span
-                className={cn(
-                  "grid size-10 place-items-center rounded-md",
-                  f ? "bg-success/12 text-success" : "bg-muted text-muted-foreground",
-                )}
+    <>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {(Object.keys(DOC_LABELS) as DocKey[]).map((k) => {
+          const f = m.documents[k];
+          const d = parseDoc(f);
+          const photo = k === "photo" && d?.image;
+          return (
+            <li key={k}>
+              <button
+                type="button"
+                disabled={!f}
+                onClick={() => setVoir(k)}
+                className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors enabled:hover:border-gold enabled:hover:bg-muted/40 disabled:cursor-default"
               >
-                {f ? <FileCheck2 className="size-4" /> : <Paperclip className="size-4" />}
-              </span>
-            )}
-            <div className="min-w-0">
-              <div className="text-sm font-medium">{DOC_LABELS[k]}</div>
-              <div className="truncate text-xs text-muted-foreground">
-                {photo ? "Photo d'identité" : (f ?? "Non fourni")}
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+                {photo ? (
+                  <MarinPhoto m={m} className="h-12 w-10 rounded-md" />
+                ) : (
+                  <span
+                    className={cn(
+                      "grid size-10 place-items-center rounded-md",
+                      f ? "bg-success/12 text-success" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {f ? <FileCheck2 className="size-4" /> : <Paperclip className="size-4" />}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{DOC_LABELS[k]}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {photo ? "Format passeport 35×45" : (d?.nom ?? "Non fourni")}
+                  </div>
+                </div>
+                {f && <Eye className="size-4 text-muted-foreground" aria-label="Aperçu" />}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <DocViewer
+        titre={voir ? DOC_LABELS[voir] : ""}
+        value={voir ? m.documents[voir] : undefined}
+        open={!!voir}
+        onOpenChange={(o) => !o && setVoir(null)}
+      />
+    </>
   );
 }
 
@@ -312,11 +346,12 @@ function DocsList({ m }: { m: Marin }) {
 function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
   const [rejet, setRejet] = useState(false);
   const [motif, setMotif] = useState("");
-  const pieces: [string, boolean][] = [
-    ["Photo d'identité", !!m.documents.photo],
-    ["CNI / Passeport", !!m.documents.piece],
-    ["Justificatif de domicile", !!m.documents.residence],
-    ["Contrat de travail", !!m.documents.contrat],
+  const [voir, setVoir] = useState<DocKey | null>(null);
+  const pieces: [string, DocKey][] = [
+    ["Photo d'identité", "photo"],
+    ["CNI / Passeport", "piece"],
+    ["Justificatif de domicile", "residence"],
+    ["Contrat de travail", "contrat"],
   ];
   const miss = manquants(m).filter((x) => !["Photo d'identité", "Pièce d'identité"].includes(x));
   const required = !!m.documents.photo && !!m.documents.piece;
@@ -325,30 +360,46 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
       <div className="flex items-start gap-3">
         <CircleAlert className="mt-0.5 size-5 shrink-0 text-warning" />
         <div className="flex-1">
-          <h2 className="font-display font-semibold text-primary">
-            Validation administrative du dossier
-          </h2>
+          <h2 className="font-display font-semibold text-primary">Visa administratif DGMM</h2>
           <p className="text-sm text-muted-foreground">
-            Contrôlez les pièces avant de valider. La validation ouvre l'accès à la visite médicale
-            d'aptitude.
+            Contrôlez les pièces (cliquez pour les visualiser) avant d'apposer le visa
+            administratif.
           </p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {pieces.map(([label, ok]) => (
-              <li key={label} className="flex items-center gap-2 text-sm">
-                <span
-                  className={cn(
-                    "grid size-5 place-items-center rounded-full",
-                    ok
-                      ? "bg-success text-success-foreground"
-                      : "bg-destructive/12 text-destructive",
+            {pieces.map(([label, k]) => {
+              const ok = !!m.documents[k];
+              return (
+                <li key={label} className="flex items-center gap-2 text-sm">
+                  <span
+                    className={cn(
+                      "grid size-5 place-items-center rounded-full",
+                      ok
+                        ? "bg-success text-success-foreground"
+                        : "bg-destructive/12 text-destructive",
+                    )}
+                  >
+                    {ok ? <Check className="size-3" /> : <XCircle className="size-3" />}
+                  </span>
+                  <span className={ok ? "" : "text-muted-foreground"}>{label}</span>
+                  {ok && (
+                    <button
+                      type="button"
+                      onClick={() => setVoir(k)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    >
+                      <Eye className="size-3" /> Voir
+                    </button>
                   )}
-                >
-                  {ok ? <Check className="size-3" /> : <XCircle className="size-3" />}
-                </span>
-                <span className={ok ? "" : "text-muted-foreground"}>{label}</span>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
+          <DocViewer
+            titre={voir ? DOC_LABELS[voir] : ""}
+            value={voir ? m.documents[voir] : undefined}
+            open={!!voir}
+            onOpenChange={(o) => !o && setVoir(null)}
+          />
           {miss.length > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
               Signalement à compléter avant le livret : {miss.join(", ")}.
@@ -405,12 +456,12 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
               title={required ? undefined : "Photo et CNI/Passeport requises"}
               onClick={() => {
                 setValidationAdmin(m.id, "validee", auteur);
-                toast.success("Dossier validé", {
-                  description: "Le marin est ajouté à la file active de la visite médicale.",
+                toast.success("Visa administratif DGMM apposé", {
+                  description: "Le dossier pourra être livré dès la validation médicale.",
                 });
               }}
             >
-              <CheckCircle2 /> Valider le dossier
+              <CheckCircle2 /> Apposer le visa DGMM
             </Button>
           </>
         )}

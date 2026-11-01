@@ -8,6 +8,7 @@ import {
   NATIONALITES,
   QUARTIERS,
   QUARTIERS_RESIDENCE,
+  parseDoc,
   type DocKey,
   type Marin,
 } from "@/lib/dgmm/store";
@@ -123,21 +124,41 @@ function validate(v: MarinInput): Errors {
   return e;
 }
 
-/** Réduit la photo d'identité (240 px max) pour l'afficher sur le livret et le certificat. */
+/**
+ * Recadre automatiquement la photo au format passeport OMI (35 × 45 mm, ratio 7:9),
+ * centrée sur le haut du cliché (visage), et la réduit à 280 × 360 px.
+ */
 function readPhoto(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, 240 / Math.max(img.width, img.height));
+      const ratio = 35 / 45;
+      let sw = img.width;
+      let sh = img.height;
+      if (sw / sh > ratio) sw = sh * ratio;
+      else sh = sw / ratio;
+      const sx = (img.width - sw) / 2;
+      const sy = Math.max(0, (img.height - sh) * 0.25);
       const c = document.createElement("canvas");
-      c.width = Math.round(img.width * scale);
-      c.height = Math.round(img.height * scale);
-      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+      c.width = 280;
+      c.height = 360;
+      c.getContext("2d")?.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
       URL.revokeObjectURL(img.src);
-      resolve(c.toDataURL("image/jpeg", 0.82));
+      resolve(c.toDataURL("image/jpeg", 0.85));
     };
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
+  });
+}
+
+/** Conserve le contenu des petites pièces (≤ 700 Ko) pour la visionneuse intégrée. */
+function readDoc(file: File): Promise<string> {
+  if (file.size > 700_000) return Promise.resolve(file.name);
+  return new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(`${file.name}::${String(r.result)}`);
+    r.onerror = () => resolve(file.name);
+    r.readAsDataURL(file);
   });
 }
 
@@ -488,7 +509,9 @@ export function MarinForm({
                         )}
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
-                        {isPhoto ? "Photo chargée" : (file ?? "Aucun fichier")}
+                        {isPhoto
+                          ? "Photo recadrée au format passeport (35×45)"
+                          : (parseDoc(file)?.nom ?? "Aucun fichier")}
                       </div>
                     </div>
                     {file ? (
@@ -517,7 +540,7 @@ export function MarinForm({
                             const val =
                               k === "photo" && f.type.startsWith("image/")
                                 ? await readPhoto(f).catch(() => f.name)
-                                : f.name;
+                                : await readDoc(f);
                             setV((s) => ({ ...s, documents: { ...s.documents, [k]: val } }));
                           }}
                         />

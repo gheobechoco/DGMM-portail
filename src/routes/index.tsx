@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard } from "lucide-react";
+import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight } from "lucide-react";
 import { DgmmLogo } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
@@ -183,6 +183,24 @@ function LoginPage() {
                   );
                 })}
               </div>
+            </div>
+            <div className="mt-8 grid grid-cols-2 gap-2">
+              <Link to="/mon-espace" className="group flex items-center gap-2 rounded-lg border border-dashed p-3 text-left transition hover:border-gold hover:bg-muted/40">
+                <Anchor className="size-4 shrink-0 text-secondary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-primary">Espace Marin</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">Accès avec votre NIP</span>
+                </span>
+                <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-primary" />
+              </Link>
+              <Link to="/armateur" className="group flex items-center gap-2 rounded-lg border border-dashed p-3 text-left transition hover:border-gold hover:bg-muted/40">
+                <Building2 className="size-4 shrink-0 text-secondary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-primary">Espace Armateurs</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">Rôles d'équipage</span>
+                </span>
+                <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-primary" />
+              </Link>
             </div>
           </div>
         </div>

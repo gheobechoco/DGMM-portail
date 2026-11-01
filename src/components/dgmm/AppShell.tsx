@@ -4,6 +4,7 @@ import {
   BookOpenCheck,
   LayoutDashboard,
   LogOut,
+  ShieldCheck,
   Menu,
   Stethoscope,
   Users,
@@ -13,6 +14,7 @@ import {
 import { DgmmLogo } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
+import { Omnibar } from "@/components/dgmm/Omnibar";
 import { can, type Permission } from "@/lib/dgmm/rules";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +37,7 @@ export const NAV: NavItem[] = [
   { to: "/espace/marins", label: "Gens de mer", icon: Users, perm: "marins" },
   { to: "/espace/visites", label: "Visites médicales", icon: Stethoscope, perm: "visites" },
   { to: "/espace/livrets", label: "Livrets maritimes", icon: BookOpenCheck, perm: "marins.livret" },
+  { to: "/espace/audit", label: "Journal d'audit", icon: ShieldCheck, perm: "audit" },
 ];
 
 function initials(nom: string) {
@@ -177,7 +180,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
         </div>
       )}
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 print:pl-0">
         <header className="no-print sticky top-0 z-20 border-b bg-card/90 backdrop-blur">
           <Tricolor className="lg:hidden" />
           <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
@@ -191,15 +194,19 @@ export function AppShell({ session, children }: { session: Account; children: Re
             </button>
             <div className="flex items-center gap-2 lg:hidden">
               <DgmmLogo className="size-8" />
-              <span className="font-display text-sm font-bold text-primary">DGMM</span>
+              <span className="hidden font-display text-sm font-bold text-primary sm:inline">
+                DGMM
+              </span>
             </div>
-            <div className="hidden text-sm text-muted-foreground lg:block">
-              Direction Générale de la Marine Marchande
+            <div className="min-w-0 flex-1">
+              <Omnibar session={session} />
             </div>
-            <RepubliqueBlock className="ml-auto hidden sm:block" />
+            <RepubliqueBlock className="hidden xl:block" />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8 print:max-w-none print:p-0">
+          {children}
+        </main>
       </div>
     </div>
   );

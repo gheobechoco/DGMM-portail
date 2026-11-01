@@ -68,7 +68,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
     (v) => v.signee && !v.revoquee && certificateStatus(v.stcw.validJusquau) === "expire_bientot",
   ).length;
   const enAttente = marins.filter(
-    (m) => m.validationAdmin === "validee" && m.validationMedicale === "en_attente",
+    (m) => m.validationAdmin !== "rejetee" && m.validationMedicale === "en_attente",
   ).length;
   const set = (p: Partial<Search>) =>
     navigate({ search: (prev) => ({ ...prev, ...p }), replace: true });
@@ -96,7 +96,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
           value={enAttente}
           icon={Stethoscope}
           tone="warning"
-          hint="validés administrativement, aptitude en attente"
+          hint="enrôlés, aptitude en attente"
         />
         <StatCard label="Brouillons à signer" value={brouillons} icon={FileClock} tone="gold" />
         <StatCard

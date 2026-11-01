@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { ageFrom, certificateStatus, DAY, type CertStatus } from "./rules";
+import { ACCOUNTS } from "./auth";
+import { TOUS_NAVIRES, type TypeFlotte } from "./maritime";
 
 export type Etat = "en_attente" | "validee" | "rejetee";
 export type OuiNon = "oui" | "non" | "";
@@ -28,6 +30,8 @@ export interface Marin {
   lieuMariage: string;
   situationMatrimoniale?: string | undefined;
   historique?: Evenement[] | undefined;
+  embarquements?: Embarquement[] | undefined;
+  alertes?: { sms: boolean; email: boolean } | undefined;
   documents: Partial<Record<DocKey, string>>;
   validationAdmin: Etat;
   validationMedicale: Etat;
@@ -43,6 +47,45 @@ export interface Evenement {
   action: string;
   auteur: string;
   type: "creation" | "modification" | "admin" | "medical" | "livret";
+}
+
+/** Ligne du relevé des services en mer (sea service) inscrite au livret. */
+export interface Embarquement {
+  id: number;
+  navire: string;
+  imo: string;
+  typeNavire: TypeFlotte | string;
+  jauge: number;
+  armateur: string;
+  fonction: string;
+  embarquement: string;
+  debarquement: string;
+  saisiPar: string;
+  saisiLe: string;
+}
+
+/** Rôle d'équipage déclaré par un armateur pour un appareillage. */
+export interface RoleEquipage {
+  id: number;
+  armateur: string;
+  navire: string;
+  appareillage: string;
+  membres: { marinId: number; fonction: string }[];
+  creeLe: string;
+  modifieLe: string;
+}
+
+/** Entrée du journal d'audit, chaînée à la précédente par son empreinte. */
+export interface AuditEntry {
+  seq: number;
+  date: string;
+  acteur: string;
+  role: string;
+  action: string;
+  cible: string;
+  poste: string;
+  prev: string;
+  hash: string;
 }
 
 export type DocKey = "photo" | "piece" | "certificat" | "residence" | "contrat" | "livret";
@@ -115,9 +158,56 @@ export interface Visite {
 interface State {
   marins: Marin[];
   visites: Visite[];
+  roles: RoleEquipage[];
+  audit: AuditEntry[];
 }
 
-const KEY = "dgmm-gdm-v2";
+const KEY = "dgmm-gdm-v3";
+
+/** Empreinte 64 bits (deux FNV-1a) — démonstration ; en production : SHA-256 côté serveur. */
+export function empreinte(src: string): string {
+  let h1 = 0x811c9dc5,
+    h2 = 0x01000193;
+  for (let i = 0; i < src.length; i++) {
+    h1 = Math.imul(h1 ^ src.charCodeAt(i), 16777619);
+    h2 = Math.imul(h2 ^ src.charCodeAt(i), 2246822519);
+  }
+  const part = (n: number) => (n >>> 0).toString(16).padStart(8, "0");
+  return `${part(h1)}${part(h2)}`;
+}
+
+function auditPayload(e: Omit<AuditEntry, "hash">) {
+  return `${e.seq}|${e.date}|${e.acteur}|${e.role}|${e.action}|${e.cible}|${e.poste}|${e.prev}`;
+}
+
+function roleDe(acteur: string): string {
+  return ACCOUNTS.find((a) => a.nom === acteur)?.roleLabel ?? (acteur.startsWith("Armateur") ? "Armateur" : acteur.startsWith("Marin") ? "Marin" : "Agent");
+}
+
+function poste(): string {
+  if (typeof navigator === "undefined") return "serveur";
+  const ua = navigator.userAgent;
+  const nav = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "Navigateur";
+  const os = /Windows/.test(ua) ? "Windows" : /Mac OS/.test(ua) ? "macOS" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Linux/.test(ua) ? "Linux" : "";
+  return `${nav}${os ? ` / ${os}` : ""}`;
+}
+
+function appendAudit(audit: AuditEntry[], acteur: string, action: string, cible: string, date = nowIso(), post = poste()): AuditEntry[] {
+  const last = audit[audit.length - 1];
+  const base = { seq: (last?.seq ?? 0) + 1, date, acteur, role: roleDe(acteur), action, cible, poste: post, prev: last?.hash ?? "0".repeat(16) };
+  return [...audit, { ...base, hash: empreinte(auditPayload(base)) }];
+}
+
+/** Vérifie la chaîne d'empreintes : renvoie le n° de la première entrée altérée, ou null. */
+export function verifierAudit(audit: AuditEntry[]): number | null {
+  let prev = "0".repeat(16);
+  for (const e of audit) {
+    const { hash, ...base } = e;
+    if (e.prev !== prev || empreinte(auditPayload(base)) !== hash) return e.seq;
+    prev = hash;
+  }
+  return null;
+}
 
 function iso(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -184,7 +274,7 @@ function seed(): State {
       nom, prenom, sexe,
       dateNaissance: iso(birth),
       profession,
-      nationalite: i % 7 === 3 ? "Camerounaise" : "Gabonaise",
+      nationalite: i % 7 === 3 ? "Camerounaise" : i % 9 === 5 ? "Française" : i % 11 === 8 ? "Congolaise" : "Gabonaise",
       entreprise: ENTREPRISES[i % ENTREPRISES.length]!,
       tel1: `07${String(7452017 + i * 1311).slice(0, 7)}`,
       tel2: "",
@@ -197,7 +287,7 @@ function seed(): State {
       validationAdmin: va,
       validationMedicale: vm,
       login: `${nom.split(" ")[0]!.toLowerCase()}${id}`,
-      mdp: Math.random().toString(36).slice(2, 7),
+      mdp: "azerty",
       creePar: i % 2 ? "Agent DGMM" : "Dr MÉDECIN DU TRAVAIL",
       creeLe: daysAgo(created),
       modifieLe: daysAgo(Math.max(0, created - 3)),
@@ -261,7 +351,43 @@ function seed(): State {
   for (const m of marins.filter((x) => x.livret)) {
     m.historique?.push({ date: m.modifieLe, action: `Livret ${m.livret} délivré`, auteur: "Gestionnaire MM", type: "livret" });
   }
-  return { marins, visites };
+  // Relevé des services en mer pour les marins validés.
+  let embId = 1;
+  for (const m of marins.filter((x) => x.validationAdmin === "validee")) {
+    const flotte = TOUS_NAVIRES.filter((n) => n.armateur === m.entreprise);
+    const n = 1 + (m.id % 3);
+    const list: Embarquement[] = [];
+    let fin = 20 + (m.id % 5) * 9;
+    for (let k = 0; k < n; k++) {
+      const nav = flotte[k % Math.max(1, flotte.length)] ?? TOUS_NAVIRES[m.id % TOUS_NAVIRES.length]!;
+      const duree = 60 + ((m.id * 37 + k * 53) % 150);
+      const deb = fin + duree;
+      list.push({
+        id: embId++, navire: nav.nom, imo: nav.imo, typeNavire: nav.type, jauge: nav.jauge, armateur: nav.armateur,
+        fonction: m.profession, embarquement: iso(new Date(Date.now() - deb * DAY)),
+        debarquement: k === 0 && m.id % 4 === 0 ? "" : iso(new Date(Date.now() - fin * DAY)),
+        saisiPar: "Agent DGMM", saisiLe: daysAgo(fin),
+      });
+      fin = deb + 15 + (k * 11);
+    }
+    m.embarquements = list;
+  }
+  // Rôle d'équipage déclaré par Perenco Marine.
+  const perenco = marins.filter((m) => m.entreprise === "Perenco Marine");
+  const roles: RoleEquipage[] = [
+    {
+      id: 1, armateur: "Perenco Marine", navire: "Perenco Mandji", appareillage: iso(new Date(Date.now() + 6 * DAY)),
+      membres: [...perenco.map((m) => ({ marinId: m.id, fonction: m.profession })), { marinId: 3, fonction: "Officier de quart pont" }],
+      creeLe: daysAgo(4), modifieLe: daysAgo(2),
+    },
+  ];
+  // Journal d'audit initial reconstitué à partir des historiques.
+  const evts = marins
+    .flatMap((m) => (m.historique ?? []).map((e) => ({ ...e, cible: `${m.nom} ${m.prenom} (${m.nip})` })))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  let audit: AuditEntry[] = [];
+  for (const e of evts) audit = appendAudit(audit, e.auteur, e.action, e.cible, e.date, "Chrome / Windows");
+  return { marins, visites, roles, audit };
 }
 
 let state: State | null = null;
@@ -271,7 +397,10 @@ function load(): State {
   if (typeof window === "undefined") return seed();
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as State;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<State>;
+      return { marins: parsed.marins ?? [], visites: parsed.visites ?? [], roles: parsed.roles ?? [], audit: parsed.audit ?? [] };
+    }
   } catch {
     /* ignore */
   }
@@ -286,10 +415,21 @@ function get(): State {
 }
 const serverState = seed();
 
-function set(next: State) {
-  state = next;
-  if (typeof window !== "undefined") window.localStorage.setItem(KEY, JSON.stringify(next));
+/** Enregistre le nouvel état ; si `log` est fourni, ajoute une entrée chaînée au journal d'audit. */
+function set(next: State, log?: { acteur: string; action: string; cible: string }) {
+  state = log ? { ...next, audit: appendAudit(next.audit, log.acteur, log.action, log.cible) } : next;
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(state));
+    } catch {
+      console.warn("Stockage local plein : les dernières modifications ne seront pas conservées.");
+    }
+  }
   listeners.forEach((l) => l());
+}
+
+function cible(m: Marin | undefined) {
+  return m ? `${m.nom} ${m.prenom} (${m.nip})` : "—";
 }
 
 function subscribe(l: () => void) {
@@ -306,6 +446,17 @@ export function useMarins() {
 export function useVisites() {
   return useDgmm((s) => s.visites);
 }
+export function useRoles() {
+  return useDgmm((s) => s.roles);
+}
+export function useAudit() {
+  return useDgmm((s) => s.audit);
+}
+
+/** Trace une consultation ou une action sans modification de données. */
+export function journaliser(acteur: string, action: string, cibleTxt: string) {
+  set(get(), { acteur, action, cible: cibleTxt });
+}
 
 export function nowIso() {
   return new Date().toISOString();
@@ -319,8 +470,9 @@ export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "c
   const s = get();
   if (input.id) {
     const marins = s.marins.map((m) => (m.id === input.id ? withEvent({ ...m, ...input, id: m.id, modifieLe: nowIso() }, "Dossier modifié", auteur, "modification") : m));
-    set({ ...s, marins });
-    return marins.find((m) => m.id === input.id)!;
+    const saved = marins.find((m) => m.id === input.id)!;
+    set({ ...s, marins }, { acteur: auteur, action: "Modification du dossier", cible: cible(saved) });
+    return saved;
   }
   const id = Math.max(0, ...s.marins.map((m) => m.id)) + 1;
   const m: Marin = {
@@ -330,6 +482,7 @@ export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "c
     livret: "",
     login: `${(input.nom.split(" ")[0] ?? "").toLowerCase().normalize("NFD").replace(/[^a-z]/g, "")}${id}`,
     mdp: Math.random().toString(36).slice(2, 8),
+    embarquements: [],
     validationAdmin: "en_attente",
     validationMedicale: "en_attente",
     creePar: auteur,
@@ -337,7 +490,7 @@ export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "c
     modifieLe: nowIso(),
     historique: [{ date: nowIso(), action: "Dossier créé — enrôlement", auteur, type: "creation" }],
   };
-  set({ ...s, marins: [m, ...s.marins] });
+  set({ ...s, marins: [m, ...s.marins] }, { acteur: auteur, action: "Enrôlement d'un nouveau marin", cible: cible(m) });
   return m;
 }
 
@@ -378,14 +531,24 @@ export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteL
         : m,
     );
   }
-  set({ marins, visites });
+  set(
+    { ...s, marins, visites },
+    {
+      acteur: saved.signee ? saved.signataire : saved.praticien,
+      action: saved.signee ? `Signature du certificat ${saved.numero} — ${VERDICT_LABELS[saved.stcw.verdict]}` : `Saisie de la visite ${saved.numero} (brouillon)`,
+      cible: cible(marins.find((m) => m.id === saved.marinId)),
+    },
+  );
   return saved;
 }
 
 export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM", motif = "") {
   const s = get();
   const action = etat === "validee" ? "Validation administrative accordée" : `Dossier rejeté par l'administration${motif ? ` : ${motif}` : ""}`;
-  set({ ...s, marins: s.marins.map((m) => (m.id === id ? withEvent({ ...m, validationAdmin: etat, modifieLe: nowIso() }, action, auteur, "admin") : m)) });
+  set(
+    { ...s, marins: s.marins.map((m) => (m.id === id ? withEvent({ ...m, validationAdmin: etat, modifieLe: nowIso() }, action, auteur, "admin") : m)) },
+    { acteur: auteur, action: etat === "validee" ? "Visa administratif DGMM accordé" : action, cible: cible(s.marins.find((m) => m.id === id)) },
+  );
 }
 
 /** Révoque un certificat signé (il n'est plus valable, la vérification QR l'indique). */
@@ -393,12 +556,16 @@ export function revoquerCertificat(id: number, motif: string, auteur: string) {
   const s = get();
   const v = s.visites.find((x) => x.id === id);
   if (!v) return;
-  set({
-    visites: s.visites.map((x) => (x.id === id ? { ...x, revoquee: true, motifRevocation: motif } : x)),
-    marins: s.marins.map((m) =>
-      m.id === v.marinId ? withEvent({ ...m, validationMedicale: "en_attente", modifieLe: nowIso() }, `Certificat ${v.numero} révoqué : ${motif}`, auteur, "medical") : m,
-    ),
-  });
+  set(
+    {
+      ...s,
+      visites: s.visites.map((x) => (x.id === id ? { ...x, revoquee: true, motifRevocation: motif } : x)),
+      marins: s.marins.map((m) =>
+        m.id === v.marinId ? withEvent({ ...m, validationMedicale: "en_attente", modifieLe: nowIso() }, `Certificat ${v.numero} révoqué : ${motif}`, auteur, "medical") : m,
+      ),
+    },
+    { acteur: auteur, action: `Révocation du certificat ${v.numero} : ${motif}`, cible: cible(s.marins.find((m) => m.id === v.marinId)) },
+  );
 }
 
 /** Code de validation imprimé dans le QR du certificat (empreinte non devinable du certificat). */
@@ -429,8 +596,72 @@ export function delivrerLivret(id: number, auteur = "Gestionnaire MM"): string {
   if (!m) return "";
   if (m.livret) return m.livret;
   const livret = `LM-${String(id).padStart(5, "0")}`;
-  set({ ...s, marins: s.marins.map((x) => (x.id === id ? withEvent({ ...x, livret, modifieLe: nowIso() }, `Livret ${livret} délivré`, auteur, "livret") : x)) });
+  set(
+    { ...s, marins: s.marins.map((x) => (x.id === id ? withEvent({ ...x, livret, modifieLe: nowIso() }, `Livret ${livret} délivré`, auteur, "livret") : x)) },
+    { acteur: auteur, action: `Délivrance du livret maritime ${livret}`, cible: cible(m) },
+  );
   return livret;
+}
+
+/* ---------- Services en mer ---------- */
+
+export function ajouterEmbarquement(marinId: number, e: Omit<Embarquement, "id" | "saisiLe" | "saisiPar">, auteur: string) {
+  const s = get();
+  const m = s.marins.find((x) => x.id === marinId);
+  if (!m) return;
+  const id = Math.max(0, ...s.marins.flatMap((x) => (x.embarquements ?? []).map((y) => y.id))) + 1;
+  const emb: Embarquement = { ...e, id, saisiPar: auteur, saisiLe: nowIso() };
+  set(
+    {
+      ...s,
+      marins: s.marins.map((x) =>
+        x.id === marinId ? withEvent({ ...x, embarquements: [...(x.embarquements ?? []), emb], modifieLe: nowIso() }, `Embarquement inscrit : ${e.navire} (${e.fonction})`, auteur, "modification") : x,
+      ),
+    },
+    { acteur: auteur, action: `Inscription d'un embarquement sur ${e.navire}`, cible: cible(m) },
+  );
+}
+
+export function cloturerEmbarquement(marinId: number, embId: number, debarquement: string, auteur: string) {
+  const s = get();
+  const m = s.marins.find((x) => x.id === marinId);
+  set(
+    {
+      ...s,
+      marins: s.marins.map((x) =>
+        x.id === marinId ? { ...x, embarquements: (x.embarquements ?? []).map((y) => (y.id === embId ? { ...y, debarquement } : y)), modifieLe: nowIso() } : x,
+      ),
+    },
+    { acteur: auteur, action: `Débarquement enregistré le ${debarquement}`, cible: cible(m) },
+  );
+}
+
+export function joursEmbarquement(e: Embarquement, now = new Date()): number {
+  const fin = e.debarquement ? new Date(e.debarquement) : now;
+  return Math.max(0, Math.round((fin.getTime() - new Date(e.embarquement).getTime()) / DAY) + 1);
+}
+
+/* ---------- Rôles d'équipage (armateurs) ---------- */
+
+export function saveRole(r: Omit<RoleEquipage, "id" | "creeLe" | "modifieLe"> & { id?: number }, acteur: string): RoleEquipage {
+  const s = get();
+  let saved: RoleEquipage;
+  let roles: RoleEquipage[];
+  if (r.id) {
+    roles = s.roles.map((x) => (x.id === r.id ? { ...x, ...r, id: x.id, modifieLe: nowIso() } : x));
+    saved = roles.find((x) => x.id === r.id)!;
+  } else {
+    saved = { ...r, id: Math.max(0, ...s.roles.map((x) => x.id)) + 1, creeLe: nowIso(), modifieLe: nowIso() };
+    roles = [saved, ...s.roles];
+  }
+  set({ ...s, roles }, { acteur, action: `Déclaration du rôle d'équipage — ${saved.navire} (${saved.membres.length} marins)`, cible: saved.armateur });
+  return saved;
+}
+
+export function setAlertes(marinId: number, alertes: { sms: boolean; email: boolean }) {
+  const s = get();
+  const m = s.marins.find((x) => x.id === marinId);
+  set({ ...s, marins: s.marins.map((x) => (x.id === marinId ? { ...x, alertes } : x)) }, { acteur: `Marin ${m?.nip ?? ""}`, action: "Préférences d'alerte d'expiration modifiées", cible: cible(m) });
 }
 
 export function resetDemo() {
@@ -478,4 +709,14 @@ export function age(m: Marin) {
 export function formatDate(d?: string) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+/** Une pièce jointe est stockée sous forme « nom » (démo) ou « nom::dataURL » (fichier réellement chargé). */
+export function parseDoc(v: string | undefined): { nom: string; url?: string | undefined; image: boolean; pdf: boolean } | null {
+  if (!v) return null;
+  if (v.startsWith("data:")) return { nom: "Photo d'identité", url: v, image: true, pdf: false };
+  const i = v.indexOf("::");
+  const nom = i >= 0 ? v.slice(0, i) : v;
+  const url = i >= 0 ? v.slice(i + 2) : undefined;
+  return { nom, url, image: !!url?.startsWith("data:image"), pdf: !!url?.startsWith("data:application/pdf") };
 }

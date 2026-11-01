@@ -58,3 +58,59 @@ export function useSession(): Account | null {
   );
   return ACCOUNTS.find((a) => a.username === u) ?? null;
 }
+
+/* ---------- Sessions des espaces externes (marins, armateurs) ---------- */
+
+function sessionStore(key: string) {
+  const ls = new Set<() => void>();
+  let c: string | null | undefined;
+  const readKey = () => {
+    if (typeof window === "undefined") return null;
+    if (c === undefined) c = window.localStorage.getItem(key);
+    return c;
+  };
+  const write = (v: string | null) => {
+    if (v === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, v);
+    c = v;
+    ls.forEach((l) => l());
+  };
+  const use = () =>
+    useSyncExternalStore(
+      (l) => {
+        ls.add(l);
+        return () => ls.delete(l);
+      },
+      readKey,
+      () => null,
+    );
+  return { read: readKey, write, use };
+}
+
+/** Session de l'espace marin : contient l'identifiant interne du marin. */
+export const marinSession = sessionStore("dgmm-marin-session");
+
+export interface ArmateurAccount {
+  username: string;
+  password: string;
+  entreprise: string;
+  contact: string;
+}
+
+// Comptes armateurs de démonstration.
+export const ARMATEUR_ACCOUNTS: ArmateurAccount[] = [
+  { username: "perenco", password: "azerty", entreprise: "Perenco Marine", contact: "Service armement Perenco" },
+  { username: "bourbon", password: "azerty", entreprise: "Bourbon Offshore", contact: "Crewing Bourbon Gabon" },
+  { username: "snat", password: "azerty", entreprise: "SNAT Gabon", contact: "Armement SNAT" },
+];
+export const armateurSession = sessionStore("dgmm-armateur-session");
+
+export function loginArmateur(username: string, password: string): ArmateurAccount | null {
+  const a = ARMATEUR_ACCOUNTS.find((x) => x.username === username.trim().toLowerCase() && x.password === password);
+  if (a) armateurSession.write(a.username);
+  return a ?? null;
+}
+export function useArmateur(): ArmateurAccount | null {
+  const u = armateurSession.use();
+  return ARMATEUR_ACCOUNTS.find((a) => a.username === u) ?? null;
+}

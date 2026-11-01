@@ -14,8 +14,12 @@ import {
   Stethoscope,
   UserPlus,
   Users,
+  Flag,
+  MapPin,
+  Ship,
 } from "lucide-react";
 import { useSession, type Account } from "@/lib/dgmm/auth";
+import { ARMATEURS, TOUS_NAVIRES, TYPES_FLOTTE } from "@/lib/dgmm/maritime";
 import { ageBracket, can, isOverdueRegistration, profil } from "@/lib/dgmm/rules";
 import {
   VERDICT_LABELS,
@@ -223,7 +227,7 @@ function PilotageDashboard({ session }: { session: Account }) {
       .filter(
         (m) =>
           (m.validationAdmin === "en_attente" ||
-            (m.validationAdmin === "validee" && m.validationMedicale === "en_attente")) &&
+            (m.validationAdmin !== "rejetee" && m.validationMedicale === "en_attente")) &&
           isOverdueRegistration(m.creeLe, now),
       )
       .sort((a, b) => a.creeLe.localeCompare(b.creeLe));
@@ -382,7 +386,172 @@ function PilotageDashboard({ session }: { session: Account }) {
       >
         <RenewTable rows={d.renew} />
       </Panel>
+
+      {!rh && <PilotageNational marins={marins} />}
     </>
+  );
+}
+
+/* ---------- Pilotage national (DGMM) ---------- */
+
+function PilotageNational({ marins }: { marins: Marin[] }) {
+  const d = useMemo(() => {
+    const actifs = marins.filter(
+      (m) => m.validationAdmin === "validee" && m.validationMedicale === "validee",
+    );
+    const embarques = marins.filter((m) => (m.embarquements ?? []).some((e) => !e.debarquement));
+    const nationaux = marins.filter((m) => m.nationalite === "Gabonaise").length;
+    const nat = countBy(
+      marins.filter((m) => m.nationalite !== "Gabonaise"),
+      (m) => m.nationalite,
+    );
+    const flotte = TYPES_FLOTTE.map((t) => ({
+      nom: t,
+      n: TOUS_NAVIRES.filter((n) => n.type === t).length,
+    })).filter((x) => x.n);
+    const marinsParType = TYPES_FLOTTE.map((t) => ({
+      nom: t,
+      n: marins.filter((m) => ARMATEURS.find((a) => a.nom === m.entreprise)?.type === t).length,
+    })).filter((x) => x.n);
+    const villes = [...new Set(ARMATEURS.map((a) => a.ville))].map((v) => ({
+      ville: v,
+      armateurs: ARMATEURS.filter((a) => a.ville === v),
+    }));
+    return {
+      actifs,
+      embarques,
+      nationaux,
+      nat,
+      flotte,
+      marinsParType,
+      villes,
+      jauge: TOUS_NAVIRES.reduce((s, n) => s + n.jauge, 0),
+    };
+  }, [marins]);
+  const total = Math.max(1, marins.length);
+  const pctNat = Math.round((d.nationaux / total) * 100);
+
+  return (
+    <section className="mt-10" aria-labelledby="pilotage-national">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <h2
+          id="pilotage-national"
+          className="font-display text-sm font-bold uppercase tracking-[0.16em] text-secondary"
+        >
+          Pilotage national · Marine marchande gabonaise
+        </h2>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Effectif actif (temps réel)"
+          value={d.actifs.length}
+          icon={Users}
+          hint={`sur ${marins.length} gens de mer enregistrés`}
+        />
+        <StatCard
+          label="Actuellement embarqués"
+          value={d.embarques.length}
+          icon={Ship}
+          tone="success"
+        />
+        <StatCard
+          label="Taux de gabonisation"
+          value={`${pctNat} %`}
+          icon={Flag}
+          tone="gold"
+          hint={`${d.nationaux} marins nationaux`}
+        />
+        <StatCard
+          label="Flotte suivie"
+          value={TOUS_NAVIRES.length}
+          icon={Ship}
+          hint={`${ARMATEURS.length} armateurs · ${d.jauge.toLocaleString("fr-FR")} GT`}
+        />
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <Panel
+          title="Gabonisation des équipages"
+          description="Marins nationaux et marins sous contrat étranger"
+        >
+          <div className="flex h-4 w-full gap-0.5 overflow-hidden rounded-full" aria-hidden>
+            <div className="bg-secondary" style={{ width: `${pctNat}%` }} />
+            <div className="bg-gold" style={{ width: `${100 - pctNat}%` }} />
+          </div>
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="size-2.5 rounded-sm bg-secondary" /> Nationaux
+              </dt>
+              <dd className="font-display text-xl font-bold tabular-nums text-primary">
+                {pctNat} %
+              </dd>
+            </div>
+            <div>
+              <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="size-2.5 rounded-sm bg-gold" /> Étrangers
+              </dt>
+              <dd className="font-display text-xl font-bold tabular-nums text-primary">
+                {100 - pctNat} %
+              </dd>
+            </div>
+          </dl>
+          <ul className="mt-4 space-y-1.5 border-t pt-3 text-sm">
+            {d.nat.map((x) => (
+              <li key={x.nom} className="flex justify-between">
+                <span className="text-muted-foreground">{x.nom}</span>
+                <span className="font-semibold tabular-nums">{x.n}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+        <Panel title="Typologie de la flotte" description="Navires par segment d'activité">
+          <HBars
+            data={d.flotte}
+            unit="navires"
+            color="var(--chart-1)"
+            label="Typologie de la flotte"
+          />
+        </Panel>
+        <Panel title="Gens de mer par segment" description="Selon l'activité de leur armateur">
+          <HBars
+            data={d.marinsParType}
+            unit="marins"
+            color="var(--chart-2)"
+            label="Marins par segment"
+          />
+        </Panel>
+      </div>
+
+      <Panel title="Répartition géographique des armateurs" className="mt-6" bodyClassName="p-0">
+        <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+          {d.villes.map((v) => (
+            <div key={v.ville} className="p-5">
+              <div className="flex items-center gap-2">
+                <MapPin className="size-4 text-secondary" />
+                <span className="font-display font-semibold text-primary">{v.ville}</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {v.armateurs.length} armateur{v.armateurs.length > 1 ? "s" : ""}
+                </span>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {v.armateurs.map((a) => (
+                  <li key={a.nom} className="text-sm">
+                    <div className="font-medium">{a.nom}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {a.type} · {a.navires.length} navire(s) · siège : {a.pays}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </section>
   );
 }
 
@@ -412,7 +581,7 @@ function MedicalDashboard({ session }: { session: Account }) {
       .sort((a, b) => b.creeLe.localeCompare(a.creeLe));
     const brouillons = visites.filter((v) => !v.signee);
     const fileActive = marins
-      .filter((m) => m.validationAdmin === "validee" && m.validationMedicale === "en_attente")
+      .filter((m) => m.validationAdmin !== "rejetee" && m.validationMedicale === "en_attente")
       .sort((a, b) => a.creeLe.localeCompare(b.creeLe));
     const renew = renewals(marins, visites);
     // Verdict de la dernière visite signée (non révoquée) de chaque marin.
@@ -493,7 +662,7 @@ function MedicalDashboard({ session }: { session: Account }) {
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Panel
           title="File active"
-          description="Marins validés administrativement, convoqués pour la visite d'aptitude"
+          description="Marins enrôlés convoqués pour la visite d'aptitude STCW"
           className="lg:col-span-2"
           bodyClassName="p-0"
           actions={
