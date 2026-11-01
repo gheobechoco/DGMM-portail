@@ -116,19 +116,14 @@ function Attestation() {
           <span>
             Délivré à Libreville le {formatDate(dateDeliv)}
             <span className="mt-2 block">Signature du titulaire</span>
-            {m.biometrie?.signature ? (
+            {m.signature ? (
               <img
-                src={m.biometrie.signature}
+                src={m.signature}
                 alt={`Signature de ${m.prenom} ${m.nom}`}
                 className="mt-1 h-12 max-w-[180px] object-contain"
               />
             ) : (
               <span className="mt-1 block h-12 w-44 border-b border-dashed" aria-hidden />
-            )}
-            {m.biometrie?.empreintes?.statut === "capturees" && (
-              <span className="mt-1 block text-[10px]">
-                Empreintes digitales enregistrées (10 doigts)
-              </span>
             )}
           </span>
           <span className="text-right">

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { CheckCircle2, CircleDashed } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Élément du dossier biométrique (photo, empreintes, signature) avec son état. */
+/** Élément d'identification du dossier (photo, signature) avec son état. */
 export function BioItem({
   ok,
   titre,

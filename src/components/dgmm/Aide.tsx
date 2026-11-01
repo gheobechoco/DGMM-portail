@@ -54,10 +54,10 @@ export const GLOSSAIRE = {
     texte:
       "Remplace l'ancien « signalement anthropométrique », terme qui n'existe plus dans les textes ni les formulaires de la Marine marchande gabonaise. On relève la taille, le poids, la couleur des yeux et des cheveux, et — section obligatoire — les signes particuliers servant à l'identification : cicatrices visibles, tatouages, amputations, taches de naissance (ou « Néant »).",
   },
-  biometrie: {
-    titre: "Données biométriques",
+  identification: {
+    titre: "Photo d'identité et signature",
     texte:
-      "Le vrai remplaçant du signalement à la règle et au compas. À la création du dossier de gens de mer, l'administration enregistre les empreintes digitales numériques, une photographie d'identité normalisée (reconnaissance faciale) et la signature numérisée du marin.",
+      "La photo d'identité est recadrée au format passeport (35 × 45 mm) et la signature du marin est tracée à l'écran lors de l'enrôlement ; toutes deux sont reportées sur le livret maritime.",
   },
 } as const;
 

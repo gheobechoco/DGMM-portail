@@ -539,7 +539,7 @@ export function VisiteForm({
 
       <Panel
         title="Examen clinique"
-        description="Constantes biométriques — l'IMC est calculé automatiquement."
+        description="Constantes cliniques — l'IMC est calculé automatiquement."
       >
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <Field label="Taille (cm)" htmlFor="ex-taille">

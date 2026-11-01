@@ -29,7 +29,6 @@ function Nouveau() {
             subtitle="Le dossier sera soumis à la validation administrative puis à la visite médicale d'aptitude."
           />
           <MarinForm
-            agent={session.nom}
             submitLabel="Enregistrer le dossier"
             onCancel={() => navigate({ to: "/espace/marins" })}
             onSubmit={(v) => {

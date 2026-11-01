@@ -31,7 +31,6 @@ function Modifier() {
             </Link>
             <PageHeader eyebrow={`NIP ${marin.nip}`} title="Modifier le dossier" />
             <MarinForm
-              agent={session.nom}
               key={marin.id}
               initial={marin}
               submitLabel="Enregistrer les modifications"

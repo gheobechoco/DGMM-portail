@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Download, Fingerprint, Search, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Download, KeyRound, Search, ShieldAlert, ShieldCheck } from "lucide-react";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { PageHeader, Panel, StatCard, selectClass } from "@/components/dgmm/Page";
 import { Button } from "@/components/ui/button";
@@ -89,7 +89,7 @@ function Journal() {
                 setVerif({ at: new Date().toLocaleString("fr-FR"), rupture: verifierAudit(audit) })
               }
             >
-              <Fingerprint /> Vérifier l'intégrité
+              <KeyRound /> Vérifier l'intégrité
             </Button>
           </>
         }
@@ -122,7 +122,7 @@ function Journal() {
       )}
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Entrées journalisées" value={audit.length} icon={Fingerprint} />
+        <StatCard label="Entrées journalisées" value={audit.length} icon={KeyRound} />
         <StatCard
           label="Livrets délivrés (tracés)"
           value={livrets}
@@ -135,7 +135,7 @@ function Journal() {
           value={
             <span className="font-mono text-base">{audit.at(-1)?.hash.slice(0, 10) ?? "—"}</span>
           }
-          icon={Fingerprint}
+          icon={KeyRound}
         />
       </div>
 

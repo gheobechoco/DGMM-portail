@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 /**
  * Pavé de signature (souris, stylet ou doigt) : la signature du marin est numérisée
- * en image PNG et enregistrée avec son dossier biométrique.
+ * en image PNG et enregistrée avec son dossier.
  */
 export function SignaturePad({
   value,

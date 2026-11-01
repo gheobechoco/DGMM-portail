@@ -33,8 +33,8 @@ export interface Marin {
   station?: string | undefined;
   /** Description physique : poids en kg (la taille est dans `taille`). */
   poids?: string | undefined;
-  /** Données biométriques (remplacent l'ancien « signalement anthropométrique »). */
-  biometrie?: Biometrie | undefined;
+  /** Signature du marin, tracée à l'écran lors de l'enrôlement (image PNG en data URL). */
+  signature?: string | undefined;
   historique?: Evenement[] | undefined;
   embarquements?: Embarquement[] | undefined;
   alertes?: { sms: boolean; email: boolean } | undefined;
@@ -53,20 +53,6 @@ export interface Evenement {
   action: string;
   auteur: string;
   type: "creation" | "modification" | "admin" | "medical" | "livret";
-}
-
-export interface Biometrie {
-  /** Empreintes digitales numériques capturées au poste d'enrôlement. */
-  empreintes?:
-    | {
-        statut: "capturees" | "a_capturer";
-        doigts: number;
-        le?: string | undefined;
-        par?: string | undefined;
-      }
-    | undefined;
-  /** Signature numérisée du marin (image PNG en data URL). */
-  signature?: string | undefined;
 }
 
 /** Ligne du relevé des services en mer (sea service) inscrite au livret. */
@@ -683,12 +669,9 @@ function seed(): State {
       type: "livret",
     });
   }
-  // Données biométriques des marins validés (empreintes + signature numérisée).
+  // Signature (démonstration) et poids des marins validés.
   for (const m of marins.filter((x) => x.validationAdmin === "validee")) {
-    m.biometrie = {
-      empreintes: { statut: "capturees", doigts: 10, le: m.modifieLe, par: "Agent DGMM" },
-      signature: signatureDemo(`${m.prenom.split(" ")[0]} ${m.nom.split(" ")[0]}`),
-    };
+    m.signature = signatureDemo(`${m.prenom.split(" ")[0]} ${m.nom.split(" ")[0]}`);
     m.poids = m.poids ?? String(62 + ((m.id * 7) % 25));
   }
   // Relevé des services en mer pour les marins validés.
@@ -758,7 +741,12 @@ function load(): State {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<State>;
       return {
-        marins: parsed.marins ?? [],
+        // Migration : l'ancien bloc « biometrie » (empreintes simulées) est supprimé, seule la signature est conservée.
+        marins: (parsed.marins ?? []).map((m) => {
+          const ancien = m as Marin & { biometrie?: { signature?: string } };
+          const { biometrie, ...reste } = ancien;
+          return { ...reste, signature: reste.signature ?? biometrie?.signature };
+        }),
         visites: parsed.visites ?? [],
         roles: parsed.roles ?? [],
         audit: parsed.audit ?? [],
@@ -1197,16 +1185,9 @@ const REQUIRED_LIVRET: (keyof Marin)[] = [
   "quartierInscription",
   "signeParticulier",
 ];
-export function biometrieComplete(m: Marin): boolean {
-  return m.biometrie?.empreintes?.statut === "capturees" && !!m.biometrie.signature;
-}
-
 export function dossierIncomplet(m: Marin): boolean {
   return (
-    REQUIRED_LIVRET.some((k) => !m[k]) ||
-    !m.documents.photo ||
-    !m.documents.piece ||
-    !biometrieComplete(m)
+    REQUIRED_LIVRET.some((k) => !m[k]) || !m.documents.photo || !m.documents.piece || !m.signature
   );
 }
 export function manquants(m: Marin): string[] {
@@ -1221,8 +1202,7 @@ export function manquants(m: Marin): string[] {
   const out = REQUIRED_LIVRET.filter((k) => !m[k]).map((k) => labels[k]!);
   if (!m.documents.photo) out.push("Photo d'identité");
   if (!m.documents.piece) out.push("Pièce d'identité");
-  if (m.biometrie?.empreintes?.statut !== "capturees") out.push("Empreintes digitales");
-  if (!m.biometrie?.signature) out.push("Signature numérisée");
+  if (!m.signature) out.push("Signature du titulaire");
   return out;
 }
 

@@ -8,7 +8,6 @@ import {
   Save,
   User,
   X,
-  Fingerprint,
   ScanFace,
   PenLine,
 } from "lucide-react";
@@ -193,8 +192,8 @@ function Stepper({ step, onStep }: { step: 1 | 2; onStep: (s: 1 | 2) => void }) 
     { n: 1 as const, t: "État civil & contact", d: "Identité, coordonnées, profession" },
     {
       n: 2 as const,
-      t: "Description, biométrie & documents",
-      d: "Description physique, biométrie, pièces jointes",
+      t: "Description, signature & documents",
+      d: "Description physique, photo, signature, pièces jointes",
     },
   ];
   return (
@@ -249,9 +248,7 @@ export function MarinForm({
   onSubmit,
   onCancel,
   submitLabel,
-  agent = "Agent DGMM",
 }: {
-  agent?: string | undefined;
   initial?: Marin | undefined;
   onSubmit: (v: MarinInput) => void;
   onCancel: () => void;
@@ -556,26 +553,24 @@ export function MarinForm({
           <Panel
             title={
               <span className="inline-flex items-center gap-1.5">
-                <Fingerprint className="size-4" /> Données biométriques <Aide terme="biometrie" />
+                Photo et signature du titulaire <Aide terme="identification" />
               </span>
             }
-            description="Empreintes digitales numériques, photographie normalisée et signature numérisée : obligatoires pour la délivrance du livret."
+            description="Photo d'identité au format passeport et signature tracée à l'écran : reportées sur le livret maritime."
           >
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-lg border p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
-                  <ScanFace className="size-4" /> Photographie normalisée
+                  <ScanFace className="size-4" /> Photo d'identité
                 </div>
                 {v.documents.photo?.startsWith("data:") ? (
                   <div className="flex items-center gap-3">
                     <img
                       src={v.documents.photo}
-                      alt="Photo d'identité normalisée"
+                      alt="Photo d'identité"
                       className="h-20 w-[62px] rounded-md border object-cover"
                     />
-                    <p className="text-xs text-success">
-                      Recadrée au format passeport OMI 35 × 45 mm.
-                    </p>
+                    <p className="text-xs text-success">Recadrée au format passeport 35 × 45 mm.</p>
                   </div>
                 ) : v.documents.photo ? (
                   <p className="text-xs text-success">Photo d'identité enregistrée.</p>
@@ -587,77 +582,9 @@ export function MarinForm({
               </div>
               <div className="rounded-lg border p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
-                  <Fingerprint className="size-4" /> Empreintes digitales
+                  <PenLine className="size-4" /> Signature du titulaire
                 </div>
-                {v.biometrie?.empreintes?.statut === "capturees" ? (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-5 gap-1" aria-label="10 empreintes capturées">
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <span
-                          key={i}
-                          className="pop-in grid aspect-square place-items-center rounded bg-success/12 text-success"
-                          style={{ animationDelay: `${i * 40}ms` }}
-                        >
-                          <Fingerprint className="size-3.5" />
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-xs text-success">
-                      10 empreintes capturées
-                      {v.biometrie.empreintes.le
-                        ? ` le ${new Date(v.biometrie.empreintes.le).toLocaleDateString("fr-FR")}`
-                        : ""}
-                      {v.biometrie.empreintes.par ? ` par ${v.biometrie.empreintes.par}` : ""}.
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        up("biometrie", {
-                          ...v.biometrie,
-                          empreintes: { statut: "a_capturer", doigts: 0 },
-                        })
-                      }
-                    >
-                      Reprendre la capture
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      Capture au lecteur d'empreintes du poste d'enrôlement (10 doigts). Confirmez
-                      une fois la capture effectuée.
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        up("biometrie", {
-                          ...v.biometrie,
-                          empreintes: {
-                            statut: "capturees",
-                            doigts: 10,
-                            le: new Date().toISOString(),
-                            par: agent,
-                          },
-                        })
-                      }
-                    >
-                      <Fingerprint /> Confirmer la capture des 10 empreintes
-                    </Button>
-                  </div>
-                )}
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
-                  <PenLine className="size-4" /> Signature numérisée
-                </div>
-                <SignaturePad
-                  value={v.biometrie?.signature}
-                  onChange={(sig) => up("biometrie", { ...v.biometrie, signature: sig })}
-                />
+                <SignaturePad value={v.signature} onChange={(sig) => up("signature", sig)} />
               </div>
             </div>
           </Panel>
@@ -784,7 +711,7 @@ export function MarinForm({
         )}
         {step === 1 ? (
           <Button type="submit" variant="gold">
-            Volet 2 : description, biométrie & documents <ArrowRight />
+            Volet 2 : description, signature & documents <ArrowRight />
           </Button>
         ) : (
           <Button type="submit" variant="gold">

@@ -98,8 +98,8 @@ describe("code de validation du certificat", () => {
   });
 });
 
-describe("description physique & biométrie", () => {
-  it("le dossier n'est complet qu'avec empreintes et signature numérisée", async () => {
+describe("description physique & signature", () => {
+  it("le dossier n'est complet qu'avec la signature du titulaire, sans aucune empreinte", async () => {
     const { dossierIncomplet, manquants } = await import("@/lib/dgmm/store");
     const base = {
       dateNaissance: "1988-06-14",
@@ -111,14 +111,7 @@ describe("description physique & biométrie", () => {
       documents: { photo: "photo.jpg", piece: "cni.pdf" },
     } as unknown as Parameters<typeof dossierIncomplet>[0];
     expect(dossierIncomplet(base)).toBe(true);
-    expect(manquants(base)).toEqual(["Empreintes digitales", "Signature numérisée"]);
-    const complet = {
-      ...base,
-      biometrie: {
-        empreintes: { statut: "capturees" as const, doigts: 10 },
-        signature: "data:image/png;base64,AA",
-      },
-    };
-    expect(dossierIncomplet(complet)).toBe(false);
+    expect(manquants(base)).toEqual(["Signature du titulaire"]);
+    expect(dossierIncomplet({ ...base, signature: "data:image/png;base64,AA" })).toBe(false);
   });
 });
