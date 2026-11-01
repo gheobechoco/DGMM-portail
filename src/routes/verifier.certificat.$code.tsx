@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { Ban, CheckCircle2, ShieldAlert, ShieldX } from "lucide-react";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
+import { Aide } from "@/components/dgmm/Aide";
 import { VerifyShell, validateLang, type Lang } from "@/components/dgmm/VerifyShell";
 import { visaDgmm } from "@/components/dgmm/CertificatDocument";
 import {
@@ -15,6 +17,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/verifier/certificat/$code")({
   ssr: false,
+  pendingComponent: CarteSkeleton,
   validateSearch: validateLang,
   head: () => ({
     meta: [
@@ -213,6 +216,12 @@ function VerifierCertificat() {
             </dl>
             <p className="border-t pt-3 text-[11px] text-muted-foreground">
               {t.verifie(new Date().toLocaleString(loc))}
+            </p>
+            <p className="-mt-3 flex items-center gap-1 text-[11px] text-muted-foreground">
+              {lang === "fr"
+                ? "Contrôle par l'État du port — MoU d'Abuja"
+                : "Port State Control — Abuja MoU"}
+              {lang === "fr" && <Aide terme="abuja" />}
             </p>
           </div>
         )}

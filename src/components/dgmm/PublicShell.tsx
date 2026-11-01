@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { appliquerPrefs } from "@/lib/dgmm/prefs";
 import { LogOut } from "lucide-react";
 import { DgmmLogo } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
@@ -16,6 +17,7 @@ export function PublicShell({
   onLogout?: (() => void) | undefined;
   children: ReactNode;
 }) {
+  useEffect(() => appliquerPrefs(), []);
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Tricolor className="no-print" />

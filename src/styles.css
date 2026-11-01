@@ -213,3 +213,57 @@
     shape-rendering: geometricPrecision;
   }
 }
+
+/* ---------- Densité d'affichage : mode compact (agents au guichet) ---------- */
+[data-density="compact"] main table th,
+[data-density="compact"] main table td {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+[data-density="compact"] main section > .p-5,
+[data-density="compact"] main .rounded-xl > .p-5 {
+  padding: 0.85rem 1rem;
+}
+[data-density="compact"] main ul.divide-y > li > a,
+[data-density="compact"] main ul.divide-y > li {
+  padding-top: 0.15rem;
+  padding-bottom: 0.15rem;
+}
+[data-density="compact"] main .gap-6 {
+  gap: 1rem;
+}
+[data-density="compact"] main .mt-6 {
+  margin-top: 1rem;
+}
+
+/* ---------- Contraste élevé / plein soleil (contrôles à quai) ---------- */
+[data-contrast="eleve"] {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.12 0.03 262);
+  --card-foreground: oklch(0.12 0.03 262);
+  --muted: oklch(0.93 0.01 250);
+  --muted-foreground: oklch(0.3 0.03 262);
+  --border: oklch(0.45 0.03 262);
+  --input: oklch(0.3 0.03 262);
+  --primary: oklch(0.16 0.05 262);
+  --secondary: oklch(0.24 0.07 160);
+  --success: oklch(0.38 0.12 155);
+  --warning: oklch(0.48 0.13 60);
+  --destructive: oklch(0.45 0.2 27);
+  --shadow-card: 0 0 0 1px oklch(0.3 0.03 262);
+}
+[data-contrast="eleve"] body {
+  font-weight: 500;
+}
+[data-contrast="eleve"] :focus-visible {
+  outline: 3px solid oklch(0.16 0.05 262) !important;
+  outline-offset: 2px;
+}
+
+/* Validation en direct : bordure verte pour un champ conforme, rouge pour une erreur. */
+[data-state="valid"] .field-dgmm:not(:focus):not(:focus-within) {
+  border-color: var(--success);
+}
+[data-state="invalid"] .field-dgmm:not(:focus):not(:focus-within) {
+  border-color: var(--destructive);
+}

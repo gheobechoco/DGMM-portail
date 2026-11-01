@@ -1,4 +1,5 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { toast } from "sonner";
 import {
   Sparkles,
   Ear,
@@ -13,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, Panel, inputClass, selectClass, textareaClass } from "@/components/dgmm/Page";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
+import { Aide, type Terme } from "@/components/dgmm/Aide";
 import { ageFrom } from "@/lib/dgmm/rules";
 import {
   PRATICIENS,
@@ -185,10 +187,12 @@ function Bloc({
   icon: Icon,
   title,
   children,
+  aide,
 }: {
   icon: typeof Eye;
   title: string;
   children: ReactNode;
+  aide?: Terme | undefined;
 }) {
   return (
     <div className="rounded-lg border p-4">
@@ -197,6 +201,7 @@ function Bloc({
           <Icon className="size-4" />
         </span>
         {title}
+        {aide && <Aide terme={aide} />}
       </div>
       {children}
     </div>
@@ -223,6 +228,64 @@ export function VisiteForm({
     stcw: { ...emptyStcw(), ...initial.stcw },
   }));
   const [tried, setTried] = useState(false);
+  const [sauve, setSauve] = useState<string | null>(null);
+  const cle = `dgmm-brouillon-visite:${initial.id ?? "nouvelle"}`;
+  const premier = useRef(true);
+
+  // Restauration d'un brouillon local (onglet fermé par erreur, coupure…).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(cle);
+      if (!raw) return;
+      const b = JSON.parse(raw) as { v: VisiteInput; at: string };
+      if (initial.id === undefined && b.v.marinId !== initial.marinId && initial.marinId) return;
+      setV(b.v);
+      setSauve(b.at);
+      const heure = new Date(b.at).toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      toast.info(`Brouillon restauré (saisie de ${heure})`, {
+        action: {
+          label: "Repartir de zéro",
+          onClick: () => {
+            window.localStorage.removeItem(cle);
+            setV(initial);
+            setSauve(null);
+          },
+        },
+      });
+    } catch {
+      /* brouillon illisible : ignoré */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sauvegarde automatique silencieuse 3 s après la dernière modification.
+  useEffect(() => {
+    if (premier.current) {
+      premier.current = false;
+      return;
+    }
+    const t = window.setTimeout(() => {
+      const at = new Date().toISOString();
+      try {
+        window.localStorage.setItem(cle, JSON.stringify({ v, at }));
+        setSauve(at);
+      } catch {
+        /* stockage plein : pas de sauvegarde locale */
+      }
+    }, 3000);
+    return () => window.clearTimeout(t);
+  }, [v, cle]);
+
+  const oublierBrouillon = () => {
+    try {
+      window.localStorage.removeItem(cle);
+    } catch {
+      /* rien */
+    }
+  };
   const marin = marins.find((m) => m.id === v.marinId);
   const mineur = (ageFrom(marin?.dateNaissance) ?? 99) < 18;
   const inapte = isInapte(v.stcw.verdict);
@@ -345,8 +408,12 @@ export function VisiteForm({
     if (sign) {
       setTried(true);
       if (signErrors.length) return;
+      oublierBrouillon();
       onSubmit({ ...clean, signee: true, signataire });
-    } else onSubmit({ ...clean, signee: false });
+    } else {
+      oublierBrouillon();
+      onSubmit({ ...clean, signee: false });
+    }
   };
 
   const addRestriction = (r: string) => {
@@ -446,7 +513,11 @@ export function VisiteForm({
       </Panel>
 
       <Panel
-        title="Contrôles sensoriels et aptitudes"
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            Contrôles sensoriels et aptitudes <Aide terme="stcw" />
+          </span>
+        }
         description={
           standard
             ? "Examen standard appliqué : ajustez uniquement les anomalies (lunettes, Ishihara…)."
@@ -476,7 +547,7 @@ export function VisiteForm({
             </Field>
             {questions(AUDITION)}
           </Bloc>
-          <Bloc icon={Palette} title="Perception des couleurs">
+          <Bloc icon={Palette} title="Perception des couleurs" aide="ishihara">
             {questions(COULEURS)}
             {v.stcw.couleurs && (
               <Field
@@ -525,7 +596,13 @@ export function VisiteForm({
         </div>
       </Panel>
 
-      <Panel title="Verdict & signature">
+      <Panel
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            Décision d'aptitude & signature <Aide terme="aptitude" />
+          </span>
+        }
+      >
         <div
           className="grid grid-cols-2 gap-2 lg:grid-cols-4"
           role="radiogroup"
@@ -637,8 +714,25 @@ export function VisiteForm({
             </span>
           )}
         </div>
+        {sauve && (
+          <span
+            className="inline-flex items-center gap-1.5 self-start whitespace-nowrap rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground sm:self-center"
+            aria-live="polite"
+          >
+            <span className="size-1.5 rounded-full bg-success" aria-hidden />
+            Brouillon sauvegardé à{" "}
+            {new Date(sauve).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        )}
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              oublierBrouillon();
+              onCancel();
+            }}
+          >
             Annuler
           </Button>
           <Button type="submit" variant="outline">

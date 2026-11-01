@@ -1,15 +1,20 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ChevronRight, Search, UserPlus, Users } from "lucide-react";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { EmptyState, PageHeader, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
+import { MarinPhoto } from "@/components/dgmm/MarinBits";
+import { MarinApercu } from "@/components/dgmm/MarinApercu";
+import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
+import type { Account } from "@/lib/dgmm/auth";
 import { Button } from "@/components/ui/button";
 import { can, type CertStatus } from "@/lib/dgmm/rules";
 import {
   formatDate,
   fullName,
   marinCertStatus,
+  niveauConformite,
   useMarins,
   useVisites,
   ENTREPRISES,
@@ -48,7 +53,7 @@ export const Route = createFileRoute("/espace/marins/")({
   head: () => ({ meta: [{ title: "Gens de mer — GDM | DGMM" }] }),
   component: () => (
     <RequirePerm perm="marins">
-      {(session) => <MarinsList canCreate={can(session.role, "marins.creer")} />}
+      {(session) => <MarinsList canCreate={can(session.role, "marins.creer")} session={session} />}
     </RequirePerm>
   ),
 });
@@ -57,7 +62,8 @@ function norm(s: string) {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-function MarinsList({ canCreate }: { canCreate: boolean }) {
+function MarinsList({ canCreate, session }: { canCreate: boolean; session: Account }) {
+  const [apercu, setApercu] = useState<number | null>(null);
   const { q = "", admin, medical, cert = "tous", armateur } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const marins = useMarins();
@@ -105,6 +111,13 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
       />
 
       <Panel bodyClassName="p-0">
+        <div className="border-b px-4 py-3">
+          <ConformityGauge
+            compact
+            sujet="de la sélection"
+            niveaux={rows.map(({ m }) => niveauConformite(m, visites))}
+          />
+        </div>
         <div className="grid gap-3 border-b p-4 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_repeat(4,170px)]">
           <label className="field-dgmm flex h-10 items-center gap-2 rounded-md bg-card px-3">
             <Search className="size-4 text-muted-foreground" />
@@ -204,16 +217,19 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
                     <tr
                       key={m.id}
                       className="cursor-pointer hover:bg-muted/40"
-                      onClick={() =>
-                        navigate({ to: "/espace/marins/$id", params: { id: String(m.id) } })
-                      }
+                      onClick={() => setApercu(m.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setApercu(m.id);
+                        }
+                      }}
+                      tabIndex={0}
+                      aria-label={`Aperçu de ${fullName(m)}`}
                     >
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-3">
-                          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary">
-                            {m.nom[0]}
-                            {m.prenom[0]}
-                          </span>
+                          <MarinPhoto m={m} className="size-8 shrink-0 rounded-full text-xs" />
                           <div className="min-w-0">
                             <Link
                               to="/espace/marins/$id"
@@ -259,10 +275,10 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
             <ul className="divide-y md:hidden">
               {rows.map(({ m, st }) => (
                 <li key={m.id}>
-                  <Link
-                    to="/espace/marins/$id"
-                    params={{ id: String(m.id) }}
-                    className="block px-4 py-3 hover:bg-muted/40"
+                  <button
+                    type="button"
+                    onClick={() => setApercu(m.id)}
+                    className="block w-full px-4 py-3 text-left hover:bg-muted/40"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-semibold text-primary">{fullName(m)}</span>
@@ -282,7 +298,7 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
                       />
                       <StatusPill status={st} />
                     </div>
-                  </Link>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -303,6 +319,7 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
           )}
         </div>
       </Panel>
+      <MarinApercu id={apercu} onClose={() => setApercu(null)} session={session} />
     </>
   );
 }

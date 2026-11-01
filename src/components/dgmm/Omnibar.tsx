@@ -5,6 +5,7 @@ import {
   FileText,
   LayoutDashboard,
   Search,
+  Ship,
   ShieldCheck,
   Stethoscope,
   UserPlus,
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
+import { TOUS_NAVIRES } from "@/lib/dgmm/maritime";
 import { can } from "@/lib/dgmm/rules";
 import type { Account } from "@/lib/dgmm/auth";
 import { fullName, useMarins, useVisites } from "@/lib/dgmm/store";
@@ -69,7 +71,7 @@ export function Omnibar({ session }: { session: Account }) {
       >
         <Search className="size-4" />
         <span className="flex-1 truncate text-left">
-          <span className="hidden sm:inline">NIP, n° de livret, nom, certificat…</span>
+          <span className="hidden sm:inline">NIP, nom, livret, certificat, navire…</span>
           <span className="sm:hidden">Rechercher</span>
         </span>
         <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] sm:inline">
@@ -83,7 +85,7 @@ export function Omnibar({ session }: { session: Account }) {
             Tapez un NIP, un numéro de livret, un nom ou un numéro de certificat.
           </DialogDescription>
           <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2">
-            <CommandInput placeholder="NIP, n° de livret, nom, n° de certificat…" />
+            <CommandInput placeholder="NIP, nom, n° de livret, de certificat ou navire…" />
             <CommandList className="max-h-[60vh]">
               <CommandEmpty>Aucun résultat.</CommandEmpty>
               <CommandGroup heading="Gens de mer">
@@ -121,6 +123,26 @@ export function Omnibar({ session }: { session: Account }) {
                   ))}
                 </CommandGroup>
               )}
+              <CommandGroup heading="Navires">
+                {TOUS_NAVIRES.map((n) => (
+                  <CommandItem
+                    key={n.imo}
+                    value={`${n.nom} imo ${n.imo} ${n.armateur} ${n.type} navire`}
+                    onSelect={() => {
+                      setOpen(false);
+                      navigate({ to: "/espace/marins", search: { armateur: n.armateur } });
+                    }}
+                  >
+                    <Ship className="text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{n.nom}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        IMO {n.imo} · {n.type} · {n.armateur}
+                      </div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
               <CommandGroup heading="Accès rapide">
                 <CommandItem value="tableau de bord accueil" onSelect={() => go("/espace")}>
                   <LayoutDashboard className="text-muted-foreground" /> Tableau de bord

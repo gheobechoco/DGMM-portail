@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
+import { AlertCircle, Check, type LucideIcon } from "lucide-react";
+import { Aide, type Terme } from "@/components/dgmm/Aide";
 import { cn } from "@/lib/utils";
 
 export function PageHeader({
@@ -145,6 +146,8 @@ export function Field({
   children,
   className,
   hint,
+  aide,
+  valid,
 }: {
   label: string;
   htmlFor?: string | undefined;
@@ -153,16 +156,36 @@ export function Field({
   children: ReactNode;
   className?: string | undefined;
   hint?: string | undefined;
+  /** Terme du glossaire réglementaire affiché dans une info-bulle « ? ». */
+  aide?: Terme | undefined;
+  /** Champ vérifié et conforme : affiche une coche verte. */
+  valid?: boolean | undefined;
 }) {
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
-        {label}
-        {required && <span className="ml-0.5 text-destructive">*</span>}
-      </label>
+    <div
+      className={cn("space-y-1.5", className)}
+      data-state={error ? "invalid" : valid ? "valid" : undefined}
+    >
+      <div className="flex items-center gap-1">
+        <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
+          {label}
+          {required && <span className="ml-0.5 text-destructive">*</span>}
+        </label>
+        {aide && <Aide terme={aide} />}
+        {valid && !error && (
+          <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-success">
+            <Check className="size-3.5" aria-hidden /> <span className="sr-only">Champ valide</span>
+          </span>
+        )}
+      </div>
       {children}
       {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p className="flex items-start gap-1 text-xs text-destructive" aria-live="polite">
+          <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden />
+          {error}
+        </p>
+      )}
     </div>
   );
 }

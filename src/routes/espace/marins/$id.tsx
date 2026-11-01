@@ -30,6 +30,7 @@ import {
   VerdictPill,
 } from "@/components/dgmm/MarinBits";
 import { DocViewer } from "@/components/dgmm/DocViewer";
+import { Aide } from "@/components/dgmm/Aide";
 import { SeaService } from "@/components/dgmm/SeaService";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -360,7 +361,9 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
       <div className="flex items-start gap-3">
         <CircleAlert className="mt-0.5 size-5 shrink-0 text-warning" />
         <div className="flex-1">
-          <h2 className="font-display font-semibold text-primary">Visa administratif DGMM</h2>
+          <h2 className="flex items-center gap-1.5 font-display font-semibold text-primary">
+            Visa administratif DGMM <Aide terme="visa" />
+          </h2>
           <p className="text-sm text-muted-foreground">
             Contrôlez les pièces (cliquez pour les visualiser) avant d'apposer le visa
             administratif.

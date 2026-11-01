@@ -26,7 +26,9 @@ import {
   age,
   formatDate,
   fullName,
+  eligibleLivret,
   lastCertificate,
+  niveauConformite,
   marinCertStatus,
   useMarins,
   useVisites,
@@ -34,7 +36,8 @@ import {
   type Verdict,
   type Visite,
 } from "@/lib/dgmm/store";
-import { EmptyState, PageHeader, Panel, StatCard } from "@/components/dgmm/Page";
+import { EmptyState, Panel, StatCard } from "@/components/dgmm/Page";
+import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
 
@@ -214,6 +217,66 @@ function renewals(marins: Marin[], visites: Visite[]) {
     );
 }
 
+/* ---------- Bannière d'accueil contextuelle ---------- */
+
+function salutation() {
+  const h = new Date().getHours();
+  return h >= 18 || h < 5 ? "Bonsoir" : "Bonjour";
+}
+
+function Bienvenue({
+  eyebrow,
+  nom,
+  message,
+  priorite,
+  action,
+}: {
+  eyebrow: string;
+  nom: string;
+  message: ReactNode;
+  priorite?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <section className="relative mb-6 overflow-hidden rounded-xl bg-navy-gradient px-5 py-5 text-primary-foreground shadow-card sm:px-6">
+      <svg
+        className="pointer-events-none absolute -right-10 -top-8 h-48 w-80 opacity-[0.12]"
+        viewBox="0 0 320 190"
+        aria-hidden
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <path
+            key={i}
+            d={`M0 ${60 + i * 22} C 90 ${30 + i * 22}, 200 ${100 + i * 22}, 320 ${50 + i * 22}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+          />
+        ))}
+      </svg>
+      <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
+            {eyebrow}
+          </div>
+          <h1 className="mt-1 font-display text-2xl font-bold sm:text-[28px]">
+            {salutation()}, {nom}
+          </h1>
+          <p className="mt-1 text-sm text-primary-foreground/80">{message}</p>
+          <p className="mt-0.5 text-xs capitalize text-primary-foreground/55">{today()}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {priorite}
+          {action}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const ctaClair =
+  "border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground";
+
 /* ---------- 2A. Tableau de bord de pilotage (DGMM & RH Marine) ---------- */
 
 function PilotageDashboard({ session }: { session: Account }) {
@@ -239,6 +302,7 @@ function PilotageDashboard({ session }: { session: Account }) {
       ).length,
       attenteAdmin: marins.filter((m) => m.validationAdmin === "en_attente").length,
       livrets: marins.filter((m) => m.livret).length,
+      livretsPrets: marins.filter((m) => !m.livret && eligibleLivret(m, visites, now)).length,
       souffrance,
       renew,
       bientot: renew.filter((r) => r.st === "expire_bientot").length,
@@ -253,13 +317,45 @@ function PilotageDashboard({ session }: { session: Account }) {
 
   return (
     <>
-      <PageHeader
+      <Bienvenue
         eyebrow={rh ? "Tableau de bord · RH Marine" : "Tableau de bord de pilotage"}
-        title={`Bonjour, ${greeting(session.nom)}`}
-        subtitle={`Situation des gens de mer — ${today()}.`}
-        actions={
+        nom={greeting(session.nom)}
+        message={
+          d.souffrance.length > 0 ? (
+            <>
+              <strong className="text-gold">{d.souffrance.length} dossier(s)</strong> attendent
+              depuis plus de 7 jours.
+              {!rh &&
+                d.livretsPrets > 0 &&
+                ` ${d.livretsPrets} livret(s) sont prêts à être délivrés.`}
+            </>
+          ) : !rh && d.livretsPrets > 0 ? (
+            <>
+              <strong className="text-gold">{d.livretsPrets} livret(s)</strong> sont prêts à être
+              délivrés.
+            </>
+          ) : (
+            "Aucun dossier en retard : tout est à jour."
+          )
+        }
+        priorite={
+          d.souffrance.length > 0 ? (
+            <Button asChild variant="outline" className={ctaClair}>
+              <Link to="/espace/marins" search={{ admin: "en_attente" }}>
+                Traiter les dossiers <ArrowRight />
+              </Link>
+            </Button>
+          ) : !rh && d.livretsPrets > 0 ? (
+            <Button asChild variant="outline" className={ctaClair}>
+              <Link to="/espace/livrets">
+                Délivrer les livrets <ArrowRight />
+              </Link>
+            </Button>
+          ) : null
+        }
+        action={
           can(session.role, "marins.creer") && (
-            <Button asChild variant="gold">
+            <Button asChild variant="gold" data-tour="action">
               <Link to="/espace/marins/nouveau">
                 <UserPlus /> Enrôler un marin
               </Link>
@@ -302,6 +398,17 @@ function PilotageDashboard({ session }: { session: Account }) {
           hint="inscriptions en attente"
         />
       </div>
+
+      <Panel
+        title="Conformité STCW des gens de mer"
+        description="Émeraude : conforme · Ambre : à renouveler sous 60 jours · Rubis : expiré, inapte ou sans certificat · Ardoise : visite en cours"
+        className="mt-6"
+      >
+        <ConformityGauge
+          sujet="des gens de mer"
+          niveaux={marins.map((m) => niveauConformite(m, visites))}
+        />
+      </Panel>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Panel
@@ -614,15 +721,46 @@ function MedicalDashboard({ session }: { session: Account }) {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Tableau de bord médical · Centre agréé"
-        title={`Bonjour, ${greeting(session.nom)}`}
-        subtitle={`Activité d'aptitude médicale STCW — ${today()}.`}
-        actions={
+      <Bienvenue
+        eyebrow="Tableau de bord médical · Polyclinique EDELWEISS"
+        nom={greeting(session.nom)}
+        message={
+          d.brouillons.length > 0 ? (
+            <>
+              <strong className="text-gold">{d.brouillons.length} visite(s) médicale(s)</strong> en
+              attente de clôture
+              {d.fileActive.length > 0 && ` · ${d.fileActive.length} marin(s) dans la file active`}.
+            </>
+          ) : d.fileActive.length > 0 ? (
+            <>
+              <strong className="text-gold">{d.fileActive.length} marin(s)</strong> attendent leur
+              visite d'aptitude.
+            </>
+          ) : (
+            "Aucune visite en attente aujourd'hui."
+          )
+        }
+        priorite={
+          canSaisir && d.brouillons[0] ? (
+            <Button asChild variant="outline" className={ctaClair}>
+              <Link to="/espace/visites/modifier/$id" params={{ id: String(d.brouillons[0].id) }}>
+                {can(session.role, "visites.signer") ? "Examiner et signer" : "Reprendre"}{" "}
+                <ArrowRight />
+              </Link>
+            </Button>
+          ) : canSaisir && d.fileActive[0] ? (
+            <Button asChild variant="outline" className={ctaClair}>
+              <Link to="/espace/visites/nouvelle" search={{ marin: d.fileActive[0].id }}>
+                Examiner <ArrowRight />
+              </Link>
+            </Button>
+          ) : null
+        }
+        action={
           canSaisir && (
-            <Button asChild variant="gold">
+            <Button asChild variant="gold" data-tour="action">
               <Link to="/espace/visites/nouvelle">
-                <FilePlus2 /> Nouvelle visite
+                <FilePlus2 /> Nouvelle visite STCW
               </Link>
             </Button>
           )

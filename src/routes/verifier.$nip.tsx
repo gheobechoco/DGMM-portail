@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { CheckCircle2, ShieldAlert, ShieldX } from "lucide-react";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { VerifyShell, validateLang, type Lang } from "@/components/dgmm/VerifyShell";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/verifier/$nip")({
   ssr: false,
+  pendingComponent: CarteSkeleton,
   validateSearch: validateLang,
   head: () => ({
     meta: [

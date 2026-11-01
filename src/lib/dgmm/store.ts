@@ -181,20 +181,57 @@ function auditPayload(e: Omit<AuditEntry, "hash">) {
 }
 
 function roleDe(acteur: string): string {
-  return ACCOUNTS.find((a) => a.nom === acteur)?.roleLabel ?? (acteur.startsWith("Armateur") ? "Armateur" : acteur.startsWith("Marin") ? "Marin" : "Agent");
+  return (
+    ACCOUNTS.find((a) => a.nom === acteur)?.roleLabel ??
+    (acteur.startsWith("Armateur") ? "Armateur" : acteur.startsWith("Marin") ? "Marin" : "Agent")
+  );
 }
 
 function poste(): string {
   if (typeof navigator === "undefined") return "serveur";
   const ua = navigator.userAgent;
-  const nav = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "Navigateur";
-  const os = /Windows/.test(ua) ? "Windows" : /Mac OS/.test(ua) ? "macOS" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Linux/.test(ua) ? "Linux" : "";
+  const nav = /Edg\//.test(ua)
+    ? "Edge"
+    : /Chrome\//.test(ua)
+      ? "Chrome"
+      : /Firefox\//.test(ua)
+        ? "Firefox"
+        : /Safari\//.test(ua)
+          ? "Safari"
+          : "Navigateur";
+  const os = /Windows/.test(ua)
+    ? "Windows"
+    : /Mac OS/.test(ua)
+      ? "macOS"
+      : /Android/.test(ua)
+        ? "Android"
+        : /iPhone|iPad/.test(ua)
+          ? "iOS"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : "";
   return `${nav}${os ? ` / ${os}` : ""}`;
 }
 
-function appendAudit(audit: AuditEntry[], acteur: string, action: string, cible: string, date = nowIso(), post = poste()): AuditEntry[] {
+function appendAudit(
+  audit: AuditEntry[],
+  acteur: string,
+  action: string,
+  cible: string,
+  date = nowIso(),
+  post = poste(),
+): AuditEntry[] {
   const last = audit[audit.length - 1];
-  const base = { seq: (last?.seq ?? 0) + 1, date, acteur, role: roleDe(acteur), action, cible, poste: post, prev: last?.hash ?? "0".repeat(16) };
+  const base = {
+    seq: (last?.seq ?? 0) + 1,
+    date,
+    acteur,
+    role: roleDe(acteur),
+    action,
+    cible,
+    poste: post,
+    prev: last?.hash ?? "0".repeat(16),
+  };
   return [...audit, { ...base, hash: empreinte(auditPayload(base)) }];
 }
 
@@ -216,10 +253,41 @@ function daysAgo(n: number) {
   return new Date(Date.now() - n * DAY).toISOString();
 }
 
-export const QUARTIERS = ["Libreville", "Port-Gentil", "Owendo", "Mayumba", "Lambaréné", "Gamba", "Cocobeach"];
-export const NATIONALITES = ["Gabonaise", "Camerounaise", "Congolaise", "Équato-guinéenne", "Sénégalaise", "Française", "Autre"];
-export const QUARTIERS_RESIDENCE = ["Santa Barbara / Pog", "Mounadji / Pog", "Mini-prix / Pog", "Akébé / Lbv", "Nzeng-Ayong / Lbv", "Owendo", "Autre"];
-export const ENTREPRISES = ["SNAT Gabon", "Bourbon Offshore", "Gabon Port Management", "Satram", "Perenco Marine", "Edelweiss Maritime"];
+export const QUARTIERS = [
+  "Libreville",
+  "Port-Gentil",
+  "Owendo",
+  "Mayumba",
+  "Lambaréné",
+  "Gamba",
+  "Cocobeach",
+];
+export const NATIONALITES = [
+  "Gabonaise",
+  "Camerounaise",
+  "Congolaise",
+  "Équato-guinéenne",
+  "Sénégalaise",
+  "Française",
+  "Autre",
+];
+export const QUARTIERS_RESIDENCE = [
+  "Santa Barbara / Pog",
+  "Mounadji / Pog",
+  "Mini-prix / Pog",
+  "Akébé / Lbv",
+  "Nzeng-Ayong / Lbv",
+  "Owendo",
+  "Autre",
+];
+export const ENTREPRISES = [
+  "SNAT Gabon",
+  "Bourbon Offshore",
+  "Gabon Port Management",
+  "Satram",
+  "Perenco Marine",
+  "Edelweiss Maritime",
+];
 export const PRATICIENS = ["Dr MÉDECIN DU TRAVAIL", "Dr KONGO A."];
 
 function genNip(id: number, d = new Date()) {
@@ -230,18 +298,62 @@ function genNip(id: number, d = new Date()) {
 
 function emptyStcw(): Stcw {
   return {
-    identiteVerifiee: "", acuiteVisuelle: "", auditiveSansAide: "", acuiteAuditive: "", couleurs: "",
-    dateTestCouleurs: "", veille: "", visionBinoculaire: "", communicationUrgence: "", aidesVisuelles: "", exemptAffection: "", verdict: "", details: "",
-    dateDelivrance: "", validJusquau: "",
+    identiteVerifiee: "",
+    acuiteVisuelle: "",
+    auditiveSansAide: "",
+    acuiteAuditive: "",
+    couleurs: "",
+    dateTestCouleurs: "",
+    veille: "",
+    visionBinoculaire: "",
+    communicationUrgence: "",
+    aidesVisuelles: "",
+    exemptAffection: "",
+    verdict: "",
+    details: "",
+    dateDelivrance: "",
+    validJusquau: "",
   };
 }
 export { emptyStcw };
 
 function seed(): State {
   const raw: [string, string, "M" | "F", number, string, Etat, Etat, number, Partial<Marin>?][] = [
-    ["DONGO", "Renade", "M", 45, "Capitaine", "validee", "validee", 12, { quartierInscription: "Port-Gentil", couleurYeux: "Marron", couleurCheveux: "Noir", taille: "178", signeParticulier: "Néant" }],
+    [
+      "DONGO",
+      "Renade",
+      "M",
+      45,
+      "Capitaine",
+      "validee",
+      "validee",
+      12,
+      {
+        quartierInscription: "Port-Gentil",
+        couleurYeux: "Marron",
+        couleurCheveux: "Noir",
+        taille: "178",
+        signeParticulier: "Néant",
+      },
+    ],
     ["HAPPI", "Éric", "M", 22, "Matelot", "validee", "validee", 160],
-    ["ATENDE", "Mélissa", "F", 24, "Officier pont", "validee", "validee", 170, { quartierInscription: "Libreville", couleurYeux: "Noir", couleurCheveux: "Noir", taille: "165", signeParticulier: "Néant" }],
+    [
+      "ATENDE",
+      "Mélissa",
+      "F",
+      24,
+      "Officier pont",
+      "validee",
+      "validee",
+      170,
+      {
+        quartierInscription: "Libreville",
+        couleurYeux: "Noir",
+        couleurCheveux: "Noir",
+        taille: "165",
+        signeParticulier: "Néant",
+      },
+    ],
     ["IBINGA", "Jean", "M", 36, "Mécanicien", "validee", "en_attente", 150],
     ["MBOUMA", "René", "M", 39, "Chef mécanicien", "validee", "validee", 240],
     ["ABAGHA BRAD", "Brunel Rosy", "F", 19, "Élève officier", "validee", "en_attente", 250],
@@ -264,51 +376,97 @@ function seed(): State {
     ["TCHIBINDA", "Marc", "M", 44, "Matelot", "rejetee", "en_attente", 60],
   ];
   const now = new Date();
-  const marins: Marin[] = raw.map(([nom, prenom, sexe, age, profession, va, vm, created, extra], i) => {
-    const id = i + 1;
-    const birth = new Date(now.getFullYear() - age, (i * 5) % 12, 1 + (i % 27));
-    return {
-      id,
-      nip: genNip(id, new Date(Date.now() - created * DAY)),
-      livret: va === "validee" && vm === "validee" ? `LM-${String(id).padStart(5, "0")}` : "",
-      nom, prenom, sexe,
-      dateNaissance: iso(birth),
-      profession,
-      nationalite: i % 7 === 3 ? "Camerounaise" : i % 9 === 5 ? "Française" : i % 11 === 8 ? "Congolaise" : "Gabonaise",
-      entreprise: ENTREPRISES[i % ENTREPRISES.length]!,
-      tel1: `07${String(7452017 + i * 1311).slice(0, 7)}`,
-      tel2: "",
-      quartier: QUARTIERS_RESIDENCE[i % QUARTIERS_RESIDENCE.length]!,
-      email: `${prenom.split(" ")[0]!.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}.${nom.split(" ")[0]!.toLowerCase()}@exemple.ga`,
-      signeParticulier: "", couleurYeux: "", couleurCheveux: "", taille: "",
-      quartierInscription: i % 3 === 0 ? "Port-Gentil" : i % 3 === 1 ? "Libreville" : "",
-      dateMariage: "", lieuMariage: "",
-      documents: va === "validee" ? { photo: "photo.jpg", piece: "cni.pdf", residence: "residence.pdf", contrat: "contrat.pdf" } : { piece: "cni.pdf" },
-      validationAdmin: va,
-      validationMedicale: vm,
-      login: `${nom.split(" ")[0]!.toLowerCase()}${id}`,
-      mdp: "azerty",
-      creePar: i % 2 ? "Agent DGMM" : "Dr MÉDECIN DU TRAVAIL",
-      creeLe: daysAgo(created),
-      modifieLe: daysAgo(Math.max(0, created - 3)),
-      ...extra,
-    };
-  });
+  const marins: Marin[] = raw.map(
+    ([nom, prenom, sexe, age, profession, va, vm, created, extra], i) => {
+      const id = i + 1;
+      const birth = new Date(now.getFullYear() - age, (i * 5) % 12, 1 + (i % 27));
+      return {
+        id,
+        nip: genNip(id, new Date(Date.now() - created * DAY)),
+        livret: va === "validee" && vm === "validee" ? `LM-${String(id).padStart(5, "0")}` : "",
+        nom,
+        prenom,
+        sexe,
+        dateNaissance: iso(birth),
+        profession,
+        nationalite:
+          i % 7 === 3
+            ? "Camerounaise"
+            : i % 9 === 5
+              ? "Française"
+              : i % 11 === 8
+                ? "Congolaise"
+                : "Gabonaise",
+        entreprise: ENTREPRISES[i % ENTREPRISES.length]!,
+        tel1: `07${String(7452017 + i * 1311).slice(0, 7)}`,
+        tel2: "",
+        quartier: QUARTIERS_RESIDENCE[i % QUARTIERS_RESIDENCE.length]!,
+        email: `${prenom
+          .split(" ")[0]!
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")}.${nom.split(" ")[0]!.toLowerCase()}@exemple.ga`,
+        signeParticulier: "",
+        couleurYeux: "",
+        couleurCheveux: "",
+        taille: "",
+        quartierInscription: i % 3 === 0 ? "Port-Gentil" : i % 3 === 1 ? "Libreville" : "",
+        dateMariage: "",
+        lieuMariage: "",
+        documents:
+          va === "validee"
+            ? {
+                photo: "photo.jpg",
+                piece: "cni.pdf",
+                residence: "residence.pdf",
+                contrat: "contrat.pdf",
+              }
+            : { piece: "cni.pdf" },
+        validationAdmin: va,
+        validationMedicale: vm,
+        login: `${nom.split(" ")[0]!.toLowerCase()}${id}`,
+        mdp: "azerty",
+        creePar: i % 2 ? "Agent DGMM" : "Dr MÉDECIN DU TRAVAIL",
+        creeLe: daysAgo(created),
+        modifieLe: daysAgo(Math.max(0, created - 3)),
+        ...extra,
+      };
+    },
+  );
   // Visites : certificats valides, expirant bientôt et expirés.
   const visitePlan: [number, number, Verdict, string?][] = [
-    [1, 400, "apte"], [2, 200, "apte"], [3, 15, "apte"], [5, -20, "apte"], [7, 300, "apte_restrictions", "Port obligatoire de verres correcteurs."],
-    [8, 25, "apte"], [9, 500, "apte"], [12, -5, "apte"], [13, 600, "apte_restrictions", "Navigation côtière uniquement."], [15, 180, "apte"],
+    [1, 400, "apte"],
+    [2, 200, "apte"],
+    [3, 15, "apte"],
+    [5, -20, "apte"],
+    [7, 300, "apte_restrictions", "Port obligatoire de verres correcteurs."],
+    [8, 25, "apte"],
+    [9, 500, "apte"],
+    [12, -5, "apte"],
+    [13, 600, "apte_restrictions", "Navigation côtière uniquement."],
+    [15, 180, "apte"],
     [10, 90, "inapte_temporaire", "Hypertension non contrôlée — nouvelle évaluation dans 3 mois."],
   ];
   const visites: Visite[] = visitePlan.map(([marinId, validDays, verdict, details], i) => {
     const id = 3850 + i;
-    const created = new Date(Date.now() - (validDays > 0 ? 365 * 2 * DAY - validDays * DAY : 730 * DAY - validDays * DAY));
+    const created = new Date(
+      Date.now() - (validDays > 0 ? 365 * 2 * DAY - validDays * DAY : 730 * DAY - validDays * DAY),
+    );
     const deliv = new Date(Date.now() - Math.max(1, 730 - validDays) * DAY);
     const s: Stcw = {
-      identiteVerifiee: "oui", acuiteVisuelle: "oui", auditiveSansAide: "oui", acuiteAuditive: "oui", couleurs: "oui",
-      dateTestCouleurs: iso(deliv), veille: "oui", visionBinoculaire: "oui", communicationUrgence: "oui",
-      aidesVisuelles: verdict === "apte_restrictions" || i % 3 === 0 ? "oui" : "non", exemptAffection: verdict === "inapte_temporaire" ? "non" : "oui",
-      verdict, details: details ?? "",
+      identiteVerifiee: "oui",
+      acuiteVisuelle: "oui",
+      auditiveSansAide: "oui",
+      acuiteAuditive: "oui",
+      couleurs: "oui",
+      dateTestCouleurs: iso(deliv),
+      veille: "oui",
+      visionBinoculaire: "oui",
+      communicationUrgence: "oui",
+      aidesVisuelles: verdict === "apte_restrictions" || i % 3 === 0 ? "oui" : "non",
+      exemptAffection: verdict === "inapte_temporaire" ? "non" : "oui",
+      verdict,
+      details: details ?? "",
       dateDelivrance: isInapte(verdict) ? "" : iso(deliv),
       validJusquau: isInapte(verdict) ? "" : iso(new Date(Date.now() + validDays * DAY)),
     };
@@ -321,8 +479,14 @@ function seed(): State {
       creeLe: deliv.toISOString(),
       traiteLe: deliv.toISOString(),
       examens: {
-        taille: "175", poids: "74", tension: verdict === "inapte_temporaire" ? "16/10" : "12/8", pouls: "72",
-        vision: verdict === "apte_restrictions" ? "6/10" : "10/10", visionCorrigee: "10/10", audition: "Normale", observations: "RAS",
+        taille: "175",
+        poids: "74",
+        tension: verdict === "inapte_temporaire" ? "16/10" : "12/8",
+        pouls: "72",
+        vision: verdict === "apte_restrictions" ? "6/10" : "10/10",
+        visionCorrigee: "10/10",
+        audition: "Normale",
+        observations: "RAS",
       },
       complementaires: "Glycémie, NFS : normales.",
       recommandations: "Hydratation régulière, port des EPI.",
@@ -334,22 +498,61 @@ function seed(): State {
   });
   // Visite du jour en cours de saisie (brouillon).
   visites.push({
-    id: 3870, numero: `3870-${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}-VM`, marinId: 4,
-    praticien: PRATICIENS[0]!, creeLe: new Date(Date.now() - 2 * 3600000).toISOString(), traiteLe: new Date(Date.now() - 2 * 3600000).toISOString(),
-    examens: { taille: "172", poids: "80", tension: "13/8", pouls: "76", vision: "", audition: "", observations: "" },
-    complementaires: "", recommandations: "", documents: [], stcw: emptyStcw(), signee: false, signataire: "",
+    id: 3870,
+    numero: `3870-${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}-VM`,
+    marinId: 4,
+    praticien: PRATICIENS[0]!,
+    creeLe: new Date(Date.now() - 2 * 3600000).toISOString(),
+    traiteLe: new Date(Date.now() - 2 * 3600000).toISOString(),
+    examens: {
+      taille: "172",
+      poids: "80",
+      tension: "13/8",
+      pouls: "76",
+      vision: "",
+      audition: "",
+      observations: "",
+    },
+    complementaires: "",
+    recommandations: "",
+    documents: [],
+    stcw: emptyStcw(),
+    signee: false,
+    signataire: "",
   });
   for (const m of marins) {
-    const h: Evenement[] = [{ date: m.creeLe, action: "Dossier créé", auteur: m.creePar, type: "creation" }];
+    const h: Evenement[] = [
+      { date: m.creeLe, action: "Dossier créé", auteur: m.creePar, type: "creation" },
+    ];
     if (m.validationAdmin !== "en_attente")
-      h.push({ date: m.modifieLe, action: m.validationAdmin === "validee" ? "Validation administrative accordée" : "Dossier rejeté par l'administration", auteur: "Agent DGMM", type: "admin" });
+      h.push({
+        date: m.modifieLe,
+        action:
+          m.validationAdmin === "validee"
+            ? "Validation administrative accordée"
+            : "Dossier rejeté par l'administration",
+        auteur: "Agent DGMM",
+        type: "admin",
+      });
     m.historique = h;
   }
   for (const v of visites.filter((x) => x.signee)) {
-    marins.find((m) => m.id === v.marinId)?.historique?.push({ date: v.traiteLe, action: `Visite ${v.numero} signée — ${VERDICT_LABELS[v.stcw.verdict]}`, auteur: v.signataire, type: "medical" });
+    marins
+      .find((m) => m.id === v.marinId)
+      ?.historique?.push({
+        date: v.traiteLe,
+        action: `Visite ${v.numero} signée — ${VERDICT_LABELS[v.stcw.verdict]}`,
+        auteur: v.signataire,
+        type: "medical",
+      });
   }
   for (const m of marins.filter((x) => x.livret)) {
-    m.historique?.push({ date: m.modifieLe, action: `Livret ${m.livret} délivré`, auteur: "Gestionnaire MM", type: "livret" });
+    m.historique?.push({
+      date: m.modifieLe,
+      action: `Livret ${m.livret} délivré`,
+      auteur: "Gestionnaire MM",
+      type: "livret",
+    });
   }
   // Relevé des services en mer pour les marins validés.
   let embId = 1;
@@ -359,16 +562,24 @@ function seed(): State {
     const list: Embarquement[] = [];
     let fin = 20 + (m.id % 5) * 9;
     for (let k = 0; k < n; k++) {
-      const nav = flotte[k % Math.max(1, flotte.length)] ?? TOUS_NAVIRES[m.id % TOUS_NAVIRES.length]!;
+      const nav =
+        flotte[k % Math.max(1, flotte.length)] ?? TOUS_NAVIRES[m.id % TOUS_NAVIRES.length]!;
       const duree = 60 + ((m.id * 37 + k * 53) % 150);
       const deb = fin + duree;
       list.push({
-        id: embId++, navire: nav.nom, imo: nav.imo, typeNavire: nav.type, jauge: nav.jauge, armateur: nav.armateur,
-        fonction: m.profession, embarquement: iso(new Date(Date.now() - deb * DAY)),
+        id: embId++,
+        navire: nav.nom,
+        imo: nav.imo,
+        typeNavire: nav.type,
+        jauge: nav.jauge,
+        armateur: nav.armateur,
+        fonction: m.profession,
+        embarquement: iso(new Date(Date.now() - deb * DAY)),
         debarquement: k === 0 && m.id % 4 === 0 ? "" : iso(new Date(Date.now() - fin * DAY)),
-        saisiPar: "Agent DGMM", saisiLe: daysAgo(fin),
+        saisiPar: "Agent DGMM",
+        saisiLe: daysAgo(fin),
       });
-      fin = deb + 15 + (k * 11);
+      fin = deb + 15 + k * 11;
     }
     m.embarquements = list;
   }
@@ -376,17 +587,27 @@ function seed(): State {
   const perenco = marins.filter((m) => m.entreprise === "Perenco Marine");
   const roles: RoleEquipage[] = [
     {
-      id: 1, armateur: "Perenco Marine", navire: "Perenco Mandji", appareillage: iso(new Date(Date.now() + 6 * DAY)),
-      membres: [...perenco.map((m) => ({ marinId: m.id, fonction: m.profession })), { marinId: 3, fonction: "Officier de quart pont" }],
-      creeLe: daysAgo(4), modifieLe: daysAgo(2),
+      id: 1,
+      armateur: "Perenco Marine",
+      navire: "Perenco Mandji",
+      appareillage: iso(new Date(Date.now() + 6 * DAY)),
+      membres: [
+        ...perenco.map((m) => ({ marinId: m.id, fonction: m.profession })),
+        { marinId: 3, fonction: "Officier de quart pont" },
+      ],
+      creeLe: daysAgo(4),
+      modifieLe: daysAgo(2),
     },
   ];
   // Journal d'audit initial reconstitué à partir des historiques.
   const evts = marins
-    .flatMap((m) => (m.historique ?? []).map((e) => ({ ...e, cible: `${m.nom} ${m.prenom} (${m.nip})` })))
+    .flatMap((m) =>
+      (m.historique ?? []).map((e) => ({ ...e, cible: `${m.nom} ${m.prenom} (${m.nip})` })),
+    )
     .sort((a, b) => a.date.localeCompare(b.date));
   let audit: AuditEntry[] = [];
-  for (const e of evts) audit = appendAudit(audit, e.auteur, e.action, e.cible, e.date, "Chrome / Windows");
+  for (const e of evts)
+    audit = appendAudit(audit, e.auteur, e.action, e.cible, e.date, "Chrome / Windows");
   return { marins, visites, roles, audit };
 }
 
@@ -399,7 +620,12 @@ function load(): State {
     const raw = window.localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<State>;
-      return { marins: parsed.marins ?? [], visites: parsed.visites ?? [], roles: parsed.roles ?? [], audit: parsed.audit ?? [] };
+      return {
+        marins: parsed.marins ?? [],
+        visites: parsed.visites ?? [],
+        roles: parsed.roles ?? [],
+        audit: parsed.audit ?? [],
+      };
     }
   } catch {
     /* ignore */
@@ -417,7 +643,9 @@ const serverState = seed();
 
 /** Enregistre le nouvel état ; si `log` est fourni, ajoute une entrée chaînée au journal d'audit. */
 function set(next: State, log?: { acteur: string; action: string; cible: string }) {
-  state = log ? { ...next, audit: appendAudit(next.audit, log.acteur, log.action, log.cible) } : next;
+  state = log
+    ? { ...next, audit: appendAudit(next.audit, log.acteur, log.action, log.cible) }
+    : next;
   if (typeof window !== "undefined") {
     try {
       window.localStorage.setItem(KEY, JSON.stringify(state));
@@ -438,7 +666,11 @@ function subscribe(l: () => void) {
 }
 
 export function useDgmm<T>(select: (s: State) => T): T {
-  return useSyncExternalStore(subscribe, () => select(get()), () => select(serverState));
+  return useSyncExternalStore(
+    subscribe,
+    () => select(get()),
+    () => select(serverState),
+  );
 }
 export function useMarins() {
   return useDgmm((s) => s.marins);
@@ -466,12 +698,40 @@ function withEvent(m: Marin, action: string, auteur: string, type: Evenement["ty
   return { ...m, historique: [...(m.historique ?? []), { date: nowIso(), action, auteur, type }] };
 }
 
-export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "creeLe" | "modifieLe" | "creePar" | "livret" | "validationAdmin" | "validationMedicale" | "historique"> & { id?: number }, auteur: string): Marin {
+export function saveMarin(
+  input: Omit<
+    Marin,
+    | "id"
+    | "nip"
+    | "login"
+    | "mdp"
+    | "creeLe"
+    | "modifieLe"
+    | "creePar"
+    | "livret"
+    | "validationAdmin"
+    | "validationMedicale"
+    | "historique"
+  > & { id?: number },
+  auteur: string,
+): Marin {
   const s = get();
   if (input.id) {
-    const marins = s.marins.map((m) => (m.id === input.id ? withEvent({ ...m, ...input, id: m.id, modifieLe: nowIso() }, "Dossier modifié", auteur, "modification") : m));
+    const marins = s.marins.map((m) =>
+      m.id === input.id
+        ? withEvent(
+            { ...m, ...input, id: m.id, modifieLe: nowIso() },
+            "Dossier modifié",
+            auteur,
+            "modification",
+          )
+        : m,
+    );
     const saved = marins.find((m) => m.id === input.id)!;
-    set({ ...s, marins }, { acteur: auteur, action: "Modification du dossier", cible: cible(saved) });
+    set(
+      { ...s, marins },
+      { acteur: auteur, action: "Modification du dossier", cible: cible(saved) },
+    );
     return saved;
   }
   const id = Math.max(0, ...s.marins.map((m) => m.id)) + 1;
@@ -480,7 +740,10 @@ export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "c
     id,
     nip: genNip(id),
     livret: "",
-    login: `${(input.nom.split(" ")[0] ?? "").toLowerCase().normalize("NFD").replace(/[^a-z]/g, "")}${id}`,
+    login: `${(input.nom.split(" ")[0] ?? "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[^a-z]/g, "")}${id}`,
     mdp: Math.random().toString(36).slice(2, 8),
     embarquements: [],
     validationAdmin: "en_attente",
@@ -490,21 +753,31 @@ export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "c
     modifieLe: nowIso(),
     historique: [{ date: nowIso(), action: "Dossier créé — enrôlement", auteur, type: "creation" }],
   };
-  set({ ...s, marins: [m, ...s.marins] }, { acteur: auteur, action: "Enrôlement d'un nouveau marin", cible: cible(m) });
+  set(
+    { ...s, marins: [m, ...s.marins] },
+    { acteur: auteur, action: "Enrôlement d'un nouveau marin", cible: cible(m) },
+  );
   return m;
 }
 
 export function updateMarin(id: number, patch: Partial<Marin>) {
   const s = get();
-  set({ ...s, marins: s.marins.map((m) => (m.id === id ? { ...m, ...patch, modifieLe: nowIso() } : m)) });
+  set({
+    ...s,
+    marins: s.marins.map((m) => (m.id === id ? { ...m, ...patch, modifieLe: nowIso() } : m)),
+  });
 }
 
-export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteLe"> & { id?: number }): Visite {
+export function saveVisite(
+  v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteLe"> & { id?: number },
+): Visite {
   const s = get();
   let saved: Visite;
   let visites: Visite[];
   if (v.id) {
-    visites = s.visites.map((x) => (x.id === v.id ? { ...x, ...v, id: x.id, traiteLe: nowIso() } : x));
+    visites = s.visites.map((x) =>
+      x.id === v.id ? { ...x, ...v, id: x.id, traiteLe: nowIso() } : x,
+    );
     saved = visites.find((x) => x.id === v.id)!;
   } else {
     const id = Math.max(3800, ...s.visites.map((x) => x.id)) + 1;
@@ -523,7 +796,11 @@ export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteL
     marins = marins.map((m) =>
       m.id === saved.marinId
         ? withEvent(
-            { ...m, validationMedicale: isInapte(saved.stcw.verdict) ? "rejetee" : "validee", modifieLe: nowIso() },
+            {
+              ...m,
+              validationMedicale: isInapte(saved.stcw.verdict) ? "rejetee" : "validee",
+              modifieLe: nowIso(),
+            },
             `Visite ${saved.numero} signée — ${VERDICT_LABELS[saved.stcw.verdict]}`,
             saved.signataire,
             "medical",
@@ -535,7 +812,9 @@ export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteL
     { ...s, marins, visites },
     {
       acteur: saved.signee ? saved.signataire : saved.praticien,
-      action: saved.signee ? `Signature du certificat ${saved.numero} — ${VERDICT_LABELS[saved.stcw.verdict]}` : `Saisie de la visite ${saved.numero} (brouillon)`,
+      action: saved.signee
+        ? `Signature du certificat ${saved.numero} — ${VERDICT_LABELS[saved.stcw.verdict]}`
+        : `Saisie de la visite ${saved.numero} (brouillon)`,
       cible: cible(marins.find((m) => m.id === saved.marinId)),
     },
   );
@@ -544,10 +823,24 @@ export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteL
 
 export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM", motif = "") {
   const s = get();
-  const action = etat === "validee" ? "Validation administrative accordée" : `Dossier rejeté par l'administration${motif ? ` : ${motif}` : ""}`;
+  const action =
+    etat === "validee"
+      ? "Validation administrative accordée"
+      : `Dossier rejeté par l'administration${motif ? ` : ${motif}` : ""}`;
   set(
-    { ...s, marins: s.marins.map((m) => (m.id === id ? withEvent({ ...m, validationAdmin: etat, modifieLe: nowIso() }, action, auteur, "admin") : m)) },
-    { acteur: auteur, action: etat === "validee" ? "Visa administratif DGMM accordé" : action, cible: cible(s.marins.find((m) => m.id === id)) },
+    {
+      ...s,
+      marins: s.marins.map((m) =>
+        m.id === id
+          ? withEvent({ ...m, validationAdmin: etat, modifieLe: nowIso() }, action, auteur, "admin")
+          : m,
+      ),
+    },
+    {
+      acteur: auteur,
+      action: etat === "validee" ? "Visa administratif DGMM accordé" : action,
+      cible: cible(s.marins.find((m) => m.id === id)),
+    },
   );
 }
 
@@ -559,19 +852,33 @@ export function revoquerCertificat(id: number, motif: string, auteur: string) {
   set(
     {
       ...s,
-      visites: s.visites.map((x) => (x.id === id ? { ...x, revoquee: true, motifRevocation: motif } : x)),
+      visites: s.visites.map((x) =>
+        x.id === id ? { ...x, revoquee: true, motifRevocation: motif } : x,
+      ),
       marins: s.marins.map((m) =>
-        m.id === v.marinId ? withEvent({ ...m, validationMedicale: "en_attente", modifieLe: nowIso() }, `Certificat ${v.numero} révoqué : ${motif}`, auteur, "medical") : m,
+        m.id === v.marinId
+          ? withEvent(
+              { ...m, validationMedicale: "en_attente", modifieLe: nowIso() },
+              `Certificat ${v.numero} révoqué : ${motif}`,
+              auteur,
+              "medical",
+            )
+          : m,
       ),
     },
-    { acteur: auteur, action: `Révocation du certificat ${v.numero} : ${motif}`, cible: cible(s.marins.find((m) => m.id === v.marinId)) },
+    {
+      acteur: auteur,
+      action: `Révocation du certificat ${v.numero} : ${motif}`,
+      cible: cible(s.marins.find((m) => m.id === v.marinId)),
+    },
   );
 }
 
 /** Code de validation imprimé dans le QR du certificat (empreinte non devinable du certificat). */
 export function codeValidation(v: Visite, nip: string): string {
   const src = `${v.id}|${v.numero}|${nip}|${v.signataire}|${v.stcw.dateDelivrance}|DGMM`;
-  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  let h1 = 0x811c9dc5,
+    h2 = 0x01000193;
   for (let i = 0; i < src.length; i++) {
     h1 = Math.imul(h1 ^ src.charCodeAt(i), 16777619);
     h2 = Math.imul(h2 ^ src.charCodeAt(i), 2246822519);
@@ -580,7 +887,8 @@ export function codeValidation(v: Visite, nip: string): string {
   return `${v.id}-${part(h1)}${part(h2)}`;
 }
 
-export type EtatCertificat = "valide" | "expire_bientot" | "expire" | "revoque" | "inapte" | "brouillon";
+export type EtatCertificat =
+  "valide" | "expire_bientot" | "expire" | "revoque" | "inapte" | "brouillon";
 export function etatCertificat(v: Visite, now = new Date()): EtatCertificat {
   if (!v.signee) return "brouillon";
   if (v.revoquee) return "revoque";
@@ -597,7 +905,19 @@ export function delivrerLivret(id: number, auteur = "Gestionnaire MM"): string {
   if (m.livret) return m.livret;
   const livret = `LM-${String(id).padStart(5, "0")}`;
   set(
-    { ...s, marins: s.marins.map((x) => (x.id === id ? withEvent({ ...x, livret, modifieLe: nowIso() }, `Livret ${livret} délivré`, auteur, "livret") : x)) },
+    {
+      ...s,
+      marins: s.marins.map((x) =>
+        x.id === id
+          ? withEvent(
+              { ...x, livret, modifieLe: nowIso() },
+              `Livret ${livret} délivré`,
+              auteur,
+              "livret",
+            )
+          : x,
+      ),
+    },
     { acteur: auteur, action: `Délivrance du livret maritime ${livret}`, cible: cible(m) },
   );
   return livret;
@@ -605,7 +925,11 @@ export function delivrerLivret(id: number, auteur = "Gestionnaire MM"): string {
 
 /* ---------- Services en mer ---------- */
 
-export function ajouterEmbarquement(marinId: number, e: Omit<Embarquement, "id" | "saisiLe" | "saisiPar">, auteur: string) {
+export function ajouterEmbarquement(
+  marinId: number,
+  e: Omit<Embarquement, "id" | "saisiLe" | "saisiPar">,
+  auteur: string,
+) {
   const s = get();
   const m = s.marins.find((x) => x.id === marinId);
   if (!m) return;
@@ -615,21 +939,41 @@ export function ajouterEmbarquement(marinId: number, e: Omit<Embarquement, "id" 
     {
       ...s,
       marins: s.marins.map((x) =>
-        x.id === marinId ? withEvent({ ...x, embarquements: [...(x.embarquements ?? []), emb], modifieLe: nowIso() }, `Embarquement inscrit : ${e.navire} (${e.fonction})`, auteur, "modification") : x,
+        x.id === marinId
+          ? withEvent(
+              { ...x, embarquements: [...(x.embarquements ?? []), emb], modifieLe: nowIso() },
+              `Embarquement inscrit : ${e.navire} (${e.fonction})`,
+              auteur,
+              "modification",
+            )
+          : x,
       ),
     },
     { acteur: auteur, action: `Inscription d'un embarquement sur ${e.navire}`, cible: cible(m) },
   );
 }
 
-export function cloturerEmbarquement(marinId: number, embId: number, debarquement: string, auteur: string) {
+export function cloturerEmbarquement(
+  marinId: number,
+  embId: number,
+  debarquement: string,
+  auteur: string,
+) {
   const s = get();
   const m = s.marins.find((x) => x.id === marinId);
   set(
     {
       ...s,
       marins: s.marins.map((x) =>
-        x.id === marinId ? { ...x, embarquements: (x.embarquements ?? []).map((y) => (y.id === embId ? { ...y, debarquement } : y)), modifieLe: nowIso() } : x,
+        x.id === marinId
+          ? {
+              ...x,
+              embarquements: (x.embarquements ?? []).map((y) =>
+                y.id === embId ? { ...y, debarquement } : y,
+              ),
+              modifieLe: nowIso(),
+            }
+          : x,
       ),
     },
     { acteur: auteur, action: `Débarquement enregistré le ${debarquement}`, cible: cible(m) },
@@ -643,7 +987,10 @@ export function joursEmbarquement(e: Embarquement, now = new Date()): number {
 
 /* ---------- Rôles d'équipage (armateurs) ---------- */
 
-export function saveRole(r: Omit<RoleEquipage, "id" | "creeLe" | "modifieLe"> & { id?: number }, acteur: string): RoleEquipage {
+export function saveRole(
+  r: Omit<RoleEquipage, "id" | "creeLe" | "modifieLe"> & { id?: number },
+  acteur: string,
+): RoleEquipage {
   const s = get();
   let saved: RoleEquipage;
   let roles: RoleEquipage[];
@@ -651,17 +998,36 @@ export function saveRole(r: Omit<RoleEquipage, "id" | "creeLe" | "modifieLe"> & 
     roles = s.roles.map((x) => (x.id === r.id ? { ...x, ...r, id: x.id, modifieLe: nowIso() } : x));
     saved = roles.find((x) => x.id === r.id)!;
   } else {
-    saved = { ...r, id: Math.max(0, ...s.roles.map((x) => x.id)) + 1, creeLe: nowIso(), modifieLe: nowIso() };
+    saved = {
+      ...r,
+      id: Math.max(0, ...s.roles.map((x) => x.id)) + 1,
+      creeLe: nowIso(),
+      modifieLe: nowIso(),
+    };
     roles = [saved, ...s.roles];
   }
-  set({ ...s, roles }, { acteur, action: `Déclaration du rôle d'équipage — ${saved.navire} (${saved.membres.length} marins)`, cible: saved.armateur });
+  set(
+    { ...s, roles },
+    {
+      acteur,
+      action: `Déclaration du rôle d'équipage — ${saved.navire} (${saved.membres.length} marins)`,
+      cible: saved.armateur,
+    },
+  );
   return saved;
 }
 
 export function setAlertes(marinId: number, alertes: { sms: boolean; email: boolean }) {
   const s = get();
   const m = s.marins.find((x) => x.id === marinId);
-  set({ ...s, marins: s.marins.map((x) => (x.id === marinId ? { ...x, alertes } : x)) }, { acteur: `Marin ${m?.nip ?? ""}`, action: "Préférences d'alerte d'expiration modifiées", cible: cible(m) });
+  set(
+    { ...s, marins: s.marins.map((x) => (x.id === marinId ? { ...x, alertes } : x)) },
+    {
+      acteur: `Marin ${m?.nip ?? ""}`,
+      action: "Préférences d'alerte d'expiration modifiées",
+      cible: cible(m),
+    },
+  );
 }
 
 export function resetDemo() {
@@ -671,7 +1037,14 @@ export function resetDemo() {
 /** Dernier certificat signé d'un marin. */
 export function lastCertificate(visites: Visite[], marinId: number): Visite | undefined {
   return visites
-    .filter((v) => v.marinId === marinId && v.signee && !v.revoquee && !isInapte(v.stcw.verdict) && v.stcw.validJusquau)
+    .filter(
+      (v) =>
+        v.marinId === marinId &&
+        v.signee &&
+        !v.revoquee &&
+        !isInapte(v.stcw.verdict) &&
+        v.stcw.validJusquau,
+    )
     .sort((a, b) => b.stcw.validJusquau.localeCompare(a.stcw.validJusquau))[0];
 }
 
@@ -679,14 +1052,25 @@ export function marinCertStatus(visites: Visite[], marinId: number, now = new Da
   return certificateStatus(lastCertificate(visites, marinId)?.stcw.validJusquau, now);
 }
 
-const REQUIRED_LIVRET: (keyof Marin)[] = ["dateNaissance", "taille", "couleurYeux", "couleurCheveux", "quartierInscription", "signeParticulier"];
+const REQUIRED_LIVRET: (keyof Marin)[] = [
+  "dateNaissance",
+  "taille",
+  "couleurYeux",
+  "couleurCheveux",
+  "quartierInscription",
+  "signeParticulier",
+];
 export function dossierIncomplet(m: Marin): boolean {
   return REQUIRED_LIVRET.some((k) => !m[k]) || !m.documents.photo || !m.documents.piece;
 }
 export function manquants(m: Marin): string[] {
   const labels: Partial<Record<keyof Marin, string>> = {
-    dateNaissance: "Date de naissance", taille: "Taille", couleurYeux: "Couleur des yeux",
-    couleurCheveux: "Couleur des cheveux", quartierInscription: "Quartier d'inscription", signeParticulier: "Signe particulier",
+    dateNaissance: "Date de naissance",
+    taille: "Taille",
+    couleurYeux: "Couleur des yeux",
+    couleurCheveux: "Couleur des cheveux",
+    quartierInscription: "Quartier d'inscription",
+    signeParticulier: "Signe particulier",
   };
   const out = REQUIRED_LIVRET.filter((k) => !m[k]).map((k) => labels[k]!);
   if (!m.documents.photo) out.push("Photo d'identité");
@@ -696,7 +1080,12 @@ export function manquants(m: Marin): string[] {
 
 export function eligibleLivret(m: Marin, visites: Visite[], now = new Date()): boolean {
   const st = marinCertStatus(visites, m.id, now);
-  return m.validationAdmin === "validee" && m.validationMedicale === "validee" && (st === "valide" || st === "expire_bientot") && !dossierIncomplet(m);
+  return (
+    m.validationAdmin === "validee" &&
+    m.validationMedicale === "validee" &&
+    (st === "valide" || st === "expire_bientot") &&
+    !dossierIncomplet(m)
+  );
 }
 
 export function fullName(m?: Marin) {
@@ -708,15 +1097,42 @@ export function age(m: Marin) {
 
 export function formatDate(d?: string) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 /** Une pièce jointe est stockée sous forme « nom » (démo) ou « nom::dataURL » (fichier réellement chargé). */
-export function parseDoc(v: string | undefined): { nom: string; url?: string | undefined; image: boolean; pdf: boolean } | null {
+export function parseDoc(
+  v: string | undefined,
+): { nom: string; url?: string | undefined; image: boolean; pdf: boolean } | null {
   if (!v) return null;
   if (v.startsWith("data:")) return { nom: "Photo d'identité", url: v, image: true, pdf: false };
   const i = v.indexOf("::");
   const nom = i >= 0 ? v.slice(0, i) : v;
   const url = i >= 0 ? v.slice(i + 2) : undefined;
-  return { nom, url, image: !!url?.startsWith("data:image"), pdf: !!url?.startsWith("data:application/pdf") };
+  return {
+    nom,
+    url,
+    image: !!url?.startsWith("data:image"),
+    pdf: !!url?.startsWith("data:application/pdf"),
+  };
+}
+
+/* ---------- Niveau de conformité STCW (jauges) ---------- */
+
+/** Émeraude : conforme · Ambre : à renouveler sous 60 j · Rubis : expiré / inapte / absent · Ardoise : visite en brouillon. */
+export type Niveau = "conforme" | "alerte" | "non_conforme" | "brouillon";
+
+export function niveauConformite(m: Marin, visites: Visite[], date: Date = new Date()): Niveau {
+  const cert = lastCertificate(visites, m.id);
+  if (cert) {
+    const fin = new Date(cert.stcw.validJusquau + "T23:59:59").getTime();
+    const jours = (fin - date.getTime()) / DAY;
+    if (jours >= 0) return jours <= 60 ? "alerte" : "conforme";
+  }
+  if (visites.some((v) => v.marinId === m.id && !v.signee)) return "brouillon";
+  return "non_conforme";
 }

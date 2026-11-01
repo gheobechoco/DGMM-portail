@@ -12,6 +12,7 @@ import {
   selectClass,
 } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
+import { Aide } from "@/components/dgmm/Aide";
 import { FONCTIONS_BORD, TOUS_NAVIRES, TYPES_FLOTTE } from "@/lib/dgmm/maritime";
 import {
   ajouterEmbarquement,
@@ -62,7 +63,11 @@ export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean;
       </div>
 
       <Panel
-        title="Relevé des services en mer"
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            Relevé des services en mer <Aide terme="seaService" />
+          </span>
+        }
         description="Embarquements et débarquements inscrits au livret — pris en compte pour les brevets STCW supérieurs."
         bodyClassName="p-0"
         actions={
@@ -315,7 +320,7 @@ function EmbarquementDialog({
                   ))}
                 </select>
               </Field>
-              <Field label="Jauge brute (GT)" htmlFor="a-jauge">
+              <Field label="Jauge brute (GT)" aide="jauge" htmlFor="a-jauge">
                 <input
                   id="a-jauge"
                   inputMode="numeric"

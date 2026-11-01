@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { ArrowLeft, Download, FileX } from "lucide-react";
 import { PublicShell } from "@/components/dgmm/PublicShell";
 import { EmptyState } from "@/components/dgmm/Page";
@@ -9,6 +10,7 @@ import { useMarins, useVisites } from "@/lib/dgmm/store";
 
 export const Route = createFileRoute("/mon-espace/certificat/$id")({
   ssr: false,
+  pendingComponent: CarteSkeleton,
   head: () => ({ meta: [{ title: "Mon certificat d'aptitude — Espace Marin DGMM" }] }),
   component: MonCertificat,
 });

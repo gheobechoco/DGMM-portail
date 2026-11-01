@@ -91,7 +91,7 @@ export function StatutStepper({ m, examenRealise }: { m: Marin; examenRealise: b
   const done = steps.filter((x) => x.s === "fait").length;
   return (
     <nav aria-label={`Avancement du dossier : ${done} étapes sur 5`} className="overflow-x-auto">
-      <ol className="flex min-w-[560px] items-start">
+      <ol className="flex min-w-[420px] items-start">
         {steps.map((st, i) => (
           <li
             key={st.label}

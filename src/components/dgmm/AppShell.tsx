@@ -1,8 +1,12 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpenCheck,
+  CircleHelp,
   LayoutDashboard,
+  Rows3,
+  Rows4,
+  Sun,
   LogOut,
   ShieldCheck,
   Menu,
@@ -15,6 +19,10 @@ import { DgmmLogo } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
 import { Omnibar } from "@/components/dgmm/Omnibar";
+import { Tour, type TourStep } from "@/components/dgmm/Tour";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { appliquerPrefs, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
+import { useVisites } from "@/lib/dgmm/store";
 import { can, type Permission } from "@/lib/dgmm/rules";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +77,7 @@ function NavLinks({
           <Link
             key={n.to}
             to={n.to}
+            data-tour={n.to === "/espace/marins" ? "nav-marins" : undefined}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
@@ -143,8 +152,163 @@ function SidebarContent({
   );
 }
 
+function tourSteps(session: Account): TourStep[] {
+  const medical = can(session.role, "visites.saisir");
+  return [
+    {
+      cible: "omnibar",
+      titre: "Recherche universelle",
+      texte:
+        "Tapez un NIP, un nom, un n° de livret, de certificat ou un navire pour ouvrir la fiche instantanément. Raccourci : Ctrl + K (⌘ K sur Mac), depuis n'importe quel écran.",
+    },
+    {
+      cible: "nav-marins",
+      titre: "Répertoire et filtres de conformité",
+      texte:
+        "Retrouvez tous les gens de mer et filtrez-les par statut administratif, aptitude médicale, certificat STCW ou armateur. Un clic sur une ligne ouvre l'aperçu latéral.",
+    },
+    {
+      cible: "action",
+      titre: medical
+        ? "Nouvelle visite STCW"
+        : can(session.role, "marins.creer")
+          ? "Enrôler un marin"
+          : "Action principale",
+      texte: medical
+        ? "Démarrez une visite d'aptitude (touche V). Le bouton « Examen standard » remplit les contrôles normaux en un clic et le brouillon est sauvegardé automatiquement."
+        : "Ouvrez l'enrôlement guidé en 2 volets (touche N). Chaque champ est vérifié au fil de la frappe.",
+    },
+    {
+      cible: "affichage",
+      titre: "Confort d'affichage",
+      texte:
+        "Basculez entre les modes confort et compact, activez le contraste « plein soleil » pour les contrôles à quai, et relancez ce guide (touche ?). Autres raccourcis : P pour imprimer, Échap pour fermer.",
+    },
+  ];
+}
+
+function estSaisie(t: EventTarget | null) {
+  return (
+    t instanceof HTMLElement &&
+    (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))
+  );
+}
+
+function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
+  const prefs = usePrefs();
+  const compact = prefs.densite === "compact";
+  const eleve = prefs.contraste === "eleve";
+  const btn =
+    "grid size-9 place-items-center rounded-md border text-muted-foreground transition-colors hover:border-gold hover:text-primary aria-pressed:border-gold aria-pressed:bg-gold/15 aria-pressed:text-primary";
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="flex items-center gap-1.5" data-tour="affichage">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={btn}
+              aria-pressed={compact}
+              aria-label={compact ? "Passer en mode confort" : "Passer en mode compact"}
+              onClick={() => setPrefs({ densite: compact ? "confort" : "compact" })}
+            >
+              {compact ? <Rows4 className="size-4" /> : <Rows3 className="size-4" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {compact ? "Mode compact (actif)" : "Mode confort (actif)"}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={btn}
+              aria-pressed={eleve}
+              aria-label="Contraste élevé (plein soleil)"
+              onClick={() => setPrefs({ contraste: eleve ? "normal" : "eleve" })}
+            >
+              <Sun className="size-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Contraste élevé · plein soleil</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                btn,
+                "inline-flex w-auto items-center gap-1.5 whitespace-nowrap px-2.5 text-xs font-semibold",
+              )}
+              onClick={onGuide}
+            >
+              <CircleHelp className="size-4" />
+              <span className="hidden md:inline">Guide rapide</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Visite guidée (touche ?)</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
+  );
+}
+
 export function AppShell({ session, children }: { session: Account; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [tour, setTour] = useState(false);
+  const prefs = usePrefs();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const visites = useVisites();
+  const visitesRef = useRef(visites);
+  visitesRef.current = visites;
+
+  useEffect(() => appliquerPrefs(prefs), [prefs]);
+
+  // Première visite : le guide démarre seul sur le tableau de bord.
+  useEffect(() => {
+    if (prefs.tourVu || !(pathname === "/espace" || pathname === "/espace/")) return;
+    const t = window.setTimeout(() => setTour(true), 900);
+    return () => window.clearTimeout(t);
+  }, [prefs.tourVu, pathname]);
+
+  // Raccourcis clavier : N (nouveau marin), V (visite), P (imprimer), ? (guide).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        estSaisie(e.target) ||
+        document.querySelector("[role=dialog]")
+      )
+        return;
+      const k = e.key.toLowerCase();
+      if (k === "n" && can(session.role, "marins.creer")) {
+        e.preventDefault();
+        navigate({ to: "/espace/marins/nouveau" });
+      } else if (k === "v" && can(session.role, "visites.saisir")) {
+        e.preventDefault();
+        const m = /^\/espace\/marins\/(\d+)$/.exec(pathname);
+        const draft = m
+          ? visitesRef.current.find((x) => x.marinId === Number(m[1]) && !x.signee)
+          : undefined;
+        if (draft)
+          navigate({ to: "/espace/visites/modifier/$id", params: { id: String(draft.id) } });
+        else navigate({ to: "/espace/visites/nouvelle", search: m ? { marin: Number(m[1]) } : {} });
+      } else if (k === "p" && document.querySelector(".print-sheet")) {
+        e.preventDefault();
+        window.print();
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setTour(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [session.role, navigate, pathname]);
+
   return (
     <div className="min-h-screen bg-background">
       <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block">
@@ -198,16 +362,18 @@ export function AppShell({ session, children }: { session: Account; children: Re
                 DGMM
               </span>
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1" data-tour="omnibar">
               <Omnibar session={session} />
             </div>
-            <RepubliqueBlock className="hidden xl:block" />
+            <AffichageToolbar onGuide={() => setTour(true)} />
+            <RepubliqueBlock className="hidden 2xl:block" />
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8 print:max-w-none print:p-0">
           {children}
         </main>
       </div>
+      <Tour steps={tourSteps(session)} open={tour} onClose={() => setTour(false)} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { useState, type FormEvent } from "react";
 import {
   AlertTriangle,
@@ -42,6 +43,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/mon-espace/")({
   ssr: false,
+  pendingComponent: CarteSkeleton,
   head: () => ({
     meta: [
       { title: "Espace Marin — DGMM" },

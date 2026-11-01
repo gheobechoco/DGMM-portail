@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { Sun } from "lucide-react";
+import { appliquerPrefs, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
 import { DgmmLogo } from "@/components/dgmm/Logo";
 import { Tricolor } from "@/components/dgmm/Brand";
 import { cn } from "@/lib/utils";
@@ -17,6 +19,9 @@ export function VerifyShell({
   sousTitre: string;
   children: ReactNode;
 }) {
+  const prefs = usePrefs();
+  useEffect(() => appliquerPrefs(prefs), [prefs]);
+  const eleve = prefs.contraste === "eleve";
   return (
     <div className="flex min-h-screen flex-col bg-background" lang={lang}>
       <Tricolor />
@@ -32,6 +37,18 @@ export function VerifyShell({
             <div className="truncate text-[11px] text-primary-foreground/70">{sousTitre}</div>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setPrefs({ contraste: eleve ? "normal" : "eleve" })}
+          aria-pressed={eleve}
+          aria-label={
+            lang === "fr" ? "Contraste élevé (plein soleil)" : "High contrast (bright sunlight)"
+          }
+          title={lang === "fr" ? "Contraste élevé" : "High contrast"}
+          className="ml-auto grid size-8 shrink-0 place-items-center rounded-md border border-primary-foreground/30 aria-pressed:bg-gold aria-pressed:text-gold-foreground"
+        >
+          <Sun className="size-4" />
+        </button>
         <div
           className="flex shrink-0 overflow-hidden rounded-md border border-primary-foreground/30"
           role="group"

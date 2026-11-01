@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { useMemo, useState, type FormEvent } from "react";
 import {
   AlertTriangle,
@@ -24,6 +25,8 @@ import {
 } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
+import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
+import { Aide } from "@/components/dgmm/Aide";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -40,6 +43,7 @@ import {
   fullName,
   journaliser,
   lastCertificate,
+  niveauConformite,
   saveRole,
   useMarins,
   useRoles,
@@ -52,6 +56,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/armateur/")({
   ssr: false,
+  pendingComponent: CarteSkeleton,
   head: () => ({
     meta: [
       { title: "Espace Armateurs — DGMM" },
@@ -235,7 +240,19 @@ function Tableau({ a }: { a: ArmateurAccount }) {
       </div>
 
       <Panel
-        title="Rôles d'équipage"
+        title="Santé réglementaire de l'effectif"
+        description="Certificats médicaux STCW à ce jour"
+        className="mb-6"
+      >
+        <ConformityGauge niveaux={effectif.map((m) => niveauConformite(m, visites))} />
+      </Panel>
+
+      <Panel
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            Rôles d'équipage <Aide terme="role" />
+          </span>
+        }
         description="Déclarez l'équipage de chaque appareillage : la conformité est contrôlée à la date de départ."
         actions={
           <Button size="sm" variant="gold" onClick={() => setEdit("new")} disabled={!flotte.length}>
@@ -343,6 +360,17 @@ function RoleCard({
         <Button size="sm" variant="outline" onClick={onEdit}>
           Modifier
         </Button>
+      </div>
+      <div className="border-b px-4 py-3">
+        <ConformityGauge
+          compact
+          sujet="d'équipage"
+          niveaux={rows.map((x) =>
+            x.m
+              ? niveauConformite(x.m, visites, new Date(`${r.appareillage}T12:00:00`))
+              : "non_conforme",
+          )}
+        />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppShell } from "@/components/dgmm/AppShell";
+import { EspaceSkeleton } from "@/components/dgmm/Skeletons";
 import { useSession } from "@/lib/dgmm/auth";
 
 export const Route = createFileRoute("/espace")({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/espace")({
       { property: "og:description", content: "Espace professionnel sécurisé de la DGMM." },
     ],
   }),
+  pendingComponent: EspaceSkeleton,
   component: Espace,
 });
 
@@ -26,7 +28,7 @@ function Espace() {
   useEffect(() => {
     if (!session) navigate({ to: "/" });
   }, [session, navigate]);
-  if (!session) return null;
+  if (!session) return <EspaceSkeleton />;
   return (
     <AppShell session={session}>
       <Outlet />

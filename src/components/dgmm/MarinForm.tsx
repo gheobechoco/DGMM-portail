@@ -232,13 +232,16 @@ export function MarinForm({
   const [v, setV] = useState<MarinInput>(() => (initial ? toInput(initial) : emptyMarin()));
   const [step, setStep] = useState<1 | 2>(1);
   const [touched, setTouched] = useState<{ 1: boolean; 2: boolean }>({ 1: false, 2: false });
+  const [vus, setVus] = useState<Set<keyof MarinInput>>(() => new Set());
   const all = validate(v);
   const errors: Errors = {};
   (Object.keys(all) as (keyof MarinInput)[]).forEach((k) => {
     const volet = VOLET1.includes(k) ? 1 : 2;
     const msg = all[k];
-    if (touched[volet] && msg) errors[k] = msg;
+    if ((touched[volet] || vus.has(k)) && msg) errors[k] = msg;
   });
+  /** Champ quitté, renseigné et conforme : coche verte immédiate. */
+  const ok = (k: keyof MarinInput) => vus.has(k) && !all[k] && !!(v[k] as string | undefined);
 
   const up = <K extends keyof MarinInput>(k: K, val: MarinInput[K]) =>
     setV((s) => ({ ...s, [k]: val }));
@@ -246,6 +249,7 @@ export function MarinForm({
     id: k,
     value: (v[k] as string | undefined) ?? "",
     onChange: (e: { target: { value: string } }) => up(k, e.target.value as never),
+    onBlur: () => setVus((x) => (x.has(k) ? x : new Set(x).add(k))),
     "aria-invalid": errors[k] ? true : undefined,
   });
 
@@ -291,6 +295,7 @@ export function MarinForm({
             <Grid>
               <Field
                 label="NIP"
+                aide="nip"
                 htmlFor="nip"
                 hint={initial ? undefined : "Attribué automatiquement à l'enregistrement."}
               >
@@ -301,17 +306,23 @@ export function MarinForm({
                   className={cn(inputClass, "bg-muted font-mono text-muted-foreground")}
                 />
               </Field>
-              <Field label="Nom" htmlFor="nom" required error={errors.nom}>
+              <Field label="Nom" htmlFor="nom" required error={errors.nom} valid={ok("nom")}>
                 <input
                   {...text("nom")}
                   className={`${inputClass} uppercase`}
                   autoComplete="family-name"
                 />
               </Field>
-              <Field label="Prénom(s)" htmlFor="prenom" required error={errors.prenom}>
+              <Field
+                label="Prénom(s)"
+                htmlFor="prenom"
+                required
+                error={errors.prenom}
+                valid={ok("prenom")}
+              >
                 <input {...text("prenom")} className={inputClass} autoComplete="given-name" />
               </Field>
-              <Field label="Sexe" htmlFor="sexe" required error={errors.sexe}>
+              <Field label="Sexe" htmlFor="sexe" required error={errors.sexe} valid={ok("sexe")}>
                 <select {...text("sexe")} className={selectClass}>
                   <option value="">Choisir…</option>
                   <option value="M">Masculin</option>
@@ -323,10 +334,17 @@ export function MarinForm({
                 htmlFor="dateNaissance"
                 required
                 error={errors.dateNaissance}
+                valid={ok("dateNaissance")}
               >
                 <input {...text("dateNaissance")} type="date" className={inputClass} />
               </Field>
-              <Field label="Nationalité" htmlFor="nationalite" required error={errors.nationalite}>
+              <Field
+                label="Nationalité"
+                htmlFor="nationalite"
+                required
+                error={errors.nationalite}
+                valid={ok("nationalite")}
+              >
                 <select {...text("nationalite")} className={selectClass}>
                   {NATIONALITES.map((n) => (
                     <option key={n}>{n}</option>
@@ -338,7 +356,13 @@ export function MarinForm({
 
           <Panel title="Contact">
             <Grid>
-              <Field label="Téléphone principal" htmlFor="tel1" required error={errors.tel1}>
+              <Field
+                label="Téléphone principal"
+                htmlFor="tel1"
+                required
+                error={errors.tel1}
+                valid={ok("tel1")}
+              >
                 <input
                   {...text("tel1")}
                   type="tel"
@@ -348,10 +372,15 @@ export function MarinForm({
                   autoComplete="tel"
                 />
               </Field>
-              <Field label="Téléphone secondaire" htmlFor="tel2" error={errors.tel2}>
+              <Field
+                label="Téléphone secondaire"
+                htmlFor="tel2"
+                error={errors.tel2}
+                valid={ok("tel2")}
+              >
                 <input {...text("tel2")} type="tel" inputMode="tel" className={inputClass} />
               </Field>
-              <Field label="E-mail" htmlFor="email" error={errors.email}>
+              <Field label="E-mail" htmlFor="email" error={errors.email} valid={ok("email")}>
                 <input
                   {...text("email")}
                   type="email"
@@ -372,7 +401,13 @@ export function MarinForm({
 
           <Panel title="Activité maritime">
             <Grid>
-              <Field label="Profession" htmlFor="profession" required error={errors.profession}>
+              <Field
+                label="Profession"
+                htmlFor="profession"
+                required
+                error={errors.profession}
+                valid={ok("profession")}
+              >
                 <select {...text("profession")} className={selectClass}>
                   <option value="">Choisir…</option>
                   {PROFESSIONS.map((n) => (
@@ -410,7 +445,12 @@ export function MarinForm({
             description="Ces informations figurent sur le livret maritime."
           >
             <Grid>
-              <Field label="Taille (cm)" htmlFor="taille" error={errors.taille}>
+              <Field
+                label="Taille (cm)"
+                htmlFor="taille"
+                error={errors.taille}
+                valid={ok("taille")}
+              >
                 <input
                   {...text("taille")}
                   type="number"
