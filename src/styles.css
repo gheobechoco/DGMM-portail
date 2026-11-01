@@ -468,3 +468,12 @@ tr.glow-alert {
   box-shadow: 0 1px 2px oklch(0.205 0.045 262 / 0.25);
   transition-duration: 70ms;
 }
+
+/* Filigrane du sceau : conservé à l'impression des documents officiels */
+.sceau-filigrane {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+[data-contrast="eleve"] .sceau-filigrane {
+  display: none;
+}

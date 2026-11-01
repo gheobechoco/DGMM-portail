@@ -6,6 +6,7 @@ import { EmptyState, Info } from "@/components/dgmm/Page";
 import { OfficialHeader } from "@/components/dgmm/OfficialHeader";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { ExportButton } from "@/components/dgmm/Anim";
+import { SceauFiligrane } from "@/components/dgmm/Logo";
 import { station as stationRef } from "@/lib/dgmm/maritime";
 import { formatDate, lastCertificate, useMarins, useVisites } from "@/lib/dgmm/store";
 
@@ -51,7 +52,11 @@ function Attestation() {
           Exporter l'attestation
         </ExportButton>
       </div>
-      <article className="print-sheet mx-auto max-w-2xl overflow-hidden rounded-xl border bg-card shadow-card">
+      <article className="print-sheet relative isolate mx-auto max-w-2xl overflow-hidden rounded-xl border bg-card shadow-card">
+        <SceauFiligrane
+          className="absolute left-1/2 top-1/2 -z-10 w-[75%] -translate-x-1/2 -translate-y-1/2"
+          opacite={0.05}
+        />
         <OfficialHeader
           title="Attestation de délivrance du livret maritime"
           subtitle="Livret professionnel maritime — Seafarer's identity and record book"

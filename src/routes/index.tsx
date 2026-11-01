@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight } from "lucide-react";
-import { DgmmLogo } from "@/components/dgmm/Logo";
+import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -58,6 +58,7 @@ function LoginPage() {
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Panneau institutionnel */}
       <aside className="relative hidden overflow-hidden bg-navy-gradient text-primary-foreground lg:flex lg:flex-col">
+        <SceauFiligrane className="absolute -bottom-32 -right-32 w-[34rem]" opacite={0.07} />
         <Tricolor />
         <WaveLines />
         <div className="relative flex flex-1 flex-col justify-between p-12">
@@ -82,7 +83,8 @@ function LoginPage() {
       </aside>
 
       {/* Formulaire */}
-      <main className="flex flex-col">
+      <main className="relative isolate flex flex-col overflow-hidden">
+        <SceauFiligrane className="absolute -right-24 top-1/2 -z-10 w-[30rem] -translate-y-1/2 lg:-right-40" opacite={0.05} />
         <Tricolor className="lg:hidden" />
         <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10">
           <div className="w-full max-w-md">

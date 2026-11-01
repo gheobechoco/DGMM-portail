@@ -17,7 +17,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { DgmmLogo } from "@/components/dgmm/Logo";
+import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
 import { Omnibar } from "@/components/dgmm/Omnibar";
@@ -314,7 +314,11 @@ export function AppShell({ session, children }: { session: Account; children: Re
   }, [session.role, navigate, pathname]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative isolate min-h-screen bg-background">
+      <SceauFiligrane
+        className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[32rem]"
+        opacite={0.045}
+      />
       <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block">
         <Tricolor />
         <SidebarContent session={session} />

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { appliquerPrefs } from "@/lib/dgmm/prefs";
 import { LogOut } from "lucide-react";
-import { DgmmLogo } from "@/components/dgmm/Logo";
+import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 
 /** Cadre des espaces externes (marins, armateurs). */
@@ -19,7 +19,11 @@ export function PublicShell({
 }) {
   useEffect(() => appliquerPrefs(), []);
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="relative isolate flex min-h-screen flex-col bg-background">
+      <SceauFiligrane
+        className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[34rem]"
+        opacite={0.05}
+      />
       <Tricolor className="no-print" />
       <header className="no-print bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">

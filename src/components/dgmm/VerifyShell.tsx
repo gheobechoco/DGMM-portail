@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { Sun } from "lucide-react";
 import { appliquerPrefs, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
-import { DgmmLogo } from "@/components/dgmm/Logo";
+import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { Tricolor } from "@/components/dgmm/Brand";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,14 @@ export function VerifyShell({
   useEffect(() => appliquerPrefs(prefs), [prefs]);
   const eleve = prefs.contraste === "eleve";
   return (
-    <div className="flex min-h-screen flex-col bg-background" lang={lang}>
+    <div
+      className="relative isolate flex min-h-screen flex-col overflow-hidden bg-background"
+      lang={lang}
+    >
+      <SceauFiligrane
+        className="fixed left-1/2 top-1/2 -z-10 w-[min(90vw,40rem)] -translate-x-1/2 -translate-y-1/2"
+        opacite={0.06}
+      />
       <Tricolor />
       <header className="flex items-center justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground sm:px-5">
         <a

@@ -1,6 +1,7 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Minus } from "lucide-react";
 import { Info } from "@/components/dgmm/Page";
+import { SceauFiligrane } from "@/components/dgmm/Logo";
 import { OfficialHeader } from "@/components/dgmm/OfficialHeader";
 import { Cachet } from "@/components/dgmm/Cachet";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
@@ -93,7 +94,11 @@ export function CertificatDocument({ v, m }: { v: Visite; m: Marin | undefined }
     : "";
   const visa = visaDgmm(m);
   return (
-    <article className="print-sheet relative mx-auto max-w-3xl overflow-hidden rounded-xl border bg-card shadow-card">
+    <article className="print-sheet relative isolate mx-auto max-w-3xl overflow-hidden rounded-xl border bg-card shadow-card">
+      <SceauFiligrane
+        className="absolute left-1/2 top-1/2 -z-10 w-[70%] -translate-x-1/2 -translate-y-1/2"
+        opacite={0.05}
+      />
       {(etat === "revoque" || etat === "brouillon") && (
         <div
           className="pointer-events-none absolute inset-0 z-10 grid place-items-center"

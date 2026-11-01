@@ -1,13 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="31" fill="#0a192f"/>
-  <circle cx="32" cy="32" r="27" fill="none" stroke="#d4af37" stroke-width="2"/>
-  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="32" cy="15" r="3.5" stroke-width="2.6"/>
-    <line x1="23" y1="22" x2="41" y2="22" stroke-width="3"/>
-    <line x1="32" y1="18.5" x2="32" y2="50" stroke-width="3.4"/>
-    <path d="M 17 37 Q 19 50 32 51 Q 45 50 47 37" stroke-width="3"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 300">
+  <title>DGMM — Direction Générale de la Marine Marchande</title>
+  <defs>
+    <path id="arcHaut" d="M42 150 A108 108 0 0 1 258 150"/>
+    <path id="arcBas" d="M26 150 A124 124 0 0 0 274 150"/>
+  </defs>
+  <!-- Contours -->
+  <circle cx="150" cy="150" r="144" fill="#FFFFFF" stroke="#13294B" stroke-width="5"/>
+  <circle cx="150" cy="150" r="136" fill="none" stroke="#FCD116" stroke-width="2"/>
+  <circle cx="150" cy="150" r="98" fill="none" stroke="#13294B" stroke-width="2.5"/>
+  <!-- Textes en arc -->
+  <text font-family="Montserrat, Inter, 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="19" letter-spacing="2" fill="#13294B">
+    <textPath href="#arcHaut" xlink:href="#arcHaut" startOffset="50%" text-anchor="middle">DIRECTION GÉNÉRALE</textPath>
+  </text>
+  <text font-family="Montserrat, Inter, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="19" letter-spacing="2" fill="#13294B">
+    <textPath href="#arcBas" xlink:href="#arcBas" startOffset="50%" text-anchor="middle">MARINE MARCHANDE</textPath>
+  </text>
+  <!-- Séparateurs tricolores -->
+  <circle cx="33" cy="141" r="3" fill="#009E60"/><circle cx="33" cy="150" r="3" fill="#FCD116"/><circle cx="33" cy="159" r="3" fill="#3A75C4"/><circle cx="267" cy="141" r="3" fill="#009E60"/><circle cx="267" cy="150" r="3" fill="#FCD116"/><circle cx="267" cy="159" r="3" fill="#3A75C4"/>
+  <!-- Ancre + corde + DE / LA -->
+  <g transform="translate(150,152) scale(1.15) translate(-100,-91)">
+  <!-- Ancre -->
+  <g fill="#13294B" stroke="#13294B" transform="translate(0,-6)">
+    <circle cx="100" cy="42" r="9" fill="none" stroke-width="6"/>
+    <rect x="96" y="51" width="8" height="99" rx="2" stroke="none"/>
+    <!-- Jas : barre tricolore = l'horizon national -->
+    <rect x="64" y="64" width="24" height="9" rx="4.5" fill="#009E60" stroke="none"/>
+    <rect x="88" y="64" width="24" height="9" fill="#FCD116" stroke="none"/>
+    <rect x="112" y="64" width="24" height="9" rx="4.5" fill="#3A75C4" stroke="none"/>
+    <!-- Corde enroulée autour de la verge -->
+    <g fill="none" stroke-linecap="round">
+      <path id="corde" d="M108 47 C124 58 118 80 100 84 C84 88 84 104 100 108 C116 112 116 128 106 134 C100 138 96 140 92 140" stroke="#13294B" stroke-width="6.5"/>
+      <path d="M108 47 C124 58 118 80 100 84 C84 88 84 104 100 108 C116 112 116 128 106 134 C100 138 96 140 92 140" stroke="#FCD116" stroke-width="3.6"/>
+      <path d="M108 47 C124 58 118 80 100 84 C84 88 84 104 100 108 C116 112 116 128 106 134 C100 138 96 140 92 140" stroke="#13294B" stroke-width="3.6" stroke-dasharray="1.1 3.2" stroke-linecap="butt"/>
+    </g>
+    <!-- La verge repasse devant la corde : effet d'enroulement -->
+    <rect x="96" y="78" width="8" height="12" stroke="none"/>
+    <rect x="96" y="128" width="8" height="12" stroke="none"/>
+    <!-- Mentions « DE » / « LA » -->
+    <g font-family="Montserrat, Inter, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="11" letter-spacing="1" stroke="none" fill="#3A75C4">
+      <text x="81" y="102" text-anchor="end">DE</text>
+      <text x="120" y="102">LA</text>
+    </g>
+    <!-- Bras -->
+    <path d="M58 112 Q60 150 100 152 Q140 150 142 112" fill="none" stroke-width="7" stroke-linecap="round"/>
+    <!-- Pattes -->
+    <polygon points="58,98 48,118 67,116" stroke="none"/>
+    <polygon points="142,98 152,118 133,116" stroke="none"/>
   </g>
-  <path d="M 13 40 L 17 31 L 22 38 Z" fill="#ffffff"/>
-  <path d="M 51 40 L 47 31 L 42 38 Z" fill="#ffffff"/>
-  <path d="M 29 15 C 20 18 21 28 32 30 C 42 32 42 40 35 43" fill="none" stroke="#d4af37" stroke-width="1.8" stroke-dasharray="2 1.4" stroke-linecap="round"/>
+  </g>
 </svg>
