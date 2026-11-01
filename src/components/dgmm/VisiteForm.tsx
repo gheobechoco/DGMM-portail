@@ -1,39 +1,116 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { FileSignature, Save } from "lucide-react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  Ear,
+  Eye,
+  FileSignature,
+  HeartPulse,
+  Palette,
+  Plus,
+  Save,
+  ShieldCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Panel, inputClass, selectClass, textareaClass } from "@/components/dgmm/Page";
+import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { ageFrom } from "@/lib/dgmm/rules";
 import {
   PRATICIENS,
   emptyStcw,
   fullName,
+  isInapte,
   type Marin,
   type OuiNon,
   type Stcw,
+  type Verdict,
   type Visite,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
 
 export type VisiteInput = Omit<Visite, "id" | "numero" | "creeLe" | "traiteLe"> & { id?: number };
+type Q = [keyof Stcw, string];
 
-const STCW_QUESTIONS: [keyof Stcw, string][] = [
-  ["identiteVerifiee", "Les documents d'identité ont été vérifiés sur le lieu de l'examen"],
-  ["acuiteVisuelle", "L'acuité visuelle satisfait aux normes STCW (section A-I/9)"],
-  ["auditiveSansAide", "L'acuité auditive satisfait aux normes sans prothèse"],
-  ["acuiteAuditive", "L'acuité auditive satisfait aux normes de la section A-I/9"],
-  ["couleurs", "La perception des couleurs est satisfaisante"],
-  ["veille", "Apte au service de veille"],
+/** Contrôles réglementaires de la section A-I/9 du Code STCW, regroupés par domaine. */
+const VISION: Q[] = [
+  ["acuiteVisuelle", "Acuité visuelle conforme aux normes A-I/9 (avec ou sans correction)"],
+  ["visionBinoculaire", "Vision binoculaire satisfaisante"],
   ["aidesVisuelles", "Port de lunettes ou de lentilles nécessaire"],
+];
+const COULEURS: Q[] = [["couleurs", "Perception des couleurs satisfaisante (test d'Ishihara)"]];
+const AUDITION: Q[] = [
+  ["auditiveSansAide", "Acuité auditive conforme sans prothèse"],
+  ["acuiteAuditive", "Acuité auditive conforme aux normes A-I/9"],
+  ["communicationUrgence", "Capable de communiquer en situation d'urgence (consignes, alarmes)"],
+];
+const APTITUDES: Q[] = [
+  ["identiteVerifiee", "Documents d'identité vérifiés sur le lieu de l'examen"],
+  ["veille", "Apte au service de veille, y compris de nuit"],
   [
     "exemptAffection",
-    "Exempt de toute affection susceptible d'être aggravée par le service en mer ou de rendre le marin inapte",
+    "Exempt de toute affection susceptible d'être aggravée par le service en mer ou de mettre en danger l'équipage",
   ],
+];
+export const ALL_QUESTIONS: Q[] = [
+  ...APTITUDES.slice(0, 1),
+  ...VISION,
+  ...COULEURS,
+  ...AUDITION,
+  ...APTITUDES.slice(1),
+];
+
+const RESTRICTIONS = [
+  "Port obligatoire de verres correcteurs",
+  "Pas de service de veille de nuit",
+  "Navigation côtière uniquement",
+  "Service de jour uniquement",
+  "Pas de travail en hauteur",
+  "Pas de service en salle des machines",
+];
+
+const VERDICTS: { v: Exclude<Verdict, "">; label: string; hint: string; on: string }[] = [
+  {
+    v: "apte",
+    label: "Apte",
+    hint: "sans restriction",
+    on: "border-success bg-success/10 text-success",
+  },
+  {
+    v: "apte_restrictions",
+    label: "Apte",
+    hint: "avec restrictions",
+    on: "border-warning bg-warning/10 text-warning",
+  },
+  {
+    v: "inapte_temporaire",
+    label: "Inapte",
+    hint: "temporaire",
+    on: "border-[oklch(0.62_0.17_45)] bg-[oklch(0.62_0.17_45)]/10 text-[oklch(0.5_0.17_45)]",
+  },
+  {
+    v: "inapte",
+    label: "Inapte",
+    hint: "définitif",
+    on: "border-destructive bg-destructive/10 text-destructive",
+  },
 ];
 
 function addYears(iso: string, n: number) {
   const d = new Date(iso);
   d.setFullYear(d.getFullYear() + n);
   return d.toISOString().slice(0, 10);
+}
+
+export function imc(
+  taille: string,
+  poids: string,
+): { valeur: number; categorie: string; tone: string } | null {
+  const t = Number(taille) / 100;
+  const p = Number(poids);
+  if (!t || !p || t < 1 || t > 2.5 || p < 30 || p > 250) return null;
+  const valeur = Math.round((p / (t * t)) * 10) / 10;
+  if (valeur < 18.5) return { valeur, categorie: "Insuffisance pondérale", tone: "text-warning" };
+  if (valeur < 25) return { valeur, categorie: "Corpulence normale", tone: "text-success" };
+  if (valeur < 30) return { valeur, categorie: "Surpoids", tone: "text-warning" };
+  return { valeur, categorie: "Obésité", tone: "text-destructive" };
 }
 
 export function emptyVisite(marinId: number, praticien: string): VisiteInput {
@@ -47,6 +124,7 @@ export function emptyVisite(marinId: number, praticien: string): VisiteInput {
       tension: "",
       pouls: "",
       vision: "",
+      visionCorrigee: "",
       audition: "",
       observations: "",
     },
@@ -102,6 +180,28 @@ function OuiNonGroup({
   );
 }
 
+function Bloc({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof Eye;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
+        <span className="grid size-7 place-items-center rounded-md bg-primary-soft">
+          <Icon className="size-4" />
+        </span>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function VisiteForm({
   initial,
   marins,
@@ -117,43 +217,86 @@ export function VisiteForm({
   onSubmit: (v: VisiteInput) => void;
   onCancel: () => void;
 }) {
-  const [v, setV] = useState<VisiteInput>(initial);
+  const [v, setV] = useState<VisiteInput>(() => ({
+    ...initial,
+    stcw: { ...emptyStcw(), ...initial.stcw },
+  }));
   const [tried, setTried] = useState(false);
   const marin = marins.find((m) => m.id === v.marinId);
   const mineur = (ageFrom(marin?.dateNaissance) ?? 99) < 18;
+  const inapte = isInapte(v.stcw.verdict);
+  const bmi = imc(v.examens.taille, v.examens.poids);
+  const eligibles = marins.filter(
+    (m) => m.validationAdmin === "validee" || m.id === initial.marinId,
+  );
 
   const ex = (k: keyof VisiteInput["examens"]) => ({
     id: `ex-${k}`,
-    value: v.examens[k],
+    value: v.examens[k] ?? "",
     onChange: (e: { target: { value: string } }) =>
       setV((s) => ({ ...s, examens: { ...s.examens, [k]: e.target.value } })),
   });
   const st = <K extends keyof Stcw>(k: K, val: Stcw[K]) =>
     setV((s) => ({ ...s, stcw: { ...s.stcw, [k]: val } }));
+  const answer = (k: keyof Stcw, o: OuiNon) =>
+    setV((s) => ({
+      ...s,
+      stcw: {
+        ...s.stcw,
+        [k]: o,
+        ...(k === "couleurs" && o === "oui" && !s.stcw.dateTestCouleurs
+          ? { dateTestCouleurs: new Date().toISOString().slice(0, 10) }
+          : {}),
+      },
+    }));
+
+  const questions = (list: Q[]) => (
+    <ul className="divide-y">
+      {list.map(([k, label]) => (
+        <li
+          key={k}
+          className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span
+            id={`${k}-label`}
+            className={cn("text-sm", tried && !v.stcw[k] && "text-destructive")}
+          >
+            {label}
+          </span>
+          <OuiNonGroup
+            name={k}
+            value={v.stcw[k] as OuiNon}
+            onChange={(o) => answer(k, o)}
+            invalid={tried && !v.stcw[k]}
+          />
+        </li>
+      ))}
+    </ul>
+  );
 
   const signErrors = useMemo(() => {
     const e: string[] = [];
     if (!v.marinId) e.push("Sélectionnez le marin.");
-    if (STCW_QUESTIONS.some(([k]) => !v.stcw[k])) e.push("Répondez à toutes les questions STCW.");
-    if (v.stcw.couleurs === "oui" && !v.stcw.dateTestCouleurs)
-      e.push("Indiquez la date du test de perception des couleurs.");
-    if (!v.stcw.verdict) e.push("Indiquez la décision d'aptitude.");
+    if (!v.examens.taille || !v.examens.poids || !v.examens.tension || !v.examens.pouls)
+      e.push("Renseignez les constantes (taille, poids, tension, pouls).");
+    if (ALL_QUESTIONS.some(([k]) => !v.stcw[k])) e.push("Répondez à tous les contrôles STCW.");
+    if (v.stcw.couleurs && !v.stcw.dateTestCouleurs) e.push("Indiquez la date du test d'Ishihara.");
+    if (!v.stcw.verdict) e.push("Indiquez le verdict d'aptitude.");
     if (v.stcw.verdict === "apte_restrictions" && !v.stcw.details.trim())
       e.push("Précisez les restrictions.");
-    if (v.stcw.verdict !== "inapte") {
+    if (inapte && !v.stcw.details.trim()) e.push("Indiquez le motif de l'inaptitude.");
+    if (v.stcw.verdict && !inapte) {
       if (!v.stcw.dateDelivrance || !v.stcw.validJusquau) e.push("Indiquez les dates de validité.");
       else {
         const max = addYears(v.stcw.dateDelivrance, mineur ? 1 : 2);
         if (v.stcw.validJusquau > max)
-          e.push(
-            `La validité ne peut excéder ${mineur ? "1 an (marin de moins de 18 ans)" : "2 ans"}.`,
-          );
+          e.push(`La validité ne peut excéder ${mineur ? "1 an (marin mineur)" : "2 ans"}.`);
         if (v.stcw.validJusquau <= v.stcw.dateDelivrance)
-          e.push("La date de fin doit suivre la date de délivrance.");
+          e.push("L'échéance doit suivre la date de délivrance.");
       }
     }
     return e;
-  }, [v, mineur]);
+  }, [v, mineur, inapte]);
 
   const submit = (sign: boolean) => (e?: FormEvent) => {
     e?.preventDefault();
@@ -161,17 +304,28 @@ export function VisiteForm({
       setTried(true);
       return;
     }
+    const clean: VisiteInput = inapte
+      ? { ...v, stcw: { ...v.stcw, dateDelivrance: "", validJusquau: "" } }
+      : v;
     if (sign) {
       setTried(true);
       if (signErrors.length) return;
-      onSubmit({ ...v, signee: true, signataire });
-    } else onSubmit({ ...v, signee: false });
+      onSubmit({ ...clean, signee: true, signataire });
+    } else onSubmit({ ...clean, signee: false });
+  };
+
+  const addRestriction = (r: string) => {
+    const cur = v.stcw.details.trim();
+    if (cur.includes(r)) return;
+    st("details", cur ? `${cur.replace(/\.$/, "")}. ${r}.` : `${r}.`);
+    if (r.includes("verres") && !v.stcw.aidesVisuelles) st("aidesVisuelles", "oui");
   };
 
   return (
     <form onSubmit={submit(false)} noValidate className="space-y-6">
       <Panel title="Marin examiné">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-[auto_1fr_1fr] sm:items-end">
+          <MarinPhoto m={marin} className="hidden size-14 rounded-lg sm:grid" initials={!!marin} />
           <Field
             label="Marin"
             htmlFor="marin"
@@ -185,16 +339,14 @@ export function VisiteForm({
               onChange={(e) => setV((s) => ({ ...s, marinId: Number(e.target.value) }))}
             >
               <option value="">Choisir un marin…</option>
-              {marins
-                .filter((m) => m.validationAdmin !== "rejetee")
-                .map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {fullName(m)} — {m.nip}
-                  </option>
-                ))}
+              {eligibles.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {fullName(m)} — {m.nip}
+                </option>
+              ))}
             </select>
           </Field>
-          <Field label="Praticien" htmlFor="praticien">
+          <Field label="Médecin examinateur" htmlFor="praticien">
             <select
               id="praticien"
               className={selectClass}
@@ -213,58 +365,112 @@ export function VisiteForm({
             {marin.entreprise || "sans armateur"}
             {mineur && (
               <span className="ml-2 font-semibold text-warning">
-                Moins de 18 ans : validité maximale 1 an.
+                Marin mineur : validité maximale 1 an.
               </span>
             )}
           </p>
         )}
       </Panel>
 
-      <Panel title="Examen clinique">
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <Panel
+        title="Examen clinique"
+        description="Constantes biométriques — l'IMC est calculé automatiquement."
+      >
+        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <Field label="Taille (cm)" htmlFor="ex-taille">
             <input {...ex("taille")} inputMode="numeric" className={inputClass} />
           </Field>
           <Field label="Poids (kg)" htmlFor="ex-poids">
-            <input {...ex("poids")} inputMode="numeric" className={inputClass} />
+            <input {...ex("poids")} inputMode="decimal" className={inputClass} />
           </Field>
-          <Field label="Tension" htmlFor="ex-tension">
+          <div className="space-y-1.5">
+            <div className="text-sm font-medium">IMC</div>
+            <div
+              className="flex h-10 items-center gap-2 rounded-md bg-muted px-3 text-sm"
+              aria-live="polite"
+            >
+              {bmi ? (
+                <>
+                  <span className="font-semibold tabular-nums">
+                    {bmi.valeur.toLocaleString("fr-FR")}
+                  </span>
+                  <span className={cn("truncate text-xs", bmi.tone)}>{bmi.categorie}</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </div>
+          </div>
+          <Field label="Tension artérielle" htmlFor="ex-tension">
             <input {...ex("tension")} placeholder="12/8" className={inputClass} />
           </Field>
           <Field label="Pouls (bpm)" htmlFor="ex-pouls">
             <input {...ex("pouls")} inputMode="numeric" className={inputClass} />
           </Field>
-          <Field label="Vision" htmlFor="ex-vision">
-            <input {...ex("vision")} placeholder="10/10" className={inputClass} />
-          </Field>
-          <Field label="Audition" htmlFor="ex-audition">
-            <input {...ex("audition")} placeholder="Normale" className={inputClass} />
-          </Field>
-          <Field
-            label="Observations"
-            htmlFor="ex-observations"
-            className="sm:col-span-3 lg:col-span-6"
-          >
+        </div>
+      </Panel>
+
+      <Panel
+        title="Contrôles sensoriels et aptitudes"
+        description="Section A-I/9 du Code STCW — normes minimales d'aptitude physique."
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Bloc icon={Eye} title="Vision">
+            <div className="mb-3 grid grid-cols-2 gap-3">
+              <Field label="Acuité sans correction" htmlFor="ex-vision">
+                <input {...ex("vision")} placeholder="10/10" className={inputClass} />
+              </Field>
+              <Field label="Acuité avec correction" htmlFor="ex-visionCorrigee">
+                <input {...ex("visionCorrigee")} placeholder="10/10" className={inputClass} />
+              </Field>
+            </div>
+            {questions(VISION)}
+          </Bloc>
+          <Bloc icon={Ear} title="Audition & communication">
+            <Field label="Résultat de l'audiométrie" htmlFor="ex-audition" className="mb-3">
+              <input {...ex("audition")} placeholder="Normale" className={inputClass} />
+            </Field>
+            {questions(AUDITION)}
+          </Bloc>
+          <Bloc icon={Palette} title="Perception des couleurs">
+            {questions(COULEURS)}
+            {v.stcw.couleurs && (
+              <Field
+                label="Date du test d'Ishihara"
+                htmlFor="dateTestCouleurs"
+                className="mt-3 max-w-xs"
+              >
+                <input
+                  id="dateTestCouleurs"
+                  type="date"
+                  value={v.stcw.dateTestCouleurs}
+                  onChange={(e) => st("dateTestCouleurs", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+            )}
+          </Bloc>
+          <Bloc icon={ShieldCheck} title="Identité, veille et état général">
+            {questions(APTITUDES)}
+          </Bloc>
+        </div>
+      </Panel>
+
+      <Panel title="Observations">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Observations cliniques" htmlFor="ex-observations">
             <textarea {...ex("observations")} className={textareaClass} />
           </Field>
-          <Field
-            label="Examens complémentaires"
-            htmlFor="complementaires"
-            className="sm:col-span-3 lg:col-span-3"
-          >
+          <Field label="Examens complémentaires" htmlFor="complementaires">
             <textarea
               id="complementaires"
               value={v.complementaires}
               onChange={(e) => setV((s) => ({ ...s, complementaires: e.target.value }))}
               className={textareaClass}
-              placeholder="Glycémie, NFS, radiographie…"
+              placeholder="Glycémie, NFS, ECG…"
             />
           </Field>
-          <Field
-            label="Recommandations"
-            htmlFor="recommandations"
-            className="sm:col-span-3 lg:col-span-3"
-          >
+          <Field label="Recommandations" htmlFor="recommandations">
             <textarea
               id="recommandations"
               value={v.recommandations}
@@ -275,98 +481,38 @@ export function VisiteForm({
         </div>
       </Panel>
 
-      <Panel
-        title="Certificat médical STCW"
-        description="Convention STCW, règle I/9 — à renseigner par le médecin agréé."
-      >
-        <ul className="divide-y">
-          {STCW_QUESTIONS.map(([k, label]) => (
-            <li
-              key={k}
-              className="flex flex-col gap-2 py-3 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
+      <Panel title="Verdict & signature">
+        <div
+          className="grid grid-cols-2 gap-2 lg:grid-cols-4"
+          role="radiogroup"
+          aria-label="Verdict d'aptitude"
+        >
+          {VERDICTS.map((o) => (
+            <button
+              key={o.v}
+              type="button"
+              role="radio"
+              aria-checked={v.stcw.verdict === o.v}
+              onClick={() => st("verdict", o.v)}
+              className={cn(
+                "rounded-lg border-2 px-3 py-2.5 text-left transition-colors",
+                v.stcw.verdict === o.v
+                  ? o.on
+                  : "border-border text-muted-foreground hover:border-input",
+                tried && !v.stcw.verdict && "border-destructive/50",
+              )}
             >
-              <span
-                id={`${k}-label`}
-                className={cn("text-sm", tried && !v.stcw[k] && "text-destructive")}
-              >
-                {label}
-              </span>
-              <OuiNonGroup
-                name={k}
-                value={v.stcw[k] as OuiNon}
-                onChange={(o) =>
-                  setV((s) => ({
-                    ...s,
-                    stcw: {
-                      ...s.stcw,
-                      [k]: o,
-                      ...(k === "couleurs" && o === "oui" && !s.stcw.dateTestCouleurs
-                        ? { dateTestCouleurs: new Date().toISOString().slice(0, 10) }
-                        : {}),
-                    },
-                  }))
-                }
-                invalid={tried && !v.stcw[k]}
-              />
-            </li>
+              <span className="block font-display text-sm font-bold">{o.label}</span>
+              <span className="block text-xs">{o.hint}</span>
+            </button>
           ))}
-        </ul>
-        {v.stcw.couleurs === "oui" && (
-          <Field
-            label="Date du dernier test de perception des couleurs"
-            htmlFor="dateTestCouleurs"
-            className="mt-2 max-w-xs"
-          >
-            <input
-              id="dateTestCouleurs"
-              type="date"
-              value={v.stcw.dateTestCouleurs}
-              onChange={(e) => st("dateTestCouleurs", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-        )}
+        </div>
 
-        <div className="mt-6 border-t pt-5">
-          <div className="mb-2 text-sm font-medium">Décision d'aptitude</div>
-          <div
-            className="grid gap-2 sm:grid-cols-3"
-            role="radiogroup"
-            aria-label="Décision d'aptitude"
-          >
-            {(
-              [
-                ["apte", "Apte", "border-success bg-success/10 text-success"],
-                [
-                  "apte_restrictions",
-                  "Apte avec restrictions",
-                  "border-warning bg-warning/10 text-warning",
-                ],
-                ["inapte", "Inapte", "border-destructive bg-destructive/10 text-destructive"],
-              ] as const
-            ).map(([val, label, on]) => (
-              <button
-                key={val}
-                type="button"
-                role="radio"
-                aria-checked={v.stcw.verdict === val}
-                onClick={() => st("verdict", val)}
-                className={cn(
-                  "rounded-lg border-2 px-4 py-3 text-sm font-semibold transition-colors",
-                  v.stcw.verdict === val
-                    ? on
-                    : "border-border text-muted-foreground hover:border-input",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-3">
             <Field
-              label={v.stcw.verdict === "inapte" ? "Motif" : "Restrictions / précisions"}
+              label={inapte ? "Motif de l'inaptitude" : "Restrictions / précisions"}
               htmlFor="details"
-              className="sm:col-span-3"
             >
               <textarea
                 id="details"
@@ -375,44 +521,58 @@ export function VisiteForm({
                 className={textareaClass}
               />
             </Field>
-            {v.stcw.verdict !== "inapte" && (
-              <>
-                <Field label="Date de délivrance" htmlFor="dateDelivrance">
-                  <input
-                    id="dateDelivrance"
-                    type="date"
-                    value={v.stcw.dateDelivrance}
-                    onChange={(e) =>
-                      setV((s) => ({
-                        ...s,
-                        stcw: {
-                          ...s.stcw,
-                          dateDelivrance: e.target.value,
-                          validJusquau: e.target.value
-                            ? addYears(e.target.value, mineur ? 1 : 2)
-                            : s.stcw.validJusquau,
-                        },
-                      }))
-                    }
-                    className={inputClass}
-                  />
-                </Field>
-                <Field
-                  label="Valide jusqu'au"
-                  htmlFor="validJusquau"
-                  hint={`Maximum ${mineur ? "1 an" : "2 ans"}`}
-                >
-                  <input
-                    id="validJusquau"
-                    type="date"
-                    value={v.stcw.validJusquau}
-                    onChange={(e) => st("validJusquau", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-              </>
+            {v.stcw.verdict === "apte_restrictions" && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {RESTRICTIONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => addRestriction(r)}
+                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:border-gold hover:text-primary"
+                  >
+                    <Plus className="size-3" /> {r}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
+          {!inapte && (
+            <>
+              <Field label="Date de délivrance" htmlFor="dateDelivrance">
+                <input
+                  id="dateDelivrance"
+                  type="date"
+                  value={v.stcw.dateDelivrance}
+                  onChange={(e) =>
+                    setV((s) => ({
+                      ...s,
+                      stcw: {
+                        ...s.stcw,
+                        dateDelivrance: e.target.value,
+                        validJusquau: e.target.value
+                          ? addYears(e.target.value, mineur ? 1 : 2)
+                          : s.stcw.validJusquau,
+                      },
+                    }))
+                  }
+                  className={inputClass}
+                />
+              </Field>
+              <Field
+                label="Échéance"
+                htmlFor="validJusquau"
+                hint={`Calculée automatiquement : ${mineur ? "1 an (mineur)" : "2 ans maximum"}`}
+              >
+                <input
+                  id="validJusquau"
+                  type="date"
+                  value={v.stcw.validJusquau}
+                  onChange={(e) => st("validJusquau", e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+            </>
+          )}
         </div>
       </Panel>
 
@@ -425,10 +585,11 @@ export function VisiteForm({
               ))}
             </ul>
           ) : (
-            <span className="text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <HeartPulse className="size-3.5" />
               {canSign
-                ? "La signature valide le certificat et met à jour l'aptitude médicale du marin."
-                : "Seul le médecin agréé peut signer le certificat."}
+                ? "La signature numérique valide le certificat et met à jour l'aptitude du marin."
+                : "Saisie enregistrée en brouillon : seul le médecin agréé peut signer."}
             </span>
           )}
         </div>

@@ -18,7 +18,7 @@ function Modifier() {
   const visite = useVisites().find((v) => v.id === Number(id));
   const navigate = useNavigate();
   return (
-    <RequirePerm perm="visites">
+    <RequirePerm perm="visites.saisir">
       {(session) =>
         !visite || visite.signee ? (
           <div className="rounded-xl border bg-card shadow-card">

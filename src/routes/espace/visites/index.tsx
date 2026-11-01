@@ -5,8 +5,16 @@ import { RequirePerm } from "@/components/dgmm/Guard";
 import { EmptyState, PageHeader, Panel, StatCard, selectClass } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
-import { certificateStatus } from "@/lib/dgmm/rules";
-import { formatDate, fullName, useMarins, useVisites } from "@/lib/dgmm/store";
+import { can, certificateStatus } from "@/lib/dgmm/rules";
+import { EtatCertificatPill } from "@/components/dgmm/MarinBits";
+import {
+  VERDICT_LABELS,
+  etatCertificat,
+  formatDate,
+  fullName,
+  useMarins,
+  useVisites,
+} from "@/lib/dgmm/store";
 import { CalendarClock, FileClock, ShieldCheck } from "lucide-react";
 
 type Etat = "tous" | "brouillon" | "signee";
@@ -21,21 +29,18 @@ export const Route = createFileRoute("/espace/visites/")({
     etat: s["etat"] === "brouillon" || s["etat"] === "signee" ? s["etat"] : undefined,
   }),
   head: () => ({ meta: [{ title: "Visites médicales — GDM | DGMM" }] }),
-  component: () => <RequirePerm perm="visites">{() => <VisitesList />}</RequirePerm>,
+  component: () => (
+    <RequirePerm perm="visites">
+      {(s) => <VisitesList canSaisir={can(s.role, "visites.saisir")} />}
+    </RequirePerm>
+  ),
 });
-
-const VERDICT: Record<string, string> = {
-  apte: "Apte",
-  apte_restrictions: "Apte (restrictions)",
-  inapte: "Inapte",
-  "": "—",
-};
 
 function norm(s: string) {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-function VisitesList() {
+function VisitesList({ canSaisir }: { canSaisir: boolean }) {
   const { q = "", etat = "tous" } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const visites = useVisites();
@@ -60,7 +65,7 @@ function VisitesList() {
 
   const brouillons = visites.filter((v) => !v.signee).length;
   const aRenouveler = visites.filter(
-    (v) => v.signee && certificateStatus(v.stcw.validJusquau) === "expire_bientot",
+    (v) => v.signee && !v.revoquee && certificateStatus(v.stcw.validJusquau) === "expire_bientot",
   ).length;
   const enAttente = marins.filter(
     (m) => m.validationAdmin === "validee" && m.validationMedicale === "en_attente",
@@ -75,11 +80,13 @@ function VisitesList() {
         title="Visites médicales"
         subtitle="Examens d'aptitude et certificats médicaux conformes à la convention STCW."
         actions={
-          <Button asChild variant="gold">
-            <Link to="/espace/visites/nouvelle">
-              <FilePlus2 /> Nouvelle visite
-            </Link>
-          </Button>
+          canSaisir && (
+            <Button asChild variant="gold">
+              <Link to="/espace/visites/nouvelle">
+                <FilePlus2 /> Nouvelle visite
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -134,10 +141,6 @@ function VisitesList() {
           <ul className="divide-y">
             {rows.map((v) => {
               const m = byId.get(v.marinId);
-              const st =
-                v.signee && v.stcw.verdict !== "inapte"
-                  ? certificateStatus(v.stcw.validJusquau)
-                  : null;
               return (
                 <li key={v.id}>
                   <Link
@@ -154,18 +157,14 @@ function VisitesList() {
                         {v.praticien} · {formatDate(v.creeLe)}
                       </span>
                     </span>
-                    <span className="text-sm">{VERDICT[v.stcw.verdict]}</span>
+                    <span className="text-sm">
+                      {v.stcw.verdict ? VERDICT_LABELS[v.stcw.verdict] : "—"}
+                    </span>
                     <span className="text-xs tabular-nums text-muted-foreground">
                       {v.stcw.validJusquau ? `→ ${formatDate(v.stcw.validJusquau)}` : ""}
                     </span>
                     <span>
-                      {!v.signee ? (
-                        <StatusPill status="en_attente" label="Brouillon" />
-                      ) : st ? (
-                        <StatusPill status={st} />
-                      ) : (
-                        <StatusPill status="rejetee" label="Inapte" />
-                      )}
+                      <EtatCertificatPill etat={etatCertificat(v)} />
                     </span>
                     <ChevronRight className="hidden size-4 text-muted-foreground md:block" />
                   </Link>

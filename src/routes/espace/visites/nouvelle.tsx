@@ -20,7 +20,7 @@ function Nouvelle() {
   const marins = useMarins();
   const navigate = useNavigate();
   return (
-    <RequirePerm perm="visites">
+    <RequirePerm perm="visites.saisir">
       {(session) => (
         <>
           <Link

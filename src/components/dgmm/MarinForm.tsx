@@ -1,5 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from "react";
-import { FileCheck2, Paperclip, Save, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ArrowLeft, ArrowRight, Check, FileCheck2, Paperclip, Save, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import {
@@ -11,6 +11,7 @@ import {
   type DocKey,
   type Marin,
 } from "@/lib/dgmm/store";
+import { cn } from "@/lib/utils";
 
 export type MarinInput = Omit<
   Marin,
@@ -24,6 +25,7 @@ export type MarinInput = Omit<
   | "livret"
   | "validationAdmin"
   | "validationMedicale"
+  | "historique"
 >;
 
 export const PROFESSIONS = [
@@ -39,6 +41,9 @@ export const PROFESSIONS = [
   "Hôtesse de bord",
   "Élève officier",
 ];
+const SITUATIONS = ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf / veuve"];
+/** Pièces demandées à l'enrôlement (le certificat d'aptitude est produit par la visite médicale). */
+const FORM_DOCS: DocKey[] = ["photo", "piece", "contrat", "residence", "livret"];
 
 export function emptyMarin(): MarinInput {
   return {
@@ -60,6 +65,7 @@ export function emptyMarin(): MarinInput {
     quartierInscription: "",
     dateMariage: "",
     lieuMariage: "",
+    situationMatrimoniale: "",
     documents: {},
   };
 }
@@ -76,12 +82,24 @@ function toInput(m: Marin): MarinInput {
     livret: _lv,
     validationAdmin: _va,
     validationMedicale: _vm,
+    historique: _h,
     ...rest
   } = m;
   return rest;
 }
 
 type Errors = Partial<Record<keyof MarinInput, string>>;
+const VOLET1: (keyof MarinInput)[] = [
+  "nom",
+  "prenom",
+  "sexe",
+  "dateNaissance",
+  "nationalite",
+  "tel1",
+  "tel2",
+  "email",
+  "profession",
+];
 
 function validate(v: MarinInput): Errors {
   const e: Errors = {};
@@ -94,7 +112,7 @@ function validate(v: MarinInput): Errors {
     if (age < 16) e.dateNaissance = "Le marin doit avoir au moins 16 ans.";
     if (age > 80) e.dateNaissance = "Vérifiez la date de naissance.";
   }
-  if (!v.profession) e.profession = "Choisissez une fonction.";
+  if (!v.profession) e.profession = "Choisissez une profession.";
   if (!v.nationalite) e.nationalite = "Choisissez une nationalité.";
   if (!/^0\d{7,8}$/.test(v.tel1.replace(/\s/g, "")))
     e.tel1 = "Numéro gabonais attendu (ex. 077 45 20 17).";
@@ -105,19 +123,77 @@ function validate(v: MarinInput): Errors {
   return e;
 }
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string | undefined;
-  children: ReactNode;
-}) {
+/** Réduit la photo d'identité (240 px max) pour l'afficher sur le livret et le certificat. */
+function readPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 240 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function Grid({ children }: { children: ReactNode }) {
+  return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
+}
+
+function Stepper({ step, onStep }: { step: 1 | 2; onStep: (s: 1 | 2) => void }) {
+  const steps = [
+    { n: 1 as const, t: "État civil & contact", d: "Identité, coordonnées, profession" },
+    { n: 2 as const, t: "Signalement & documents", d: "Signalement, situation, pièces jointes" },
+  ];
   return (
-    <Panel title={title} description={description}>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
-    </Panel>
+    <ol className="mb-6 grid gap-2 sm:grid-cols-2" aria-label="Étapes de l'enrôlement">
+      {steps.map((s) => {
+        const done = step > s.n;
+        const active = step === s.n;
+        return (
+          <li key={s.n}>
+            <button
+              type="button"
+              onClick={() => s.n < step && onStep(s.n)}
+              aria-current={active ? "step" : undefined}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left transition-colors",
+                active && "border-gold shadow-card",
+                done && "hover:bg-muted/50",
+                !active && !done && "opacity-70",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid size-9 shrink-0 place-items-center rounded-full font-display text-sm font-bold",
+                  done
+                    ? "bg-secondary text-secondary-foreground"
+                    : active
+                      ? "bg-gold text-gold-foreground"
+                      : "bg-muted text-muted-foreground",
+                )}
+              >
+                {done ? <Check className="size-4" /> : s.n}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Volet {s.n}
+                </span>
+                <span className="block truncate text-sm font-semibold text-primary">{s.t}</span>
+                <span className="hidden truncate text-xs text-muted-foreground sm:block">
+                  {s.d}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -133,229 +209,349 @@ export function MarinForm({
   submitLabel: string;
 }) {
   const [v, setV] = useState<MarinInput>(() => (initial ? toInput(initial) : emptyMarin()));
-  const [touched, setTouched] = useState(false);
-  const errors = touched ? validate(v) : {};
+  const [step, setStep] = useState<1 | 2>(1);
+  const [touched, setTouched] = useState<{ 1: boolean; 2: boolean }>({ 1: false, 2: false });
+  const all = validate(v);
+  const errors: Errors = {};
+  (Object.keys(all) as (keyof MarinInput)[]).forEach((k) => {
+    const volet = VOLET1.includes(k) ? 1 : 2;
+    const msg = all[k];
+    if (touched[volet] && msg) errors[k] = msg;
+  });
 
   const up = <K extends keyof MarinInput>(k: K, val: MarinInput[K]) =>
     setV((s) => ({ ...s, [k]: val }));
   const text = (k: keyof MarinInput) => ({
     id: k,
-    value: v[k] as string,
+    value: (v[k] as string | undefined) ?? "",
     onChange: (e: { target: { value: string } }) => up(k, e.target.value as never),
     "aria-invalid": errors[k] ? true : undefined,
   });
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    setTouched(true);
-    const errs = validate(v);
-    if (Object.keys(errs).length) {
-      const first = Object.keys(errs)[0];
-      document.getElementById(first!)?.focus();
+  const focusFirst = (keys: (keyof MarinInput)[]) => {
+    const first = keys.find((k) => all[k]);
+    if (first) document.getElementById(first)?.focus();
+  };
+
+  const next = () => {
+    setTouched((t) => ({ ...t, 1: true }));
+    if (VOLET1.some((k) => all[k])) return focusFirst(VOLET1);
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const submit = () => {
+    setTouched({ 1: true, 2: true });
+    if (VOLET1.some((k) => all[k])) {
+      setStep(1);
       return;
     }
+    if (Object.keys(all).length) return focusFirst(Object.keys(all) as (keyof MarinInput)[]);
     onSubmit({ ...v, nom: v.nom.trim().toUpperCase(), prenom: v.prenom.trim() });
   };
 
+  const marie = v.situationMatrimoniale === "Marié(e)";
+  const nbErr = Object.keys(errors).length;
+
   return (
-    <form onSubmit={submit} noValidate className="space-y-6">
-      <Section title="Identité" description="Informations d'état civil du marin.">
-        <Field label="Nom" htmlFor="nom" required error={errors.nom}>
-          <input
-            {...text("nom")}
-            className={`${inputClass} uppercase`}
-            autoComplete="family-name"
-          />
-        </Field>
-        <Field label="Prénom(s)" htmlFor="prenom" required error={errors.prenom}>
-          <input {...text("prenom")} className={inputClass} autoComplete="given-name" />
-        </Field>
-        <Field label="Sexe" htmlFor="sexe" required error={errors.sexe}>
-          <select {...text("sexe")} className={selectClass}>
-            <option value="">Choisir…</option>
-            <option value="M">Masculin</option>
-            <option value="F">Féminin</option>
-          </select>
-        </Field>
-        <Field
-          label="Date de naissance"
-          htmlFor="dateNaissance"
-          required
-          error={errors.dateNaissance}
-        >
-          <input {...text("dateNaissance")} type="date" className={inputClass} />
-        </Field>
-        <Field label="Nationalité" htmlFor="nationalite" required error={errors.nationalite}>
-          <select {...text("nationalite")} className={selectClass}>
-            {NATIONALITES.map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Quartier de résidence" htmlFor="quartier">
-          <select {...text("quartier")} className={selectClass}>
-            <option value="">Choisir…</option>
-            {QUARTIERS_RESIDENCE.map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Date de mariage" htmlFor="dateMariage" hint="Facultatif">
-          <input {...text("dateMariage")} type="date" className={inputClass} />
-        </Field>
-        <Field label="Lieu de mariage" htmlFor="lieuMariage" hint="Facultatif">
-          <input {...text("lieuMariage")} className={inputClass} />
-        </Field>
-      </Section>
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (step === 1) next();
+        else submit();
+      }}
+    >
+      <Stepper step={step} onStep={setStep} />
 
-      <Section title="Coordonnées">
-        <Field label="Téléphone principal" htmlFor="tel1" required error={errors.tel1}>
-          <input
-            {...text("tel1")}
-            type="tel"
-            inputMode="tel"
-            placeholder="077 45 20 17"
-            className={inputClass}
-            autoComplete="tel"
-          />
-        </Field>
-        <Field label="Téléphone secondaire" htmlFor="tel2" error={errors.tel2}>
-          <input {...text("tel2")} type="tel" inputMode="tel" className={inputClass} />
-        </Field>
-        <Field label="E-mail" htmlFor="email" error={errors.email}>
-          <input {...text("email")} type="email" className={inputClass} autoComplete="email" />
-        </Field>
-      </Section>
+      {step === 1 ? (
+        <div className="space-y-6">
+          <Panel title="Identité" description="Informations d'état civil du marin.">
+            <Grid>
+              <Field
+                label="NIP"
+                htmlFor="nip"
+                hint={initial ? undefined : "Attribué automatiquement à l'enregistrement."}
+              >
+                <input
+                  id="nip"
+                  readOnly
+                  value={initial?.nip ?? "—"}
+                  className={cn(inputClass, "bg-muted font-mono text-muted-foreground")}
+                />
+              </Field>
+              <Field label="Nom" htmlFor="nom" required error={errors.nom}>
+                <input
+                  {...text("nom")}
+                  className={`${inputClass} uppercase`}
+                  autoComplete="family-name"
+                />
+              </Field>
+              <Field label="Prénom(s)" htmlFor="prenom" required error={errors.prenom}>
+                <input {...text("prenom")} className={inputClass} autoComplete="given-name" />
+              </Field>
+              <Field label="Sexe" htmlFor="sexe" required error={errors.sexe}>
+                <select {...text("sexe")} className={selectClass}>
+                  <option value="">Choisir…</option>
+                  <option value="M">Masculin</option>
+                  <option value="F">Féminin</option>
+                </select>
+              </Field>
+              <Field
+                label="Date de naissance"
+                htmlFor="dateNaissance"
+                required
+                error={errors.dateNaissance}
+              >
+                <input {...text("dateNaissance")} type="date" className={inputClass} />
+              </Field>
+              <Field label="Nationalité" htmlFor="nationalite" required error={errors.nationalite}>
+                <select {...text("nationalite")} className={selectClass}>
+                  {NATIONALITES.map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+            </Grid>
+          </Panel>
 
-      <Section title="Situation maritime">
-        <Field label="Fonction à bord" htmlFor="profession" required error={errors.profession}>
-          <select {...text("profession")} className={selectClass}>
-            <option value="">Choisir…</option>
-            {PROFESSIONS.map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Armateur / entreprise" htmlFor="entreprise">
-          <select {...text("entreprise")} className={selectClass}>
-            <option value="">Aucune</option>
-            {ENTREPRISES.map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Quartier maritime d'inscription"
-          htmlFor="quartierInscription"
-          hint="Requis pour le livret"
-        >
-          <select {...text("quartierInscription")} className={selectClass}>
-            <option value="">Choisir…</option>
-            {QUARTIERS.map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </Field>
-      </Section>
+          <Panel title="Contact">
+            <Grid>
+              <Field label="Téléphone principal" htmlFor="tel1" required error={errors.tel1}>
+                <input
+                  {...text("tel1")}
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="077 45 20 17"
+                  className={inputClass}
+                  autoComplete="tel"
+                />
+              </Field>
+              <Field label="Téléphone secondaire" htmlFor="tel2" error={errors.tel2}>
+                <input {...text("tel2")} type="tel" inputMode="tel" className={inputClass} />
+              </Field>
+              <Field label="E-mail" htmlFor="email" error={errors.email}>
+                <input
+                  {...text("email")}
+                  type="email"
+                  className={inputClass}
+                  autoComplete="email"
+                />
+              </Field>
+              <Field label="Quartier de résidence" htmlFor="quartier">
+                <select {...text("quartier")} className={selectClass}>
+                  <option value="">Choisir…</option>
+                  {QUARTIERS_RESIDENCE.map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+            </Grid>
+          </Panel>
 
-      <Section title="Signalement" description="Ces informations figurent sur le livret maritime.">
-        <Field label="Taille (cm)" htmlFor="taille" error={errors.taille}>
-          <input
-            {...text("taille")}
-            type="number"
-            inputMode="numeric"
-            min={120}
-            max={230}
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Couleur des yeux" htmlFor="couleurYeux">
-          <select {...text("couleurYeux")} className={selectClass}>
-            <option value="">Choisir…</option>
-            {["Noir", "Marron", "Noisette", "Vert", "Bleu"].map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Couleur des cheveux" htmlFor="couleurCheveux">
-          <select {...text("couleurCheveux")} className={selectClass}>
-            <option value="">Choisir…</option>
-            {["Noir", "Brun", "Châtain", "Gris", "Blanc", "Chauve"].map((n) => (
-              <option key={n}>{n}</option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Signe particulier"
-          htmlFor="signeParticulier"
-          className="sm:col-span-2 lg:col-span-3"
-        >
-          <input {...text("signeParticulier")} placeholder="Néant" className={inputClass} />
-        </Field>
-      </Section>
+          <Panel title="Activité maritime">
+            <Grid>
+              <Field label="Profession" htmlFor="profession" required error={errors.profession}>
+                <select {...text("profession")} className={selectClass}>
+                  <option value="">Choisir…</option>
+                  {PROFESSIONS.map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Entreprise maritime / armateur" htmlFor="entreprise">
+                <select {...text("entreprise")} className={selectClass}>
+                  <option value="">Aucune</option>
+                  {ENTREPRISES.map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                label="Quartier maritime d'inscription"
+                htmlFor="quartierInscription"
+                hint="Requis pour le livret"
+              >
+                <select {...text("quartierInscription")} className={selectClass}>
+                  <option value="">Choisir…</option>
+                  {QUARTIERS.map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+            </Grid>
+          </Panel>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <Panel
+            title="Signalement"
+            description="Ces informations figurent sur le livret maritime."
+          >
+            <Grid>
+              <Field label="Taille (cm)" htmlFor="taille" error={errors.taille}>
+                <input
+                  {...text("taille")}
+                  type="number"
+                  inputMode="numeric"
+                  min={120}
+                  max={230}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Couleur des yeux" htmlFor="couleurYeux">
+                <select {...text("couleurYeux")} className={selectClass}>
+                  <option value="">Choisir…</option>
+                  {["Noir", "Marron", "Noisette", "Vert", "Bleu"].map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Couleur des cheveux" htmlFor="couleurCheveux">
+                <select {...text("couleurCheveux")} className={selectClass}>
+                  <option value="">Choisir…</option>
+                  {["Noir", "Brun", "Châtain", "Gris", "Blanc", "Chauve"].map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                label="Signes particuliers"
+                htmlFor="signeParticulier"
+                className="sm:col-span-2 lg:col-span-3"
+              >
+                <input {...text("signeParticulier")} placeholder="Néant" className={inputClass} />
+              </Field>
+            </Grid>
+          </Panel>
 
-      <Panel
-        title="Pièces justificatives"
-        description="PDF, JPG ou PNG. La photo et la pièce d'identité sont requises pour le livret."
-      >
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {(Object.keys(DOC_LABELS) as DocKey[]).map((k) => {
-            const file = v.documents[k];
-            return (
-              <li key={k} className="flex items-center gap-3 rounded-lg border p-3">
-                <span
-                  className={`grid size-9 shrink-0 place-items-center rounded-md ${file ? "bg-success/12 text-success" : "bg-muted text-muted-foreground"}`}
-                >
-                  {file ? <FileCheck2 className="size-4" /> : <Paperclip className="size-4" />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{DOC_LABELS[k]}</div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {file ?? "Aucun fichier"}
-                  </div>
-                </div>
-                {file ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => up("documents", { ...v.documents, [k]: undefined })}
-                    aria-label={`Retirer ${DOC_LABELS[k]}`}
-                  >
-                    <X />
-                  </Button>
-                ) : (
-                  <label className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-muted">
-                    Joindre
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="sr-only"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) up("documents", { ...v.documents, [k]: f.name });
-                      }}
-                    />
-                  </label>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </Panel>
+          <Panel title="Situation matrimoniale">
+            <Grid>
+              <Field label="Situation" htmlFor="situationMatrimoniale">
+                <select {...text("situationMatrimoniale")} className={selectClass}>
+                  <option value="">Choisir…</option>
+                  {SITUATIONS.map((n) => (
+                    <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+              {marie && (
+                <>
+                  <Field label="Date de mariage" htmlFor="dateMariage">
+                    <input {...text("dateMariage")} type="date" className={inputClass} />
+                  </Field>
+                  <Field label="Lieu de mariage" htmlFor="lieuMariage">
+                    <input {...text("lieuMariage")} className={inputClass} />
+                  </Field>
+                </>
+              )}
+            </Grid>
+          </Panel>
 
-      <div className="sticky bottom-0 -mx-4 flex justify-end gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
-        {touched && Object.keys(errors).length > 0 && (
-          <p className="mr-auto self-center text-xs text-destructive">
-            {Object.keys(errors).length} champ(s) à corriger.
-          </p>
+          <Panel
+            title="Pièces justificatives"
+            description="Téléversement sécurisé — PDF, JPG ou PNG. Photo et CNI/Passeport requises pour le livret."
+          >
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {FORM_DOCS.map((k) => {
+                const file = v.documents[k];
+                const isPhoto = k === "photo" && file?.startsWith("data:");
+                return (
+                  <li key={k} className="flex items-center gap-3 rounded-lg border p-3">
+                    {isPhoto ? (
+                      <img
+                        src={file}
+                        alt="Photo d'identité"
+                        className="size-12 shrink-0 rounded-md object-cover"
+                      />
+                    ) : (
+                      <span
+                        className={cn(
+                          "grid size-12 shrink-0 place-items-center rounded-md",
+                          file ? "bg-success/12 text-success" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {k === "photo" && !file ? (
+                          <User className="size-5" />
+                        ) : file ? (
+                          <FileCheck2 className="size-5" />
+                        ) : (
+                          <Paperclip className="size-5" />
+                        )}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium">
+                        {DOC_LABELS[k]}
+                        {(k === "photo" || k === "piece") && (
+                          <span className="ml-0.5 text-destructive">*</span>
+                        )}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {isPhoto ? "Photo chargée" : (file ?? "Aucun fichier")}
+                      </div>
+                    </div>
+                    {file ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const { [k]: _removed, ...rest } = v.documents;
+                          up("documents", rest);
+                        }}
+                        aria-label={`Retirer ${DOC_LABELS[k]}`}
+                      >
+                        <X />
+                      </Button>
+                    ) : (
+                      <label className="cursor-pointer rounded-md border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-muted">
+                        Joindre
+                        <input
+                          type="file"
+                          accept={k === "photo" ? "image/*" : ".pdf,.jpg,.jpeg,.png"}
+                          className="sr-only"
+                          onChange={async (e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            const val =
+                              k === "photo" && f.type.startsWith("image/")
+                                ? await readPhoto(f).catch(() => f.name)
+                                : f.name;
+                            setV((s) => ({ ...s, documents: { ...s.documents, [k]: val } }));
+                          }}
+                        />
+                      </label>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </Panel>
+        </div>
+      )}
+
+      <div className="sticky bottom-0 -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
+        {nbErr > 0 && (
+          <p className="mr-auto text-xs text-destructive">{nbErr} champ(s) à corriger.</p>
         )}
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" variant="gold">
-          <Save /> {submitLabel}
-        </Button>
+        {step === 2 && (
+          <Button type="button" variant="outline" onClick={() => setStep(1)}>
+            <ArrowLeft /> Volet 1
+          </Button>
+        )}
+        {step === 1 ? (
+          <Button type="submit" variant="gold">
+            Volet 2 : signalement & documents <ArrowRight />
+          </Button>
+        ) : (
+          <Button type="submit" variant="gold">
+            <Save /> {submitLabel}
+          </Button>
+        )}
       </div>
     </form>
   );

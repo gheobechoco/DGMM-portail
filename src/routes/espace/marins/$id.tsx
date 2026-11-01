@@ -1,22 +1,29 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   BookOpenCheck,
   Check,
   CheckCircle2,
   CircleAlert,
+  Eye,
   FileCheck2,
+  FilePen,
   Paperclip,
   Pencil,
   Printer,
+  ShieldCheck,
   Stethoscope,
+  UserPlus,
   UserX,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { RequirePerm } from "@/components/dgmm/Guard";
-import { EmptyState, Info, Panel } from "@/components/dgmm/Page";
+import { EmptyState, Info, Panel, textareaClass } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
+import { EtatCertificatPill, MarinPhoto, VerdictPill } from "@/components/dgmm/MarinBits";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { can } from "@/lib/dgmm/rules";
@@ -27,6 +34,7 @@ import {
   delivrerLivret,
   dossierIncomplet,
   eligibleLivret,
+  etatCertificat,
   formatDate,
   fullName,
   lastCertificate,
@@ -36,21 +44,16 @@ import {
   useMarins,
   useVisites,
   type DocKey,
+  type Evenement,
   type Marin,
   type Visite,
 } from "@/lib/dgmm/store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/espace/marins/$id")({
-  head: () => ({ meta: [{ title: "Dossier marin — GDM | DGMM" }] }),
+  head: () => ({ meta: [{ title: "Fiche marin — GDM | DGMM" }] }),
   component: () => <RequirePerm perm="marins">{(s) => <Fiche session={s} />}</RequirePerm>,
 });
-
-const VERDICT: Record<string, string> = {
-  apte: "Apte",
-  apte_restrictions: "Apte avec restrictions",
-  inapte: "Inapte",
-  "": "—",
-};
 
 function Fiche({ session }: { session: Account }) {
   const { id } = Route.useParams();
@@ -74,6 +77,8 @@ function Fiche({ session }: { session: Account }) {
   const cert = lastCertificate(visites, m.id);
   const st = marinCertStatus(visites, m.id);
   const a = age(m);
+  const ecriture = can(session.role, "marins.creer");
+  const draft = mv.find((v) => !v.signee);
 
   return (
     <>
@@ -87,15 +92,23 @@ function Fiche({ session }: { session: Account }) {
       <section className="overflow-hidden rounded-xl border bg-card shadow-card">
         <div className="bg-navy-gradient px-5 py-5 text-primary-foreground sm:px-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <span className="grid size-16 shrink-0 place-items-center rounded-full border-2 border-gold bg-primary-foreground/10 font-display text-xl font-bold">
-              {m.nom[0]}
-              {m.prenom[0]}
-            </span>
+            <MarinPhoto
+              m={m}
+              className="size-20 shrink-0 rounded-xl border-2 border-gold text-xl"
+            />
             <div className="min-w-0 flex-1">
-              <h1 className="font-display text-2xl font-bold">{fullName(m)}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-2xl font-bold">{fullName(m)}</h1>
+                {!ecriture && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/10 px-2 py-0.5 text-[11px] font-semibold">
+                    <Eye className="size-3" /> Lecture seule
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 text-sm text-primary-foreground/75">
                 {m.profession}
                 {a !== null && ` · ${a} ans`} · {m.nationalite}
+                {m.entreprise && ` · ${m.entreprise}`}
               </p>
               <p className="mt-1 font-mono text-xs text-gold">
                 NIP {m.nip}
@@ -103,7 +116,7 @@ function Fiche({ session }: { session: Account }) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {can(session.role, "marins.creer") && (
+              {ecriture && (
                 <Button
                   asChild
                   size="sm"
@@ -115,21 +128,27 @@ function Fiche({ session }: { session: Account }) {
                   </Link>
                 </Button>
               )}
-              {can(session.role, "visites") && (
+              {can(session.role, "visites.saisir") && m.validationAdmin === "validee" && (
                 <Button asChild size="sm" variant="gold">
-                  <Link to="/espace/visites/nouvelle" search={{ marin: m.id }}>
-                    <Stethoscope /> Nouvelle visite
-                  </Link>
+                  {draft ? (
+                    <Link to="/espace/visites/modifier/$id" params={{ id: String(draft.id) }}>
+                      <FilePen /> Reprendre la visite
+                    </Link>
+                  ) : (
+                    <Link to="/espace/visites/nouvelle" search={{ marin: m.id }}>
+                      <Stethoscope /> Nouvelle visite
+                    </Link>
+                  )}
                 </Button>
               )}
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <div className="grid grid-cols-1 divide-y sm:grid-cols-4 sm:divide-x sm:divide-y-0">
           <StatusCell label="Validation administrative">
             <StatusPill status={m.validationAdmin} />
           </StatusCell>
-          <StatusCell label="Aptitude médicale">
+          <StatusCell label="Validation médicale">
             <StatusPill
               status={m.validationMedicale}
               label={
@@ -145,15 +164,22 @@ function Fiche({ session }: { session: Account }) {
             <StatusPill status={st} />
             {cert && (
               <span className="text-xs text-muted-foreground">
-                jusqu'au {formatDate(cert.stcw.validJusquau)}
+                → {formatDate(cert.stcw.validJusquau)}
               </span>
+            )}
+          </StatusCell>
+          <StatusCell label="Livret maritime">
+            {m.livret ? (
+              <span className="font-mono text-sm font-semibold text-primary">{m.livret}</span>
+            ) : (
+              <StatusPill status="aucun" label="Non délivré" />
             )}
           </StatusCell>
         </div>
       </section>
 
       {can(session.role, "marins.valider_admin") && m.validationAdmin === "en_attente" && (
-        <ValidationBar m={m} />
+        <ValidationPanel m={m} auteur={session.nom} />
       )}
 
       <Tabs defaultValue="dossier" className="mt-6">
@@ -163,7 +189,8 @@ function Fiche({ session }: { session: Account }) {
             Pièces ({Object.values(m.documents).filter(Boolean).length})
           </TabsTrigger>
           <TabsTrigger value="visites">Visites médicales ({mv.length})</TabsTrigger>
-          <TabsTrigger value="livret">Livret maritime</TabsTrigger>
+          <TabsTrigger value="livret">Livret</TabsTrigger>
+          <TabsTrigger value="historique">Historique ({m.historique?.length ?? 0})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dossier" className="mt-4 grid gap-6 lg:grid-cols-2">
@@ -176,14 +203,14 @@ function Fiche({ session }: { session: Account }) {
               </Info>
               <Info label="Date de naissance">{formatDate(m.dateNaissance)}</Info>
               <Info label="Nationalité">{m.nationalite}</Info>
-              <Info label="Mariage">
-                {m.dateMariage
-                  ? `${formatDate(m.dateMariage)}${m.lieuMariage ? ` · ${m.lieuMariage}` : ""}`
-                  : ""}
+              <Info label="Situation matrimoniale">
+                {m.situationMatrimoniale}
+                {m.dateMariage &&
+                  ` · ${formatDate(m.dateMariage)}${m.lieuMariage ? `, ${m.lieuMariage}` : ""}`}
               </Info>
             </dl>
           </Panel>
-          <Panel title="Coordonnées">
+          <Panel title="Contact">
             <dl className="grid grid-cols-2 gap-4">
               <Info label="Téléphone">{m.tel1}</Info>
               <Info label="Téléphone 2">{m.tel2}</Info>
@@ -191,10 +218,10 @@ function Fiche({ session }: { session: Account }) {
               <Info label="Quartier">{m.quartier}</Info>
             </dl>
           </Panel>
-          <Panel title="Situation maritime">
+          <Panel title="Activité maritime">
             <dl className="grid grid-cols-2 gap-4">
-              <Info label="Fonction">{m.profession}</Info>
-              <Info label="Armateur">{m.entreprise}</Info>
+              <Info label="Profession">{m.profession}</Info>
+              <Info label="Entreprise maritime">{m.entreprise}</Info>
               <Info label="Quartier d'inscription">{m.quartierInscription}</Info>
               <Info label="Identifiant marin">{m.login}</Info>
             </dl>
@@ -204,7 +231,7 @@ function Fiche({ session }: { session: Account }) {
               <Info label="Taille">{m.taille ? `${m.taille} cm` : ""}</Info>
               <Info label="Yeux">{m.couleurYeux}</Info>
               <Info label="Cheveux">{m.couleurCheveux}</Info>
-              <Info label="Signe particulier">{m.signeParticulier}</Info>
+              <Info label="Signes particuliers">{m.signeParticulier}</Info>
             </dl>
           </Panel>
           <p className="text-xs text-muted-foreground lg:col-span-2">
@@ -214,26 +241,7 @@ function Fiche({ session }: { session: Account }) {
 
         <TabsContent value="documents" className="mt-4">
           <Panel title="Pièces justificatives">
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {(Object.keys(DOC_LABELS) as DocKey[]).map((k) => {
-                const f = m.documents[k];
-                return (
-                  <li key={k} className="flex items-center gap-3 rounded-lg border p-3">
-                    <span
-                      className={`grid size-9 place-items-center rounded-md ${f ? "bg-success/12 text-success" : "bg-muted text-muted-foreground"}`}
-                    >
-                      {f ? <FileCheck2 className="size-4" /> : <Paperclip className="size-4" />}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium">{DOC_LABELS[k]}</div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {f ?? "Non fourni"}
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <DocsList m={m} />
           </Panel>
         </TabsContent>
 
@@ -242,14 +250,23 @@ function Fiche({ session }: { session: Account }) {
         </TabsContent>
 
         <TabsContent value="livret" className="mt-4">
-          <LivretPanel m={m} canIssue={can(session.role, "marins.livret")} />
+          <LivretPanel m={m} canIssue={can(session.role, "marins.livret")} auteur={session.nom} />
+        </TabsContent>
+
+        <TabsContent value="historique" className="mt-4">
+          <Panel
+            title="Historique du dossier"
+            description="Toutes les étapes administratives et médicales, de la plus récente à la plus ancienne."
+          >
+            <Timeline events={m.historique ?? []} />
+          </Panel>
         </TabsContent>
       </Tabs>
     </>
   );
 }
 
-function StatusCell({ label, children }: { label: string; children: React.ReactNode }) {
+function StatusCell({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="px-5 py-3">
       <div className="mb-1 text-xs text-muted-foreground">{label}</div>
@@ -258,47 +275,147 @@ function StatusCell({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-function ValidationBar({ m }: { m: Marin }) {
-  const miss = dossierIncomplet(m) ? manquants(m) : [];
+function DocsList({ m }: { m: Marin }) {
   return (
-    <div className="mt-4 flex flex-col gap-3 rounded-xl border border-warning/40 bg-warning/8 p-4 sm:flex-row sm:items-center">
-      <CircleAlert className="size-5 shrink-0 text-warning" />
-      <div className="flex-1 text-sm">
-        <div className="font-semibold text-primary">
-          Dossier en attente de validation administrative
-        </div>
-        <div className="text-muted-foreground">
-          {miss.length
-            ? `Éléments manquants : ${miss.join(", ")}.`
-            : "Toutes les pièces requises sont présentes."}
+    <ul className="grid gap-3 sm:grid-cols-2">
+      {(Object.keys(DOC_LABELS) as DocKey[]).map((k) => {
+        const f = m.documents[k];
+        const photo = k === "photo" && f?.startsWith("data:");
+        return (
+          <li key={k} className="flex items-center gap-3 rounded-lg border p-3">
+            {photo ? (
+              <MarinPhoto m={m} className="size-10 rounded-md" />
+            ) : (
+              <span
+                className={cn(
+                  "grid size-10 place-items-center rounded-md",
+                  f ? "bg-success/12 text-success" : "bg-muted text-muted-foreground",
+                )}
+              >
+                {f ? <FileCheck2 className="size-4" /> : <Paperclip className="size-4" />}
+              </span>
+            )}
+            <div className="min-w-0">
+              <div className="text-sm font-medium">{DOC_LABELS[k]}</div>
+              <div className="truncate text-xs text-muted-foreground">
+                {photo ? "Photo d'identité" : (f ?? "Non fourni")}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Étape 5 : contrôle des pièces puis validation (ou rejet motivé) du dossier. */
+function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
+  const [rejet, setRejet] = useState(false);
+  const [motif, setMotif] = useState("");
+  const pieces: [string, boolean][] = [
+    ["Photo d'identité", !!m.documents.photo],
+    ["CNI / Passeport", !!m.documents.piece],
+    ["Justificatif de domicile", !!m.documents.residence],
+    ["Contrat de travail", !!m.documents.contrat],
+  ];
+  const miss = manquants(m).filter((x) => !["Photo d'identité", "Pièce d'identité"].includes(x));
+  const required = !!m.documents.photo && !!m.documents.piece;
+  return (
+    <section className="mt-4 rounded-xl border border-warning/40 bg-warning/8 p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <CircleAlert className="mt-0.5 size-5 shrink-0 text-warning" />
+        <div className="flex-1">
+          <h2 className="font-display font-semibold text-primary">
+            Validation administrative du dossier
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Contrôlez les pièces avant de valider. La validation ouvre l'accès à la visite médicale
+            d'aptitude.
+          </p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {pieces.map(([label, ok]) => (
+              <li key={label} className="flex items-center gap-2 text-sm">
+                <span
+                  className={cn(
+                    "grid size-5 place-items-center rounded-full",
+                    ok
+                      ? "bg-success text-success-foreground"
+                      : "bg-destructive/12 text-destructive",
+                  )}
+                >
+                  {ok ? <Check className="size-3" /> : <XCircle className="size-3" />}
+                </span>
+                <span className={ok ? "" : "text-muted-foreground"}>{label}</span>
+              </li>
+            ))}
+          </ul>
+          {miss.length > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Signalement à compléter avant le livret : {miss.join(", ")}.
+            </p>
+          )}
+          {rejet && (
+            <div className="mt-3">
+              <label htmlFor="motif" className="text-sm font-medium">
+                Motif du rejet
+              </label>
+              <textarea
+                id="motif"
+                value={motif}
+                onChange={(e) => setMotif(e.target.value)}
+                className={cn(textareaClass, "mt-1 min-h-16")}
+                placeholder="Ex. pièce d'identité illisible"
+              />
+            </div>
+          )}
         </div>
       </div>
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => {
-            setValidationAdmin(m.id, "rejetee");
-            toast.error("Dossier rejeté");
-          }}
-        >
-          <XCircle /> Rejeter
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => {
-            setValidationAdmin(m.id, "validee");
-            toast.success("Dossier validé", {
-              description: "Le marin peut passer la visite médicale d'aptitude.",
-            });
-          }}
-        >
-          <CheckCircle2 /> Valider
-        </Button>
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        {rejet ? (
+          <>
+            <Button size="sm" variant="ghost" onClick={() => setRejet(false)}>
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={!motif.trim()}
+              onClick={() => {
+                setValidationAdmin(m.id, "rejetee", auteur, motif.trim());
+                toast.error("Dossier rejeté", { description: motif.trim() });
+              }}
+            >
+              <XCircle /> Confirmer le rejet
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setRejet(true)}
+            >
+              <XCircle /> Rejeter
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={!required}
+              title={required ? undefined : "Photo et CNI/Passeport requises"}
+              onClick={() => {
+                setValidationAdmin(m.id, "validee", auteur);
+                toast.success("Dossier validé", {
+                  description: "Le marin est ajouté à la file active de la visite médicale.",
+                });
+              }}
+            >
+              <CheckCircle2 /> Valider le dossier
+            </Button>
+          </>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -319,10 +436,10 @@ export function VisitesTable({ visites }: { visites: Visite[] }) {
           <tr>
             <th className="px-4 py-2.5 font-semibold">N° visite</th>
             <th className="px-3 py-2.5 font-semibold">Date</th>
-            <th className="px-3 py-2.5 font-semibold">Praticien</th>
-            <th className="px-3 py-2.5 font-semibold">Décision</th>
-            <th className="px-3 py-2.5 font-semibold">Valide jusqu'au</th>
-            <th className="px-4 py-2.5 font-semibold">État</th>
+            <th className="px-3 py-2.5 font-semibold">Médecin</th>
+            <th className="px-3 py-2.5 font-semibold">Verdict</th>
+            <th className="px-3 py-2.5 font-semibold">Échéance</th>
+            <th className="px-4 py-2.5 font-semibold">Certificat</th>
           </tr>
         </thead>
         <tbody className="divide-y">
@@ -338,15 +455,13 @@ export function VisitesTable({ visites }: { visites: Visite[] }) {
                 </Link>
               </td>
               <td className="px-3 py-2.5 tabular-nums">{formatDate(v.creeLe)}</td>
-              <td className="px-3 py-2.5 text-muted-foreground">{v.praticien}</td>
-              <td className="px-3 py-2.5">{VERDICT[v.stcw.verdict]}</td>
+              <td className="px-3 py-2.5 text-muted-foreground">{v.signataire || v.praticien}</td>
+              <td className="px-3 py-2.5">
+                {v.stcw.verdict ? <VerdictPill verdict={v.stcw.verdict} /> : "—"}
+              </td>
               <td className="px-3 py-2.5 tabular-nums">{formatDate(v.stcw.validJusquau)}</td>
               <td className="px-4 py-2.5">
-                {v.signee ? (
-                  <StatusPill status="validee" label="Signée" />
-                ) : (
-                  <StatusPill status="en_attente" label="Brouillon" />
-                )}
+                <EtatCertificatPill etat={etatCertificat(v)} />
               </td>
             </tr>
           ))}
@@ -356,14 +471,62 @@ export function VisitesTable({ visites }: { visites: Visite[] }) {
   );
 }
 
-function LivretPanel({ m, canIssue }: { m: Marin; canIssue: boolean }) {
+const EVENT_ICONS: Record<Evenement["type"], LucideIcon> = {
+  creation: UserPlus,
+  modification: Pencil,
+  admin: ShieldCheck,
+  medical: Stethoscope,
+  livret: BookOpenCheck,
+};
+const EVENT_TONES: Record<Evenement["type"], string> = {
+  creation: "bg-primary-soft text-primary",
+  modification: "bg-muted text-muted-foreground",
+  admin: "bg-secondary/12 text-secondary",
+  medical: "bg-success/12 text-success",
+  livret: "bg-gold/25 text-gold-foreground",
+};
+
+function Timeline({ events }: { events: Evenement[] }) {
+  if (!events.length) return <EmptyState icon={FilePen} title="Aucun événement enregistré" />;
+  const sorted = [...events].sort((a, b) => b.date.localeCompare(a.date));
+  return (
+    <ol className="relative space-y-5 border-l pl-6">
+      {sorted.map((e, i) => {
+        const Icon = EVENT_ICONS[e.type];
+        return (
+          <li key={i} className="relative">
+            <span
+              className={cn(
+                "absolute -left-[37px] grid size-7 place-items-center rounded-full ring-4 ring-card",
+                EVENT_TONES[e.type],
+              )}
+            >
+              <Icon className="size-3.5" />
+            </span>
+            <div className="text-sm font-medium text-foreground">{e.action}</div>
+            <div className="text-xs text-muted-foreground">
+              {new Date(e.date).toLocaleDateString("fr-FR", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              · {e.auteur}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function LivretPanel({ m, canIssue, auteur }: { m: Marin; canIssue: boolean; auteur: string }) {
   const visites = useVisites();
   const st = marinCertStatus(visites, m.id);
   const checks: [string, boolean][] = [
-    ["Validation administrative", m.validationAdmin === "validee"],
-    ["Aptitude médicale validée", m.validationMedicale === "validee"],
+    ["Validation administrative DGMM", m.validationAdmin === "validee"],
+    ["Validation médicale (centre agréé)", m.validationMedicale === "validee"],
     ["Certificat STCW en cours de validité", st === "valide" || st === "expire_bientot"],
-    ["Dossier complet (signalement, photo, pièce d'identité)", !dossierIncomplet(m)],
+    ["Dossier complet (signalement, photo, CNI/Passeport)", !dossierIncomplet(m)],
   ];
   const ok = eligibleLivret(m, visites);
   const miss = manquants(m);
@@ -371,13 +534,18 @@ function LivretPanel({ m, canIssue }: { m: Marin; canIssue: boolean }) {
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <Panel
         title="Conditions de délivrance"
-        description="Le livret maritime sécurisé n'est délivré qu'aux marins remplissant toutes les conditions."
+        description="Le livret n'est délivré qu'après la double validation administrative et médicale."
       >
         <ul className="space-y-2.5">
           {checks.map(([label, pass]) => (
             <li key={label} className="flex items-center gap-2.5 text-sm">
               <span
-                className={`grid size-5 place-items-center rounded-full ${pass ? "bg-success text-success-foreground" : "bg-destructive/12 text-destructive"}`}
+                className={cn(
+                  "grid size-5 place-items-center rounded-full",
+                  pass
+                    ? "bg-success text-success-foreground"
+                    : "bg-destructive/12 text-destructive",
+                )}
               >
                 {pass ? <Check className="size-3" /> : <XCircle className="size-3" />}
               </span>
@@ -394,7 +562,7 @@ function LivretPanel({ m, canIssue }: { m: Marin; canIssue: boolean }) {
       <Panel title="Livret maritime">
         <div className="flex flex-col items-center text-center">
           <BookOpenCheck
-            className={`size-10 ${m.livret ? "text-secondary" : "text-muted-foreground"}`}
+            className={cn("size-10", m.livret ? "text-secondary" : "text-muted-foreground")}
           />
           <div className="mt-2 font-mono text-lg font-bold text-primary">
             {m.livret || "Non délivré"}
@@ -403,7 +571,7 @@ function LivretPanel({ m, canIssue }: { m: Marin; canIssue: boolean }) {
             {m.livret ? (
               <Button asChild variant="outline">
                 <Link to="/espace/livrets/$id" params={{ id: String(m.id) }}>
-                  <Printer /> Voir / imprimer le livret
+                  <Printer /> Attestation de délivrance
                 </Link>
               </Button>
             ) : canIssue ? (
@@ -411,15 +579,15 @@ function LivretPanel({ m, canIssue }: { m: Marin; canIssue: boolean }) {
                 variant="gold"
                 disabled={!ok}
                 onClick={() => {
-                  const n = delivrerLivret(m.id);
+                  const n = delivrerLivret(m.id, auteur);
                   toast.success(`Livret ${n} délivré`);
                 }}
               >
-                <BookOpenCheck /> Délivrer le livret
+                <BookOpenCheck /> Générer le n° de livret
               </Button>
             ) : (
               <p className="text-xs text-muted-foreground">
-                La délivrance relève du gestionnaire de la Marine Marchande.
+                La délivrance relève du Gestionnaire Marine Marchande.
               </p>
             )}
           </div>

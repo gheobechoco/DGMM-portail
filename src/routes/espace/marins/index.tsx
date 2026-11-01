@@ -12,6 +12,7 @@ import {
   marinCertStatus,
   useMarins,
   useVisites,
+  ENTREPRISES,
   type Etat,
 } from "@/lib/dgmm/store";
 
@@ -20,8 +21,10 @@ type Cert = "tous" | CertStatus;
 
 interface Search {
   q?: string | undefined;
-  statut?: Statut | undefined;
+  admin?: Etat | undefined;
+  medical?: Etat | undefined;
   cert?: Cert | undefined;
+  armateur?: string | undefined;
 }
 
 const STATUTS: Statut[] = ["tous", "en_attente", "validee", "rejetee"];
@@ -30,10 +33,15 @@ const CERTS: Cert[] = ["tous", "valide", "expire_bientot", "expire", "aucun"];
 export const Route = createFileRoute("/espace/marins/")({
   validateSearch: (s: Record<string, unknown>): Search => ({
     q: typeof s["q"] === "string" && s["q"] ? s["q"] : undefined,
-    statut:
-      STATUTS.includes(s["statut"] as Statut) && s["statut"] !== "tous"
-        ? (s["statut"] as Statut)
+    admin:
+      STATUTS.includes(s["admin"] as Statut) && s["admin"] !== "tous"
+        ? (s["admin"] as Etat)
         : undefined,
+    medical:
+      STATUTS.includes(s["medical"] as Statut) && s["medical"] !== "tous"
+        ? (s["medical"] as Etat)
+        : undefined,
+    armateur: typeof s["armateur"] === "string" && s["armateur"] ? s["armateur"] : undefined,
     cert:
       CERTS.includes(s["cert"] as Cert) && s["cert"] !== "tous" ? (s["cert"] as Cert) : undefined,
   }),
@@ -50,7 +58,7 @@ function norm(s: string) {
 }
 
 function MarinsList({ canCreate }: { canCreate: boolean }) {
-  const { q = "", statut = "tous", cert = "tous" } = Route.useSearch();
+  const { q = "", admin, medical, cert = "tous", armateur } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const marins = useMarins();
   const visites = useVisites();
@@ -67,12 +75,14 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
           ).includes(nq)
         )
           return false;
-        if (statut !== "tous" && m.validationAdmin !== statut && m.validationMedicale !== statut)
-          return false;
+        if (admin && m.validationAdmin !== admin) return false;
+        if (medical && m.validationMedicale !== medical) return false;
+        if (armateur && m.entreprise !== armateur) return false;
         if (cert !== "tous" && st !== cert) return false;
         return true;
       });
-  }, [marins, visites, q, statut, cert]);
+  }, [marins, visites, q, admin, medical, cert, armateur]);
+  const filtered = !!(q || admin || medical || armateur || cert !== "tous");
 
   const set = (patch: Partial<Search>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
@@ -95,30 +105,45 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
       />
 
       <Panel bodyClassName="p-0">
-        <div className="grid gap-3 border-b p-4 sm:grid-cols-[1fr_200px_200px]">
+        <div className="grid gap-3 border-b p-4 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_repeat(4,170px)]">
           <label className="field-dgmm flex h-10 items-center gap-2 rounded-md bg-card px-3">
             <Search className="size-4 text-muted-foreground" />
             <span className="sr-only">Rechercher</span>
             <input
               value={q}
               onChange={(e) => set({ q: e.target.value || undefined })}
-              placeholder="Nom, NIP, n° de livret, fonction…"
+              placeholder="NIP, nom, prénom, métier, armateur…"
               className="h-full flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </label>
           <label>
-            <span className="sr-only">Statut de validation</span>
+            <span className="sr-only">Validation administrative</span>
             <select
               className={selectClass}
-              value={statut}
+              value={admin ?? "tous"}
               onChange={(e) =>
-                set({ statut: e.target.value === "tous" ? undefined : (e.target.value as Statut) })
+                set({ admin: e.target.value === "tous" ? undefined : (e.target.value as Etat) })
               }
             >
-              <option value="tous">Toutes validations</option>
-              <option value="en_attente">En attente</option>
-              <option value="validee">Validées</option>
-              <option value="rejetee">Rejetées</option>
+              <option value="tous">Administratif : tous</option>
+              <option value="en_attente">Admin. en attente</option>
+              <option value="validee">Admin. validé</option>
+              <option value="rejetee">Admin. rejeté</option>
+            </select>
+          </label>
+          <label>
+            <span className="sr-only">Statut médical</span>
+            <select
+              className={selectClass}
+              value={medical ?? "tous"}
+              onChange={(e) =>
+                set({ medical: e.target.value === "tous" ? undefined : (e.target.value as Etat) })
+              }
+            >
+              <option value="tous">Médical : tous</option>
+              <option value="en_attente">Visite en attente</option>
+              <option value="validee">Apte</option>
+              <option value="rejetee">Inapte</option>
             </select>
           </label>
           <label>
@@ -135,6 +160,19 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
               <option value="expire_bientot">À renouveler</option>
               <option value="expire">Expiré</option>
               <option value="aucun">Sans certificat</option>
+            </select>
+          </label>
+          <label>
+            <span className="sr-only">Armateur</span>
+            <select
+              className={selectClass}
+              value={armateur ?? ""}
+              onChange={(e) => set({ armateur: e.target.value || undefined })}
+            >
+              <option value="">Tous armateurs</option>
+              {ENTREPRISES.map((e) => (
+                <option key={e}>{e}</option>
+              ))}
             </select>
           </label>
         </div>
@@ -250,8 +288,19 @@ function MarinsList({ canCreate }: { canCreate: boolean }) {
             </ul>
           </>
         )}
-        <div className="border-t px-4 py-2.5 text-xs text-muted-foreground">
-          {rows.length} résultat{rows.length > 1 ? "s" : ""} sur {marins.length}
+        <div className="flex items-center justify-between border-t px-4 py-2.5 text-xs text-muted-foreground">
+          <span>
+            {rows.length} résultat{rows.length > 1 ? "s" : ""} sur {marins.length}
+          </span>
+          {filtered && (
+            <button
+              type="button"
+              className="font-semibold text-primary hover:underline"
+              onClick={() => navigate({ search: {}, replace: true })}
+            >
+              Réinitialiser les filtres
+            </button>
+          )}
         </div>
       </Panel>
     </>

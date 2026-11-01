@@ -9,14 +9,31 @@ export type Permission =
   | "marins.valider_admin"
   | "marins.livret"
   | "visites"
-  | "visites.signer";
+  | "visites.saisir"
+  | "visites.signer"
+  | "certificats.imprimer";
 
+/**
+ * Matrice des droits (RBAC) :
+ * - Gestionnaire MM : pilotage complet, fiches en écriture, enrôlement, validation administrative,
+ *   délivrance du livret, impression des certificats.
+ * - RH Marine : pilotage restreint RH, fiches en écriture, enrôlement, validation administrative.
+ * - Médecin du travail : tableau de bord santé, fiches en lecture seule, saisie et signature des visites,
+ *   impression des certificats.
+ * - Gestionnaire médical : tableau de bord santé, fiches en lecture seule, saisie des visites (sans signature),
+ *   impression des certificats.
+ */
 const PERMISSIONS: Record<Role, Permission[]> = {
-  gestionnaire_mm: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "marins.livret"],
-  rh_marine: ["marins", "marins.creer", "marins.valider_admin"],
-  medecin: ["marins", "marins.creer", "visites", "visites.signer"],
-  gestionnaire_medical: ["dashboard", "marins", "marins.creer"],
+  gestionnaire_mm: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "marins.livret", "visites", "certificats.imprimer"],
+  rh_marine: ["dashboard", "marins", "marins.creer", "marins.valider_admin"],
+  medecin: ["dashboard", "marins", "visites", "visites.saisir", "visites.signer", "certificats.imprimer"],
+  gestionnaire_medical: ["dashboard", "marins", "visites", "visites.saisir", "certificats.imprimer"],
 };
+
+/** Profil de tableau de bord : pilotage administratif ou santé. */
+export function profil(role: Role): "pilotage" | "medical" {
+  return role === "medecin" || role === "gestionnaire_medical" ? "medical" : "pilotage";
+}
 
 export function can(role: Role | undefined, perm: Permission): boolean {
   if (!role) return false;

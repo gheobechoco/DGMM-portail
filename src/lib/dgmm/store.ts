@@ -26,6 +26,8 @@ export interface Marin {
   quartierInscription: string;
   dateMariage: string;
   lieuMariage: string;
+  situationMatrimoniale?: string | undefined;
+  historique?: Evenement[] | undefined;
   documents: Partial<Record<DocKey, string>>;
   validationAdmin: Etat;
   validationMedicale: Etat;
@@ -36,12 +38,19 @@ export interface Marin {
   modifieLe: string;
 }
 
+export interface Evenement {
+  date: string;
+  action: string;
+  auteur: string;
+  type: "creation" | "modification" | "admin" | "medical" | "livret";
+}
+
 export type DocKey = "photo" | "piece" | "certificat" | "residence" | "contrat" | "livret";
 export const DOC_LABELS: Record<DocKey, string> = {
   photo: "Photo d'identité",
-  piece: "Pièce d'identité",
+  piece: "CNI / Passeport",
   certificat: "Certificat d'aptitude",
-  residence: "Certificat de résidence",
+  residence: "Justificatif de domicile",
   contrat: "Contrat de travail",
   livret: "Livret maritime (ancien)",
 };
@@ -54,12 +63,26 @@ export interface Stcw {
   couleurs: OuiNon;
   dateTestCouleurs: string;
   veille: OuiNon;
+  visionBinoculaire: OuiNon;
+  communicationUrgence: OuiNon;
   aidesVisuelles: OuiNon;
   exemptAffection: OuiNon;
-  verdict: "apte" | "apte_restrictions" | "inapte" | "";
+  verdict: Verdict;
   details: string;
   dateDelivrance: string;
   validJusquau: string;
+}
+
+export type Verdict = "apte" | "apte_restrictions" | "inapte_temporaire" | "inapte" | "";
+export const VERDICT_LABELS: Record<Verdict, string> = {
+  apte: "Apte sans restriction",
+  apte_restrictions: "Apte avec restrictions",
+  inapte_temporaire: "Inapte temporaire",
+  inapte: "Inapte définitif",
+  "": "Non renseigné",
+};
+export function isInapte(v: Verdict) {
+  return v === "inapte" || v === "inapte_temporaire";
 }
 
 export interface Visite {
@@ -69,13 +92,24 @@ export interface Visite {
   praticien: string;
   creeLe: string;
   traiteLe: string;
-  examens: { taille: string; poids: string; tension: string; pouls: string; vision: string; audition: string; observations: string };
+  examens: {
+    taille: string;
+    poids: string;
+    tension: string;
+    pouls: string;
+    vision: string;
+    visionCorrigee?: string | undefined;
+    audition: string;
+    observations: string;
+  };
   complementaires: string;
   recommandations: string;
   documents: { type: string; nom: string; date: string }[];
   stcw: Stcw;
   signee: boolean;
   signataire: string;
+  revoquee?: boolean | undefined;
+  motifRevocation?: string | undefined;
 }
 
 interface State {
@@ -83,7 +117,7 @@ interface State {
   visites: Visite[];
 }
 
-const KEY = "dgmm-gdm-v1";
+const KEY = "dgmm-gdm-v2";
 
 function iso(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -107,7 +141,7 @@ function genNip(id: number, d = new Date()) {
 function emptyStcw(): Stcw {
   return {
     identiteVerifiee: "", acuiteVisuelle: "", auditiveSansAide: "", acuiteAuditive: "", couleurs: "",
-    dateTestCouleurs: "", veille: "", aidesVisuelles: "", exemptAffection: "", verdict: "", details: "",
+    dateTestCouleurs: "", veille: "", visionBinoculaire: "", communicationUrgence: "", aidesVisuelles: "", exemptAffection: "", verdict: "", details: "",
     dateDelivrance: "", validJusquau: "",
   };
 }
@@ -171,17 +205,22 @@ function seed(): State {
     };
   });
   // Visites : certificats valides, expirant bientôt et expirés.
-  const visitePlan: [number, number][] = [
-    [1, 400], [2, 200], [3, 15], [5, -20], [7, 300], [8, 25], [9, 500], [12, -5], [13, 600], [15, 180],
+  const visitePlan: [number, number, Verdict, string?][] = [
+    [1, 400, "apte"], [2, 200, "apte"], [3, 15, "apte"], [5, -20, "apte"], [7, 300, "apte_restrictions", "Port obligatoire de verres correcteurs."],
+    [8, 25, "apte"], [9, 500, "apte"], [12, -5, "apte"], [13, 600, "apte_restrictions", "Navigation côtière uniquement."], [15, 180, "apte"],
+    [10, 90, "inapte_temporaire", "Hypertension non contrôlée — nouvelle évaluation dans 3 mois."],
   ];
-  const visites: Visite[] = visitePlan.map(([marinId, validDays], i) => {
+  const visites: Visite[] = visitePlan.map(([marinId, validDays, verdict, details], i) => {
     const id = 3850 + i;
     const created = new Date(Date.now() - (validDays > 0 ? 365 * 2 * DAY - validDays * DAY : 730 * DAY - validDays * DAY));
     const deliv = new Date(Date.now() - Math.max(1, 730 - validDays) * DAY);
     const s: Stcw = {
       identiteVerifiee: "oui", acuiteVisuelle: "oui", auditiveSansAide: "oui", acuiteAuditive: "oui", couleurs: "oui",
-      dateTestCouleurs: iso(deliv), veille: "oui", aidesVisuelles: i % 3 === 0 ? "oui" : "non", exemptAffection: "oui",
-      verdict: "apte", details: "", dateDelivrance: iso(deliv), validJusquau: iso(new Date(Date.now() + validDays * DAY)),
+      dateTestCouleurs: iso(deliv), veille: "oui", visionBinoculaire: "oui", communicationUrgence: "oui",
+      aidesVisuelles: verdict === "apte_restrictions" || i % 3 === 0 ? "oui" : "non", exemptAffection: verdict === "inapte_temporaire" ? "non" : "oui",
+      verdict, details: details ?? "",
+      dateDelivrance: isInapte(verdict) ? "" : iso(deliv),
+      validJusquau: isInapte(verdict) ? "" : iso(new Date(Date.now() + validDays * DAY)),
     };
     void created;
     return {
@@ -191,7 +230,10 @@ function seed(): State {
       praticien: PRATICIENS[i % 2]!,
       creeLe: deliv.toISOString(),
       traiteLe: deliv.toISOString(),
-      examens: { taille: "175", poids: "74", tension: "12/8", pouls: "72", vision: "10/10", audition: "Normale", observations: "RAS" },
+      examens: {
+        taille: "175", poids: "74", tension: verdict === "inapte_temporaire" ? "16/10" : "12/8", pouls: "72",
+        vision: verdict === "apte_restrictions" ? "6/10" : "10/10", visionCorrigee: "10/10", audition: "Normale", observations: "RAS",
+      },
       complementaires: "Glycémie, NFS : normales.",
       recommandations: "Hydratation régulière, port des EPI.",
       documents: [],
@@ -200,6 +242,25 @@ function seed(): State {
       signataire: PRATICIENS[i % 2]!,
     };
   });
+  // Visite du jour en cours de saisie (brouillon).
+  visites.push({
+    id: 3870, numero: `3870-${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}-VM`, marinId: 4,
+    praticien: PRATICIENS[0]!, creeLe: new Date(Date.now() - 2 * 3600000).toISOString(), traiteLe: new Date(Date.now() - 2 * 3600000).toISOString(),
+    examens: { taille: "172", poids: "80", tension: "13/8", pouls: "76", vision: "", audition: "", observations: "" },
+    complementaires: "", recommandations: "", documents: [], stcw: emptyStcw(), signee: false, signataire: "",
+  });
+  for (const m of marins) {
+    const h: Evenement[] = [{ date: m.creeLe, action: "Dossier créé", auteur: m.creePar, type: "creation" }];
+    if (m.validationAdmin !== "en_attente")
+      h.push({ date: m.modifieLe, action: m.validationAdmin === "validee" ? "Validation administrative accordée" : "Dossier rejeté par l'administration", auteur: "Agent DGMM", type: "admin" });
+    m.historique = h;
+  }
+  for (const v of visites.filter((x) => x.signee)) {
+    marins.find((m) => m.id === v.marinId)?.historique?.push({ date: v.traiteLe, action: `Visite ${v.numero} signée — ${VERDICT_LABELS[v.stcw.verdict]}`, auteur: v.signataire, type: "medical" });
+  }
+  for (const m of marins.filter((x) => x.livret)) {
+    m.historique?.push({ date: m.modifieLe, action: `Livret ${m.livret} délivré`, auteur: "Gestionnaire MM", type: "livret" });
+  }
   return { marins, visites };
 }
 
@@ -250,10 +311,14 @@ export function nowIso() {
   return new Date().toISOString();
 }
 
-export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "creeLe" | "modifieLe" | "creePar" | "livret" | "validationAdmin" | "validationMedicale"> & { id?: number }, auteur: string): Marin {
+function withEvent(m: Marin, action: string, auteur: string, type: Evenement["type"]): Marin {
+  return { ...m, historique: [...(m.historique ?? []), { date: nowIso(), action, auteur, type }] };
+}
+
+export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "creeLe" | "modifieLe" | "creePar" | "livret" | "validationAdmin" | "validationMedicale" | "historique"> & { id?: number }, auteur: string): Marin {
   const s = get();
   if (input.id) {
-    const marins = s.marins.map((m) => (m.id === input.id ? { ...m, ...input, id: m.id, modifieLe: nowIso() } : m));
+    const marins = s.marins.map((m) => (m.id === input.id ? withEvent({ ...m, ...input, id: m.id, modifieLe: nowIso() }, "Dossier modifié", auteur, "modification") : m));
     set({ ...s, marins });
     return marins.find((m) => m.id === input.id)!;
   }
@@ -270,6 +335,7 @@ export function saveMarin(input: Omit<Marin, "id" | "nip" | "login" | "mdp" | "c
     creePar: auteur,
     creeLe: nowIso(),
     modifieLe: nowIso(),
+    historique: [{ date: nowIso(), action: "Dossier créé — enrôlement", auteur, type: "creation" }],
   };
   set({ ...s, marins: [m, ...s.marins] });
   return m;
@@ -303,7 +369,12 @@ export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteL
   if (saved.signee && saved.stcw.verdict) {
     marins = marins.map((m) =>
       m.id === saved.marinId
-        ? { ...m, validationMedicale: saved.stcw.verdict === "inapte" ? "rejetee" : "validee", modifieLe: nowIso() }
+        ? withEvent(
+            { ...m, validationMedicale: isInapte(saved.stcw.verdict) ? "rejetee" : "validee", modifieLe: nowIso() },
+            `Visite ${saved.numero} signée — ${VERDICT_LABELS[saved.stcw.verdict]}`,
+            saved.signataire,
+            "medical",
+          )
         : m,
     );
   }
@@ -311,18 +382,54 @@ export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteL
   return saved;
 }
 
-export function setValidationAdmin(id: number, etat: Etat) {
-  updateMarin(id, { validationAdmin: etat });
+export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM", motif = "") {
+  const s = get();
+  const action = etat === "validee" ? "Validation administrative accordée" : `Dossier rejeté par l'administration${motif ? ` : ${motif}` : ""}`;
+  set({ ...s, marins: s.marins.map((m) => (m.id === id ? withEvent({ ...m, validationAdmin: etat, modifieLe: nowIso() }, action, auteur, "admin") : m)) });
+}
+
+/** Révoque un certificat signé (il n'est plus valable, la vérification QR l'indique). */
+export function revoquerCertificat(id: number, motif: string, auteur: string) {
+  const s = get();
+  const v = s.visites.find((x) => x.id === id);
+  if (!v) return;
+  set({
+    visites: s.visites.map((x) => (x.id === id ? { ...x, revoquee: true, motifRevocation: motif } : x)),
+    marins: s.marins.map((m) =>
+      m.id === v.marinId ? withEvent({ ...m, validationMedicale: "en_attente", modifieLe: nowIso() }, `Certificat ${v.numero} révoqué : ${motif}`, auteur, "medical") : m,
+    ),
+  });
+}
+
+/** Code de validation imprimé dans le QR du certificat (empreinte non devinable du certificat). */
+export function codeValidation(v: Visite, nip: string): string {
+  const src = `${v.id}|${v.numero}|${nip}|${v.signataire}|${v.stcw.dateDelivrance}|DGMM`;
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < src.length; i++) {
+    h1 = Math.imul(h1 ^ src.charCodeAt(i), 16777619);
+    h2 = Math.imul(h2 ^ src.charCodeAt(i), 2246822519);
+  }
+  const part = (n: number) => (n >>> 0).toString(36).toUpperCase().padStart(6, "0").slice(-6);
+  return `${v.id}-${part(h1)}${part(h2)}`;
+}
+
+export type EtatCertificat = "valide" | "expire_bientot" | "expire" | "revoque" | "inapte" | "brouillon";
+export function etatCertificat(v: Visite, now = new Date()): EtatCertificat {
+  if (!v.signee) return "brouillon";
+  if (v.revoquee) return "revoque";
+  if (isInapte(v.stcw.verdict)) return "inapte";
+  const st = certificateStatus(v.stcw.validJusquau, now);
+  return st === "aucun" ? "expire" : st;
 }
 
 /** Attribue un numéro de livret maritime au marin (s'il n'en a pas déjà un). */
-export function delivrerLivret(id: number): string {
+export function delivrerLivret(id: number, auteur = "Gestionnaire MM"): string {
   const s = get();
   const m = s.marins.find((x) => x.id === id);
   if (!m) return "";
   if (m.livret) return m.livret;
   const livret = `LM-${String(id).padStart(5, "0")}`;
-  updateMarin(id, { livret });
+  set({ ...s, marins: s.marins.map((x) => (x.id === id ? withEvent({ ...x, livret, modifieLe: nowIso() }, `Livret ${livret} délivré`, auteur, "livret") : x)) });
   return livret;
 }
 
@@ -333,7 +440,7 @@ export function resetDemo() {
 /** Dernier certificat signé d'un marin. */
 export function lastCertificate(visites: Visite[], marinId: number): Visite | undefined {
   return visites
-    .filter((v) => v.marinId === marinId && v.signee && v.stcw.verdict !== "inapte" && v.stcw.validJusquau)
+    .filter((v) => v.marinId === marinId && v.signee && !v.revoquee && !isInapte(v.stcw.verdict) && v.stcw.validJusquau)
     .sort((a, b) => b.stcw.validJusquau.localeCompare(a.stcw.validJusquau))[0];
 }
 

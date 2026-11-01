@@ -19,10 +19,12 @@ import { ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/espace/livrets/")({
   head: () => ({ meta: [{ title: "Livrets maritimes — GDM | DGMM" }] }),
-  component: () => <RequirePerm perm="marins.livret">{() => <Livrets />}</RequirePerm>,
+  component: () => (
+    <RequirePerm perm="marins.livret">{(s) => <Livrets auteur={s.nom} />}</RequirePerm>
+  ),
 });
 
-function Livrets() {
+function Livrets({ auteur }: { auteur: string }) {
   const marins = useMarins();
   const visites = useVisites();
   const { aDelivrer, bloques, delivres } = useMemo(() => {
@@ -84,7 +86,9 @@ function Livrets() {
                     size="sm"
                     variant="gold"
                     onClick={() =>
-                      toast.success(`Livret ${delivrerLivret(m.id)} délivré à ${fullName(m)}`)
+                      toast.success(
+                        `Livret ${delivrerLivret(m.id, auteur)} délivré à ${fullName(m)}`,
+                      )
                     }
                   >
                     Délivrer
@@ -173,7 +177,7 @@ function Livrets() {
                   <td className="px-5 py-2.5 text-right">
                     <Button asChild size="sm" variant="ghost">
                       <Link to="/espace/livrets/$id" params={{ id: String(m.id) }}>
-                        <Printer /> Imprimer
+                        <Printer /> Attestation
                       </Link>
                     </Button>
                   </td>

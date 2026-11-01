@@ -21,6 +21,7 @@ import { Route as EspaceMarinsNouveauRouteImport } from './routes/espace/marins/
 import { Route as EspaceVisitesIndexRouteImport } from './routes/espace/visites/index'
 import { Route as EspaceVisitesIdRouteImport } from './routes/espace/visites/$id'
 import { Route as EspaceVisitesNouvelleRouteImport } from './routes/espace/visites/nouvelle'
+import { Route as VerifierCertificatCodeRouteImport } from './routes/verifier.certificat.$code'
 import { Route as EspaceMarinsModifierIdRouteImport } from './routes/espace/marins/modifier.$id'
 import { Route as EspaceVisitesModifierIdRouteImport } from './routes/espace/visites/modifier.$id'
 
@@ -84,6 +85,11 @@ const EspaceVisitesNouvelleRoute = EspaceVisitesNouvelleRouteImport.update({
   path: '/visites/nouvelle',
   getParentRoute: () => EspaceRoute,
 } as any)
+const VerifierCertificatCodeRoute = VerifierCertificatCodeRouteImport.update({
+  id: '/verifier/certificat/$code',
+  path: '/verifier/certificat/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EspaceMarinsModifierIdRoute = EspaceMarinsModifierIdRouteImport.update({
   id: '/marins/modifier/$id',
   path: '/marins/modifier/$id',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
   '/espace/visites/$id': typeof EspaceVisitesIdRoute
   '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/verifier/certificat/$code': typeof VerifierCertificatCodeRoute
   '/espace/livrets/': typeof EspaceLivretsIndexRoute
   '/espace/marins/': typeof EspaceMarinsIndexRoute
   '/espace/visites/': typeof EspaceVisitesIndexRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
   '/espace/visites/$id': typeof EspaceVisitesIdRoute
   '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/verifier/certificat/$code': typeof VerifierCertificatCodeRoute
   '/espace/livrets': typeof EspaceLivretsIndexRoute
   '/espace/marins': typeof EspaceMarinsIndexRoute
   '/espace/visites': typeof EspaceVisitesIndexRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
   '/espace/visites/$id': typeof EspaceVisitesIdRoute
   '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/verifier/certificat/$code': typeof VerifierCertificatCodeRoute
   '/espace/livrets/': typeof EspaceLivretsIndexRoute
   '/espace/marins/': typeof EspaceMarinsIndexRoute
   '/espace/visites/': typeof EspaceVisitesIndexRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/espace/marins/nouveau'
     | '/espace/visites/$id'
     | '/espace/visites/nouvelle'
+    | '/verifier/certificat/$code'
     | '/espace/livrets/'
     | '/espace/marins/'
     | '/espace/visites/'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/espace/marins/nouveau'
     | '/espace/visites/$id'
     | '/espace/visites/nouvelle'
+    | '/verifier/certificat/$code'
     | '/espace/livrets'
     | '/espace/marins'
     | '/espace/visites'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/espace/marins/nouveau'
     | '/espace/visites/$id'
     | '/espace/visites/nouvelle'
+    | '/verifier/certificat/$code'
     | '/espace/livrets/'
     | '/espace/marins/'
     | '/espace/visites/'
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EspaceRoute: typeof EspaceRouteWithChildren
   VerifierNipRoute: typeof VerifierNipRoute
+  VerifierCertificatCodeRoute: typeof VerifierCertificatCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceVisitesNouvelleRouteImport
       parentRoute: typeof EspaceRoute
     }
+    '/verifier/certificat/$code': {
+      id: '/verifier/certificat/$code'
+      path: '/verifier/certificat/$code'
+      fullPath: '/verifier/certificat/$code'
+      preLoaderRoute: typeof VerifierCertificatCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/espace/marins/modifier/$id': {
       id: '/espace/marins/modifier/$id'
       path: '/marins/modifier/$id'
@@ -337,6 +357,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EspaceRoute: EspaceRouteWithChildren,
   VerifierNipRoute: VerifierNipRoute,
+  VerifierCertificatCodeRoute: VerifierCertificatCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
