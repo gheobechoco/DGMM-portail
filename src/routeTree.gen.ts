@@ -11,6 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EspaceRouteImport } from './routes/espace'
+import { Route as EspaceIndexRouteImport } from './routes/espace/index'
+import { Route as VerifierNipRouteImport } from './routes/verifier.$nip'
+import { Route as EspaceLivretsIndexRouteImport } from './routes/espace/livrets/index'
+import { Route as EspaceLivretsIdRouteImport } from './routes/espace/livrets/$id'
+import { Route as EspaceMarinsIndexRouteImport } from './routes/espace/marins/index'
+import { Route as EspaceMarinsIdRouteImport } from './routes/espace/marins/$id'
+import { Route as EspaceMarinsNouveauRouteImport } from './routes/espace/marins/nouveau'
+import { Route as EspaceVisitesIndexRouteImport } from './routes/espace/visites/index'
+import { Route as EspaceVisitesIdRouteImport } from './routes/espace/visites/$id'
+import { Route as EspaceVisitesNouvelleRouteImport } from './routes/espace/visites/nouvelle'
+import { Route as EspaceMarinsModifierIdRouteImport } from './routes/espace/marins/modifier.$id'
+import { Route as EspaceVisitesModifierIdRouteImport } from './routes/espace/visites/modifier.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +34,169 @@ const EspaceRoute = EspaceRouteImport.update({
   path: '/espace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EspaceIndexRoute = EspaceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const VerifierNipRoute = VerifierNipRouteImport.update({
+  id: '/verifier/$nip',
+  path: '/verifier/$nip',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EspaceLivretsIndexRoute = EspaceLivretsIndexRouteImport.update({
+  id: '/livrets/',
+  path: '/livrets/',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceLivretsIdRoute = EspaceLivretsIdRouteImport.update({
+  id: '/livrets/$id',
+  path: '/livrets/$id',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceMarinsIndexRoute = EspaceMarinsIndexRouteImport.update({
+  id: '/marins/',
+  path: '/marins/',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceMarinsIdRoute = EspaceMarinsIdRouteImport.update({
+  id: '/marins/$id',
+  path: '/marins/$id',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceMarinsNouveauRoute = EspaceMarinsNouveauRouteImport.update({
+  id: '/marins/nouveau',
+  path: '/marins/nouveau',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceVisitesIndexRoute = EspaceVisitesIndexRouteImport.update({
+  id: '/visites/',
+  path: '/visites/',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceVisitesIdRoute = EspaceVisitesIdRouteImport.update({
+  id: '/visites/$id',
+  path: '/visites/$id',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceVisitesNouvelleRoute = EspaceVisitesNouvelleRouteImport.update({
+  id: '/visites/nouvelle',
+  path: '/visites/nouvelle',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceMarinsModifierIdRoute = EspaceMarinsModifierIdRouteImport.update({
+  id: '/marins/modifier/$id',
+  path: '/marins/modifier/$id',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceVisitesModifierIdRoute = EspaceVisitesModifierIdRouteImport.update({
+  id: '/visites/modifier/$id',
+  path: '/visites/modifier/$id',
+  getParentRoute: () => EspaceRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/espace': typeof EspaceRoute
+  '/espace': typeof EspaceRouteWithChildren
+  '/verifier/$nip': typeof VerifierNipRoute
+  '/espace/': typeof EspaceIndexRoute
+  '/espace/livrets/$id': typeof EspaceLivretsIdRoute
+  '/espace/marins/$id': typeof EspaceMarinsIdRoute
+  '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
+  '/espace/visites/$id': typeof EspaceVisitesIdRoute
+  '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/espace/livrets/': typeof EspaceLivretsIndexRoute
+  '/espace/marins/': typeof EspaceMarinsIndexRoute
+  '/espace/visites/': typeof EspaceVisitesIndexRoute
+  '/espace/marins/modifier/$id': typeof EspaceMarinsModifierIdRoute
+  '/espace/visites/modifier/$id': typeof EspaceVisitesModifierIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/espace': typeof EspaceRoute
+  '/verifier/$nip': typeof VerifierNipRoute
+  '/espace': typeof EspaceIndexRoute
+  '/espace/livrets/$id': typeof EspaceLivretsIdRoute
+  '/espace/marins/$id': typeof EspaceMarinsIdRoute
+  '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
+  '/espace/visites/$id': typeof EspaceVisitesIdRoute
+  '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/espace/livrets': typeof EspaceLivretsIndexRoute
+  '/espace/marins': typeof EspaceMarinsIndexRoute
+  '/espace/visites': typeof EspaceVisitesIndexRoute
+  '/espace/marins/modifier/$id': typeof EspaceMarinsModifierIdRoute
+  '/espace/visites/modifier/$id': typeof EspaceVisitesModifierIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/espace': typeof EspaceRoute
+  '/espace': typeof EspaceRouteWithChildren
+  '/verifier/$nip': typeof VerifierNipRoute
+  '/espace/': typeof EspaceIndexRoute
+  '/espace/livrets/$id': typeof EspaceLivretsIdRoute
+  '/espace/marins/$id': typeof EspaceMarinsIdRoute
+  '/espace/marins/nouveau': typeof EspaceMarinsNouveauRoute
+  '/espace/visites/$id': typeof EspaceVisitesIdRoute
+  '/espace/visites/nouvelle': typeof EspaceVisitesNouvelleRoute
+  '/espace/livrets/': typeof EspaceLivretsIndexRoute
+  '/espace/marins/': typeof EspaceMarinsIndexRoute
+  '/espace/visites/': typeof EspaceVisitesIndexRoute
+  '/espace/marins/modifier/$id': typeof EspaceMarinsModifierIdRoute
+  '/espace/visites/modifier/$id': typeof EspaceVisitesModifierIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/espace'
+  fullPaths:
+    | '/'
+    | '/espace'
+    | '/verifier/$nip'
+    | '/espace/'
+    | '/espace/livrets/$id'
+    | '/espace/marins/$id'
+    | '/espace/marins/nouveau'
+    | '/espace/visites/$id'
+    | '/espace/visites/nouvelle'
+    | '/espace/livrets/'
+    | '/espace/marins/'
+    | '/espace/visites/'
+    | '/espace/marins/modifier/$id'
+    | '/espace/visites/modifier/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/espace'
-  id: '__root__' | '/' | '/espace'
+  to:
+    | '/'
+    | '/verifier/$nip'
+    | '/espace'
+    | '/espace/livrets/$id'
+    | '/espace/marins/$id'
+    | '/espace/marins/nouveau'
+    | '/espace/visites/$id'
+    | '/espace/visites/nouvelle'
+    | '/espace/livrets'
+    | '/espace/marins'
+    | '/espace/visites'
+    | '/espace/marins/modifier/$id'
+    | '/espace/visites/modifier/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/espace'
+    | '/verifier/$nip'
+    | '/espace/'
+    | '/espace/livrets/$id'
+    | '/espace/marins/$id'
+    | '/espace/marins/nouveau'
+    | '/espace/visites/$id'
+    | '/espace/visites/nouvelle'
+    | '/espace/livrets/'
+    | '/espace/marins/'
+    | '/espace/visites/'
+    | '/espace/marins/modifier/$id'
+    | '/espace/visites/modifier/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  EspaceRoute: typeof EspaceRoute
+  EspaceRoute: typeof EspaceRouteWithChildren
+  VerifierNipRoute: typeof VerifierNipRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +215,128 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/espace/': {
+      id: '/espace/'
+      path: '/'
+      fullPath: '/espace/'
+      preLoaderRoute: typeof EspaceIndexRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/verifier/$nip': {
+      id: '/verifier/$nip'
+      path: '/verifier/$nip'
+      fullPath: '/verifier/$nip'
+      preLoaderRoute: typeof VerifierNipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/espace/livrets/': {
+      id: '/espace/livrets/'
+      path: '/livrets'
+      fullPath: '/espace/livrets/'
+      preLoaderRoute: typeof EspaceLivretsIndexRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/livrets/$id': {
+      id: '/espace/livrets/$id'
+      path: '/livrets/$id'
+      fullPath: '/espace/livrets/$id'
+      preLoaderRoute: typeof EspaceLivretsIdRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/marins/': {
+      id: '/espace/marins/'
+      path: '/marins'
+      fullPath: '/espace/marins/'
+      preLoaderRoute: typeof EspaceMarinsIndexRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/marins/$id': {
+      id: '/espace/marins/$id'
+      path: '/marins/$id'
+      fullPath: '/espace/marins/$id'
+      preLoaderRoute: typeof EspaceMarinsIdRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/marins/nouveau': {
+      id: '/espace/marins/nouveau'
+      path: '/marins/nouveau'
+      fullPath: '/espace/marins/nouveau'
+      preLoaderRoute: typeof EspaceMarinsNouveauRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/visites/': {
+      id: '/espace/visites/'
+      path: '/visites'
+      fullPath: '/espace/visites/'
+      preLoaderRoute: typeof EspaceVisitesIndexRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/visites/$id': {
+      id: '/espace/visites/$id'
+      path: '/visites/$id'
+      fullPath: '/espace/visites/$id'
+      preLoaderRoute: typeof EspaceVisitesIdRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/visites/nouvelle': {
+      id: '/espace/visites/nouvelle'
+      path: '/visites/nouvelle'
+      fullPath: '/espace/visites/nouvelle'
+      preLoaderRoute: typeof EspaceVisitesNouvelleRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/marins/modifier/$id': {
+      id: '/espace/marins/modifier/$id'
+      path: '/marins/modifier/$id'
+      fullPath: '/espace/marins/modifier/$id'
+      preLoaderRoute: typeof EspaceMarinsModifierIdRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/visites/modifier/$id': {
+      id: '/espace/visites/modifier/$id'
+      path: '/visites/modifier/$id'
+      fullPath: '/espace/visites/modifier/$id'
+      preLoaderRoute: typeof EspaceVisitesModifierIdRouteImport
+      parentRoute: typeof EspaceRoute
+    }
   }
 }
 
+interface EspaceRouteChildren {
+  EspaceIndexRoute: typeof EspaceIndexRoute
+  EspaceLivretsIdRoute: typeof EspaceLivretsIdRoute
+  EspaceMarinsIdRoute: typeof EspaceMarinsIdRoute
+  EspaceMarinsNouveauRoute: typeof EspaceMarinsNouveauRoute
+  EspaceVisitesIdRoute: typeof EspaceVisitesIdRoute
+  EspaceVisitesNouvelleRoute: typeof EspaceVisitesNouvelleRoute
+  EspaceLivretsIndexRoute: typeof EspaceLivretsIndexRoute
+  EspaceMarinsIndexRoute: typeof EspaceMarinsIndexRoute
+  EspaceVisitesIndexRoute: typeof EspaceVisitesIndexRoute
+  EspaceMarinsModifierIdRoute: typeof EspaceMarinsModifierIdRoute
+  EspaceVisitesModifierIdRoute: typeof EspaceVisitesModifierIdRoute
+}
+
+const EspaceRouteChildren: EspaceRouteChildren = {
+  EspaceIndexRoute: EspaceIndexRoute,
+  EspaceLivretsIdRoute: EspaceLivretsIdRoute,
+  EspaceMarinsIdRoute: EspaceMarinsIdRoute,
+  EspaceMarinsNouveauRoute: EspaceMarinsNouveauRoute,
+  EspaceVisitesIdRoute: EspaceVisitesIdRoute,
+  EspaceVisitesNouvelleRoute: EspaceVisitesNouvelleRoute,
+  EspaceLivretsIndexRoute: EspaceLivretsIndexRoute,
+  EspaceMarinsIndexRoute: EspaceMarinsIndexRoute,
+  EspaceVisitesIndexRoute: EspaceVisitesIndexRoute,
+  EspaceMarinsModifierIdRoute: EspaceMarinsModifierIdRoute,
+  EspaceVisitesModifierIdRoute: EspaceVisitesModifierIdRoute,
+}
+
+const EspaceRouteWithChildren =
+  EspaceRoute._addFileChildren(EspaceRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  EspaceRoute: EspaceRoute,
+  EspaceRoute: EspaceRouteWithChildren,
+  VerifierNipRoute: VerifierNipRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

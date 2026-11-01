@@ -34,7 +34,7 @@ const STATUS_LABELS = {
   aucun: "Aucun",
 } as const;
 
-export function StatusPill({ status, label }: { status: keyof typeof STATUS_STYLES; label?: string }) {
+export function StatusPill({ status, label }: { status: keyof typeof STATUS_STYLES; label?: string | undefined }) {
   return (
     <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold", STATUS_STYLES[status])}>
       <span className="size-1.5 rounded-full bg-current" />

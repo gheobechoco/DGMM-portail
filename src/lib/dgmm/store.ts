@@ -154,7 +154,7 @@ function seed(): State {
       entreprise: ENTREPRISES[i % ENTREPRISES.length]!,
       tel1: `07${String(7452017 + i * 1311).slice(0, 7)}`,
       tel2: "",
-      quartier: QUARTIERS_RESIDENCE[i % QUARTIERS_RESIDENCE.length],
+      quartier: QUARTIERS_RESIDENCE[i % QUARTIERS_RESIDENCE.length]!,
       email: `${prenom.split(" ")[0]!.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}.${nom.split(" ")[0]!.toLowerCase()}@exemple.ga`,
       signeParticulier: "", couleurYeux: "", couleurCheveux: "", taille: "",
       quartierInscription: i % 3 === 0 ? "Port-Gentil" : i % 3 === 1 ? "Libreville" : "",
@@ -309,6 +309,21 @@ export function saveVisite(v: Omit<Visite, "id" | "numero" | "creeLe" | "traiteL
   }
   set({ marins, visites });
   return saved;
+}
+
+export function setValidationAdmin(id: number, etat: Etat) {
+  updateMarin(id, { validationAdmin: etat });
+}
+
+/** Attribue un numéro de livret maritime au marin (s'il n'en a pas déjà un). */
+export function delivrerLivret(id: number): string {
+  const s = get();
+  const m = s.marins.find((x) => x.id === id);
+  if (!m) return "";
+  if (m.livret) return m.livret;
+  const livret = `LM-${String(id).padStart(5, "0")}`;
+  updateMarin(id, { livret });
+  return livret;
 }
 
 export function resetDemo() {
