@@ -10,6 +10,7 @@ import {
   VerdictPill,
 } from "@/components/dgmm/MarinBits";
 import { Info } from "@/components/dgmm/Page";
+import { station as stationRef } from "@/lib/dgmm/maritime";
 import { can } from "@/lib/dgmm/rules";
 import type { Account } from "@/lib/dgmm/auth";
 import {
@@ -122,6 +123,7 @@ export function MarinApercu({
                     )}
                   </Info>
                   <Info label="Armateur">{m.entreprise}</Info>
+                  <Info label="Station">{stationRef(m.station)?.ville ?? ""}</Info>
                   <Info label="Téléphone">{m.tel1}</Info>
                 </dl>
               </section>

@@ -26,7 +26,11 @@ export function VerifyShell({
     <div className="flex min-h-screen flex-col bg-background" lang={lang}>
       <Tricolor />
       <header className="flex items-center justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground sm:px-5">
-        <div className="flex min-w-0 items-center gap-3">
+        <a
+          href="/verifier"
+          className="flex min-w-0 items-center gap-3"
+          aria-label="Nouvelle vérification"
+        >
           <DgmmLogo className="size-9 shrink-0" />
           <div className="min-w-0 leading-tight">
             <div className="truncate font-display text-sm font-semibold">
@@ -36,7 +40,7 @@ export function VerifyShell({
             </div>
             <div className="truncate text-[11px] text-primary-foreground/70">{sousTitre}</div>
           </div>
-        </div>
+        </a>
         <button
           type="button"
           onClick={() => setPrefs({ contraste: eleve ? "normal" : "eleve" })}

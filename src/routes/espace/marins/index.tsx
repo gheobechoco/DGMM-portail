@@ -9,6 +9,7 @@ import { MarinApercu } from "@/components/dgmm/MarinApercu";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
 import { CountUp } from "@/components/dgmm/Anim";
 import { cn } from "@/lib/utils";
+import { STATIONS, station as stationRef } from "@/lib/dgmm/maritime";
 import type { Account } from "@/lib/dgmm/auth";
 import { Button } from "@/components/ui/button";
 import { can, type CertStatus } from "@/lib/dgmm/rules";
@@ -32,6 +33,7 @@ interface Search {
   medical?: Etat | undefined;
   cert?: Cert | undefined;
   armateur?: string | undefined;
+  station?: string | undefined;
 }
 
 const STATUTS: Statut[] = ["tous", "en_attente", "validee", "rejetee"];
@@ -49,6 +51,7 @@ export const Route = createFileRoute("/espace/marins/")({
         ? (s["medical"] as Etat)
         : undefined,
     armateur: typeof s["armateur"] === "string" && s["armateur"] ? s["armateur"] : undefined,
+    station: typeof s["station"] === "string" && s["station"] ? s["station"] : undefined,
     cert:
       CERTS.includes(s["cert"] as Cert) && s["cert"] !== "tous" ? (s["cert"] as Cert) : undefined,
   }),
@@ -66,7 +69,7 @@ function norm(s: string) {
 
 function MarinsList({ canCreate, session }: { canCreate: boolean; session: Account }) {
   const [apercu, setApercu] = useState<number | null>(null);
-  const { q = "", admin, medical, cert = "tous", armateur } = Route.useSearch();
+  const { q = "", admin, medical, cert = "tous", armateur, station } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const marins = useMarins();
   const visites = useVisites();
@@ -79,18 +82,19 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
         if (
           nq &&
           !norm(
-            `${m.nom} ${m.prenom} ${m.nip} ${m.livret} ${m.profession} ${m.entreprise}`,
+            `${m.nom} ${m.prenom} ${m.nip} ${m.livret} ${m.profession} ${m.entreprise} ${stationRef(m.station)?.nom ?? ""}`,
           ).includes(nq)
         )
           return false;
         if (admin && m.validationAdmin !== admin) return false;
         if (medical && m.validationMedicale !== medical) return false;
         if (armateur && m.entreprise !== armateur) return false;
+        if (station && m.station !== station) return false;
         if (cert !== "tous" && st !== cert) return false;
         return true;
       });
-  }, [marins, visites, q, admin, medical, cert, armateur]);
-  const filtered = !!(q || admin || medical || armateur || cert !== "tous");
+  }, [marins, visites, q, admin, medical, cert, armateur, station]);
+  const filtered = !!(q || admin || medical || armateur || station || cert !== "tous");
 
   const set = (patch: Partial<Search>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
@@ -120,7 +124,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
             niveaux={rows.map(({ m }) => niveauConformite(m, visites))}
           />
         </div>
-        <div className="grid gap-3 border-b p-4 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_repeat(4,170px)]">
+        <div className="grid gap-3 border-b p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[minmax(200px,1fr)_repeat(5,150px)]">
           <label className="field-dgmm flex h-10 items-center gap-2 rounded-md bg-card px-3">
             <Search className="size-4 text-muted-foreground" />
             <span className="sr-only">Rechercher</span>
@@ -190,6 +194,21 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
               ))}
             </select>
           </label>
+          <label>
+            <span className="sr-only">Station maritime</span>
+            <select
+              className={selectClass}
+              value={station ?? ""}
+              onChange={(e) => set({ station: e.target.value || undefined })}
+            >
+              <option value="">Toutes stations</option>
+              {STATIONS.map((st) => (
+                <option key={st.code} value={st.code}>
+                  {st.ville}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {rows.length === 0 ? (
@@ -246,6 +265,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
                             </Link>
                             <div className="truncate text-xs text-muted-foreground">
                               {m.entreprise}
+                              {m.station && ` · ${stationRef(m.station)?.ville ?? m.station}`}
                             </div>
                           </div>
                         </div>

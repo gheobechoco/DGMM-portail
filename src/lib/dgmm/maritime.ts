@@ -153,3 +153,141 @@ export const FONCTIONS_BORD = [
   "Cuisinier",
   "Élève officier",
 ];
+
+/* ---------- Référentiel DGMM (dgmm-referentiel.json) ---------- */
+
+export interface StationMaritime {
+  code: string;
+  nom: string;
+  type: string;
+  ville: string;
+  province: string;
+  vhf: string;
+  contact: string;
+}
+
+export const STATIONS: StationMaritime[] = [
+  {
+    code: "ST-OWE",
+    nom: "Station Maritime d'Owendo",
+    type: "Portuaire & Commercial",
+    ville: "Owendo",
+    province: "Estuaire",
+    vhf: "Canal 16 / 12",
+    contact: "+241 01 70 70 39",
+  },
+  {
+    code: "ST-POG",
+    nom: "Station Maritime de Port-Gentil",
+    type: "Pétrolier & Offshore",
+    ville: "Port-Gentil",
+    province: "Ogooué-Maritime",
+    vhf: "Canal 16 / 11",
+    contact: "+241 01 55 22 14",
+  },
+  {
+    code: "ST-KAN",
+    nom: "Station Fluviale de Kango",
+    type: "Fluvial & Transit Komo",
+    ville: "Kango",
+    province: "Estuaire",
+    vhf: "Canal 16",
+    contact: "+241 01 79 10 05",
+  },
+  {
+    code: "ST-LAM",
+    nom: "Station Fluviale de Lambaréné",
+    type: "Fluvial Ogooué",
+    ville: "Lambaréné",
+    province: "Moyen-Ogooué",
+    vhf: "Canal 16",
+    contact: "+241 01 58 20 18",
+  },
+  {
+    code: "ST-COC",
+    nom: "Station Maritime de Cocobeach",
+    type: "Frontière & Pêche artisanale",
+    ville: "Cocobeach",
+    province: "Estuaire",
+    vhf: "Canal 16",
+    contact: "+241 01 73 80 44",
+  },
+  {
+    code: "ST-MAY",
+    nom: "Station Maritime de Mayumba",
+    type: "Façade Sud & Pêche",
+    ville: "Mayumba",
+    province: "Nyanga",
+    vhf: "Canal 16",
+    contact: "+241 01 86 11 02",
+  },
+];
+
+export function station(code: string | undefined): StationMaritime | undefined {
+  return STATIONS.find((s) => s.code === code);
+}
+
+export interface TexteReglementaire {
+  id: string;
+  titre: string;
+  reference: string;
+  categorie: string;
+  resume: string;
+}
+
+export const TEXTES: TexteReglementaire[] = [
+  {
+    id: "REG-CEMAC-01",
+    titre: "Code Communautaire de la Marine Marchande CEMAC",
+    reference: "Règlement n° 03/01-UEAC-088-CM-06",
+    categorie: "Législation Régionale",
+    resume:
+      "Régit l'immatriculation des navires, les droits et devoirs des gens de mer, et les conditions de travail maritime en zone CEMAC.",
+  },
+  {
+    id: "REG-OMI-STCW",
+    titre: "Convention STCW 78/2010 - Section A-I/9",
+    reference: "Norme internationale OMI",
+    categorie: "Santé & Aptitude",
+    resume:
+      "Normes obligatoires relatives à l'aptitude physique et médicale des gens de mer, examens visuels, auditifs et conditions de service de quart.",
+  },
+  {
+    id: "REG-OMI-MLC",
+    titre: "Convention du Travail Maritime (MLC 2006)",
+    reference: "Norme OIT / OMI",
+    categorie: "Protection Sociale",
+    resume:
+      "Conditions d'emploi des marins, rapatriement garanti, protection de la santé et couverture médicale à bord.",
+  },
+];
+
+export interface AvisNavigateurs {
+  id: string;
+  station: string;
+  niveau: "Urgent" | "Avertissement" | "Information";
+  titre: string;
+  date: string;
+  message: string;
+}
+
+export const AVURNAV: AvisNavigateurs[] = [
+  {
+    id: "AVURNAV-2026-042",
+    station: "Owendo",
+    niveau: "Avertissement",
+    titre: "Présence de grumes en dérive - Chenal d'Owendo",
+    date: "2026-11-01T08:00:00Z",
+    message:
+      "Plusieurs grumes signalées entre la bouée 3 et la balise d'atterrage. Vigilance renforcée recommandée de nuit.",
+  },
+  {
+    id: "AVURNAV-2026-041",
+    station: "Port-Gentil",
+    niveau: "Information",
+    titre: "Travaux sous-marins au large du Cap Lopez",
+    date: "2026-10-30T14:30:00Z",
+    message:
+      "Navire support en opération de plongée. Garder une distance de sécurité de 1 mille nautique.",
+  },
+];

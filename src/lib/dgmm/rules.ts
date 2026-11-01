@@ -13,7 +13,8 @@ export type Permission =
   | "visites.signer"
   | "certificats.imprimer"
   | "audit"
-  | "embarquements";
+  | "embarquements"
+  | "roles.lecture";
 
 /**
  * Matrice des droits (RBAC) :
@@ -36,8 +37,16 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "certificats.imprimer",
     "audit",
     "embarquements",
+    "roles.lecture",
   ],
-  rh_marine: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "embarquements"],
+  rh_marine: [
+    "dashboard",
+    "marins",
+    "marins.creer",
+    "marins.valider_admin",
+    "embarquements",
+    "roles.lecture",
+  ],
   medecin: [
     "dashboard",
     "marins",
@@ -103,4 +112,41 @@ export function ageBracket(age: number | null): string {
   if (age < 45) return "35 à 44 ans";
   if (age < 55) return "45 à 54 ans";
   return "55 ans et plus";
+}
+
+/* ---------- Règles du dossier technique DGMM ---------- */
+
+export type EtatEcheance = "valide" | "expire_bientot" | "expire";
+
+/** État du certificat et nombre de jours restants avant l'échéance (négatif si expiré). */
+export function evaluateCertStatus(
+  dateExpirationStr: string,
+  now: Date = new Date(),
+): { status: EtatEcheance; joursRestants: number } {
+  const exp = new Date(
+    dateExpirationStr.length === 10 ? `${dateExpirationStr}T23:59:59` : dateExpirationStr,
+  ).getTime();
+  const diffDays = Math.ceil((exp - now.getTime()) / DAY);
+  if (diffDays < 0) return { status: "expire", joursRestants: diffDays };
+  if (diffDays <= 30) return { status: "expire_bientot", joursRestants: diffDays };
+  return { status: "valide", joursRestants: diffDays };
+}
+
+/** Règle d'éligibilité à l'émission du Livret Maritime DGMM (double validation). */
+export function canIssueLivret(marin: { validationAdmin: string; validationMedicale: string }): {
+  canIssue: boolean;
+  motif?: string;
+} {
+  if (marin.validationAdmin !== "validee")
+    return { canIssue: false, motif: "Validation administrative DGMM requise." };
+  if (marin.validationMedicale !== "validee")
+    return { canIssue: false, motif: "Certificat médical STCW valide requis." };
+  return { canIssue: true };
+}
+
+/** Libellé court du délai restant : « dans 12 j », « expiré depuis 5 j ». */
+export function libelleJours(j: number): string {
+  if (j < 0) return `expiré depuis ${-j} j`;
+  if (j === 0) return "expire aujourd'hui";
+  return `dans ${j} j`;
 }

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { ageFrom, certificateStatus, DAY, type CertStatus } from "./rules";
+import { ageFrom, canIssueLivret, certificateStatus, DAY, type CertStatus } from "./rules";
 import { ACCOUNTS } from "./auth";
 import { TOUS_NAVIRES, type TypeFlotte } from "./maritime";
 
@@ -29,6 +29,8 @@ export interface Marin {
   dateMariage: string;
   lieuMariage: string;
   situationMatrimoniale?: string | undefined;
+  /** Station maritime d'attache (référentiel DGMM : ST-OWE, ST-POG…). */
+  station?: string | undefined;
   historique?: Evenement[] | undefined;
   embarquements?: Embarquement[] | undefined;
   alertes?: { sms: boolean; email: boolean } | undefined;
@@ -143,8 +145,11 @@ export interface Visite {
     vision: string;
     visionCorrigee?: string | undefined;
     audition: string;
+    ecg?: string | undefined;
     observations: string;
   };
+  /** Antécédents médicaux relevés lors de la visite. */
+  antecedents?: string | undefined;
   complementaires: string;
   recommandations: string;
   documents: { type: string; nom: string; date: string }[];
@@ -162,7 +167,7 @@ interface State {
   audit: AuditEntry[];
 }
 
-const KEY = "dgmm-gdm-v3";
+const KEY = "dgmm-gdm-v4";
 
 /** Empreinte 64 bits (deux FNV-1a) — démonstration ; en production : SHA-256 côté serveur. */
 export function empreinte(src: string): string {
@@ -288,13 +293,33 @@ export const ENTREPRISES = [
   "Perenco Marine",
   "Edelweiss Maritime",
 ];
-export const PRATICIENS = ["Dr MÉDECIN DU TRAVAIL", "Dr KONGO A."];
+const ENTREPRISE_VILLE = [
+  "Owendo",
+  "Port-Gentil",
+  "Owendo",
+  "Port-Gentil",
+  "Port-Gentil",
+  "Mayumba",
+];
+export const PRATICIENS = ["Dr MOUGOULA Christian", "Dr KONGO A."];
 
+/** NIP : GAB-AAAA-NNNNNN (année d'enrôlement). */
 function genNip(id: number, d = new Date()) {
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = String(d.getFullYear()).slice(2);
-  return `${15100 + id}-${yy}${mm}-DGM`;
+  return `GAB-${d.getFullYear()}-${String(1200 + id).padStart(6, "0")}`;
 }
+/** Livret maritime : LIV-GA-AAAA-NNNN. */
+function genLivret(id: number, d = new Date()) {
+  return `LIV-GA-${d.getFullYear()}-${String(800 + id).padStart(4, "0")}`;
+}
+/** N° de visite / certificat médical : VM-AAAA-NNNN. */
+function genNumero(id: number, d = new Date()) {
+  return `VM-${d.getFullYear()}-${String(id - 3800).padStart(4, "0")}`;
+}
+const STATION_PAR_VILLE: Record<string, string> = {
+  Owendo: "ST-OWE",
+  "Port-Gentil": "ST-POG",
+  Mayumba: "ST-MAY",
+};
 
 function emptyStcw(): Stcw {
   return {
@@ -374,6 +399,31 @@ function seed(): State {
     ["MOUELE", "Sandrine", "F", 22, "Matelot", "en_attente", "en_attente", 18],
     ["ONDO", "Rodrigue", "M", 34, "Pilote", "en_attente", "en_attente", 21],
     ["TCHIBINDA", "Marc", "M", 44, "Matelot", "rejetee", "en_attente", 60],
+    // Marin de référence du dossier technique DGMM.
+    [
+      "OBAME NGUEMA",
+      "Jean-Pierre",
+      "M",
+      38,
+      "Second Capitaine",
+      "validee",
+      "validee",
+      600,
+      {
+        nip: "GAB-2024-001284",
+        livret: "LIV-GA-2024-0891",
+        dateNaissance: "1988-06-14",
+        nationalite: "Gabonaise",
+        entreprise: "SNAT Gabon",
+        station: "ST-OWE",
+        quartierInscription: "Libreville",
+        taille: "178",
+        couleurYeux: "Marron",
+        couleurCheveux: "Noir",
+        signeParticulier: "Néant",
+        situationMatrimoniale: "Marié(e)",
+      },
+    ],
   ];
   const now = new Date();
   const marins: Marin[] = raw.map(
@@ -383,7 +433,18 @@ function seed(): State {
       return {
         id,
         nip: genNip(id, new Date(Date.now() - created * DAY)),
-        livret: va === "validee" && vm === "validee" ? `LM-${String(id).padStart(5, "0")}` : "",
+        livret:
+          va === "validee" && vm === "validee"
+            ? genLivret(id, new Date(Date.now() - Math.max(0, created - 30) * DAY))
+            : "",
+        station:
+          i % 9 === 4
+            ? "ST-KAN"
+            : i % 11 === 6
+              ? "ST-LAM"
+              : i % 13 === 7
+                ? "ST-COC"
+                : (STATION_PAR_VILLE[ENTREPRISE_VILLE[i % ENTREPRISES.length]!] ?? "ST-OWE"),
         nom,
         prenom,
         sexe,
@@ -426,7 +487,7 @@ function seed(): State {
         validationMedicale: vm,
         login: `${nom.split(" ")[0]!.toLowerCase()}${id}`,
         mdp: "azerty",
-        creePar: i % 2 ? "Agent DGMM" : "Dr MÉDECIN DU TRAVAIL",
+        creePar: i % 2 ? "Agent DGMM" : "Agent RH Marine",
         creeLe: daysAgo(created),
         modifieLe: daysAgo(Math.max(0, created - 3)),
         ...extra,
@@ -473,7 +534,7 @@ function seed(): State {
     void created;
     return {
       id,
-      numero: `${id}-${String(deliv.getFullYear()).slice(2)}${String(deliv.getMonth() + 1).padStart(2, "0")}-VM`,
+      numero: genNumero(id, deliv),
       marinId,
       praticien: PRATICIENS[i % 2]!,
       creeLe: deliv.toISOString(),
@@ -499,7 +560,7 @@ function seed(): State {
   // Visite du jour en cours de saisie (brouillon).
   visites.push({
     id: 3870,
-    numero: `3870-${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}-VM`,
+    numero: genNumero(3870, now),
     marinId: 4,
     praticien: PRATICIENS[0]!,
     creeLe: new Date(Date.now() - 2 * 3600000).toISOString(),
@@ -519,6 +580,49 @@ function seed(): State {
     stcw: emptyStcw(),
     signee: false,
     signataire: "",
+  });
+  // Visite de référence du dossier technique : OBAME NGUEMA Jean-Pierre, Dr MOUGOULA.
+  visites.push({
+    id: 3842,
+    numero: "VM-2026-0042",
+    marinId: 24,
+    praticien: "Dr MOUGOULA Christian",
+    creeLe: "2026-03-15T09:30:00.000Z",
+    traiteLe: "2026-03-15T10:12:00.000Z",
+    examens: {
+      taille: "178",
+      poids: "76",
+      tension: "12/8",
+      pouls: "68",
+      vision: "OD 10/10 · OG 9/10",
+      visionCorrigee: "OD 10/10 · OG 9/10 (avec correction)",
+      audition: "Normale bilatérale",
+      ecg: "Normal sans anomalie de rythme",
+      observations: "Bon état général.",
+    },
+    antecedents: "Myopie corrigée. Aucun antécédent cardio-vasculaire.",
+    complementaires: "ECG de repos : normal.",
+    recommandations: "Port des verres correcteurs en service de quart.",
+    documents: [],
+    stcw: {
+      identiteVerifiee: "oui",
+      acuiteVisuelle: "oui",
+      visionBinoculaire: "oui",
+      aidesVisuelles: "oui",
+      couleurs: "oui",
+      dateTestCouleurs: "2026-03-15",
+      auditiveSansAide: "oui",
+      acuiteAuditive: "oui",
+      communicationUrgence: "oui",
+      veille: "oui",
+      exemptAffection: "oui",
+      verdict: "apte_restrictions",
+      details: "Verres correcteurs obligatoires pour le quart de nuit.",
+      dateDelivrance: "2026-03-15",
+      validJusquau: "2028-03-14",
+    },
+    signee: true,
+    signataire: "Dr MOUGOULA Christian",
   });
   for (const m of marins) {
     const h: Evenement[] = [
@@ -785,7 +889,7 @@ export function saveVisite(
     saved = {
       ...v,
       id,
-      numero: `${id}-${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, "0")}-VM`,
+      numero: genNumero(id, d),
       creeLe: nowIso(),
       traiteLe: nowIso(),
     };
@@ -874,17 +978,17 @@ export function revoquerCertificat(id: number, motif: string, auteur: string) {
   );
 }
 
-/** Code de validation imprimé dans le QR du certificat (empreinte non devinable du certificat). */
+/**
+ * Code de validation imprimé dans le QR du certificat : GAB-DGMM-AAAA-MED-NNNN-XXXX.
+ * Le suffixe de contrôle empêche de parcourir les certificats en devinant les numéros.
+ */
 export function codeValidation(v: Visite, nip: string): string {
   const src = `${v.id}|${v.numero}|${nip}|${v.signataire}|${v.stcw.dateDelivrance}|DGMM`;
-  let h1 = 0x811c9dc5,
-    h2 = 0x01000193;
-  for (let i = 0; i < src.length; i++) {
-    h1 = Math.imul(h1 ^ src.charCodeAt(i), 16777619);
-    h2 = Math.imul(h2 ^ src.charCodeAt(i), 2246822519);
-  }
-  const part = (n: number) => (n >>> 0).toString(36).toUpperCase().padStart(6, "0").slice(-6);
-  return `${v.id}-${part(h1)}${part(h2)}`;
+  let h = 0x811c9dc5;
+  for (let k = 0; k < src.length; k++) h = Math.imul(h ^ src.charCodeAt(k), 16777619);
+  const annee = (v.stcw.dateDelivrance || v.traiteLe).slice(0, 4);
+  const seq = v.numero.split("-").pop() ?? String(v.id);
+  return `GAB-DGMM-${annee}-MED-${seq}-${(h >>> 0).toString(36).toUpperCase().padStart(4, "0").slice(-4)}`;
 }
 
 export type EtatCertificat =
@@ -903,7 +1007,7 @@ export function delivrerLivret(id: number, auteur = "Gestionnaire MM"): string {
   const m = s.marins.find((x) => x.id === id);
   if (!m) return "";
   if (m.livret) return m.livret;
-  const livret = `LM-${String(id).padStart(5, "0")}`;
+  const livret = genLivret(id);
   set(
     {
       ...s,
@@ -1135,4 +1239,14 @@ export function niveauConformite(m: Marin, visites: Visite[], date: Date = new D
   }
   if (visites.some((v) => v.marinId === m.id && !v.signee)) return "brouillon";
   return "non_conforme";
+}
+
+/** Motif bloquant la délivrance du livret (règle DGMM + certificat en cours + dossier complet), ou null. */
+export function motifLivret(m: Marin, visites: Visite[], now = new Date()): string | null {
+  const base = canIssueLivret(m);
+  if (!base.canIssue) return base.motif ?? "Conditions non remplies.";
+  const st = marinCertStatus(visites, m.id, now);
+  if (st !== "valide" && st !== "expire_bientot") return "Certificat médical STCW valide requis.";
+  if (dossierIncomplet(m)) return `Dossier incomplet : ${manquants(m).join(", ")}.`;
+  return null;
 }

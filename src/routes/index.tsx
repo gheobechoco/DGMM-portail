@@ -202,6 +202,11 @@ function LoginPage() {
                 <ArrowRight className="size-3.5 text-muted-foreground group-hover:text-primary" />
               </Link>
             </div>
+            <div className="mt-3 flex justify-center gap-4 text-xs">
+              <Link to="/verifier" className="font-semibold text-primary hover:underline">Vérifier un titre (PSC)</Link>
+              <span className="text-border">|</span>
+              <Link to="/reglementation" className="font-semibold text-primary hover:underline">Réglementation & AVURNAV</Link>
+            </div>
           </div>
         </div>
         <footer className="border-t px-6 py-4 text-center text-xs text-muted-foreground">

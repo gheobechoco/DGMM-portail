@@ -7,7 +7,7 @@ export const GLOSSAIRE = {
   nip: {
     titre: "NIP — Numéro d'Identification Personnel",
     texte:
-      "Identifiant unique attribué par la DGMM à l'enrôlement (ex. 15101-2410-DGM). Il figure sur le livret, le certificat et sert de clé de recherche et de connexion à l'Espace Marin.",
+      "Identifiant unique attribué par la DGMM à l'enrôlement (ex. GAB-2024-001284). Il figure sur le livret, le certificat et sert de clé de recherche et de connexion à l'Espace Marin.",
   },
   stcw: {
     titre: "Convention STCW — règle I/9, section A-I/9",

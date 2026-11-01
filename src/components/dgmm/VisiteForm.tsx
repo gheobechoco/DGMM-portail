@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
+  History,
   Sparkles,
   Ear,
   Eye,
@@ -26,6 +27,9 @@ import {
   type Stcw,
   type Verdict,
   type Visite,
+  useVisites,
+  formatDate,
+  VERDICT_LABELS,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
 
@@ -287,6 +291,17 @@ export function VisiteForm({
     }
   };
   const marin = marins.find((m) => m.id === v.marinId);
+  const toutes = useVisites();
+  const anciennes = toutes
+    .filter((x) => x.marinId === v.marinId && x.signee && x.id !== initial.id)
+    .sort((a, b) => b.traiteLe.localeCompare(a.traiteLe))
+    .slice(0, 4);
+  // Reprend les antécédents connus de la dernière visite pour ne pas les ressaisir.
+  const antecedentsConnus = anciennes[0]?.antecedents;
+  useEffect(() => {
+    if (v.antecedents === undefined && antecedentsConnus)
+      setV((x) => ({ ...x, antecedents: antecedentsConnus }));
+  }, [v.antecedents, antecedentsConnus]);
   const mineur = (ageFrom(marin?.dateNaissance) ?? 99) < 18;
   const inapte = isInapte(v.stcw.verdict);
   const bmi = imc(v.examens.taille, v.examens.poids);
@@ -307,6 +322,7 @@ export function VisiteForm({
         vision: s.examens.vision || "10/10",
         visionCorrigee: s.examens.visionCorrigee || "10/10",
         audition: s.examens.audition || "Normale",
+        ecg: s.examens.ecg || "Normal, rythme sinusal régulier",
         observations: s.examens.observations || "Examen clinique sans particularité.",
       },
       stcw: {
@@ -474,6 +490,53 @@ export function VisiteForm({
         )}
       </Panel>
 
+      {marin && (
+        <Panel
+          title={
+            <span className="inline-flex items-center gap-2">
+              <History className="size-4" /> Dossier médical & antécédents
+            </span>
+          }
+          description="Consultation des visites précédentes du marin (confidentiel, non imprimé sur le certificat)."
+        >
+          {anciennes.length > 0 ? (
+            <ul className="stagger mb-4 divide-y rounded-lg border">
+              {anciennes.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm"
+                >
+                  <span className="font-mono text-xs text-muted-foreground">{a.numero}</span>
+                  <span className="tabular-nums">{formatDate(a.traiteLe)}</span>
+                  <span className="font-medium">{VERDICT_LABELS[a.stcw.verdict]}</span>
+                  {a.stcw.details && (
+                    <span className="text-xs text-muted-foreground">— {a.stcw.details}</span>
+                  )}
+                  {a.examens.tension && (
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      TA {a.examens.tension}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-4 text-sm text-muted-foreground">
+              Première visite d'aptitude pour ce marin.
+            </p>
+          )}
+          <Field label="Antécédents médicaux" htmlFor="antecedents">
+            <textarea
+              id="antecedents"
+              value={v.antecedents ?? ""}
+              onChange={(e) => setV((s) => ({ ...s, antecedents: e.target.value }))}
+              className={textareaClass}
+              placeholder="Pathologies, traitements en cours, chirurgies, allergies…"
+            />
+          </Field>
+        </Panel>
+      )}
+
       <Panel
         title="Examen clinique"
         description="Constantes biométriques — l'IMC est calculé automatiquement."
@@ -508,6 +571,13 @@ export function VisiteForm({
           </Field>
           <Field label="Pouls (bpm)" htmlFor="ex-pouls">
             <input {...ex("pouls")} inputMode="numeric" className={inputClass} />
+          </Field>
+          <Field label="ECG de repos" htmlFor="ex-ecg" className="sm:col-span-3 lg:col-span-5">
+            <input
+              {...ex("ecg")}
+              placeholder="Normal, rythme sinusal régulier"
+              className={inputClass}
+            />
           </Field>
         </div>
       </Panel>

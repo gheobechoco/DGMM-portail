@@ -31,6 +31,7 @@ import {
 } from "@/components/dgmm/MarinBits";
 import { DocViewer } from "@/components/dgmm/DocViewer";
 import { Aide } from "@/components/dgmm/Aide";
+import { station as stationRef } from "@/lib/dgmm/maritime";
 import { useChanged } from "@/components/dgmm/Anim";
 import { SeaService } from "@/components/dgmm/SeaService";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ import {
   fullName,
   lastCertificate,
   manquants,
+  motifLivret,
   parseDoc,
   marinCertStatus,
   setValidationAdmin,
@@ -244,6 +246,7 @@ function Fiche({ session }: { session: Account }) {
               <Info label="Profession">{m.profession}</Info>
               <Info label="Entreprise maritime">{m.entreprise}</Info>
               <Info label="Quartier d'inscription">{m.quartierInscription}</Info>
+              <Info label="Station d'attache">{stationRef(m.station)?.nom ?? ""}</Info>
               <Info label="Identifiant marin">{m.login}</Info>
             </dl>
           </Panel>
@@ -655,7 +658,13 @@ function LivretPanel({ m, canIssue, auteur }: { m: Marin; canIssue: boolean; aut
               >
                 <BookOpenCheck /> Générer le n° de livret
               </Button>
-            ) : (
+            ) : null}
+            {!m.livret && !ok && (
+              <p className="flex items-start gap-1.5 rounded-md bg-destructive/8 px-3 py-2 text-left text-xs text-destructive">
+                <XCircle className="mt-px size-3.5 shrink-0" /> {motifLivret(m, visites)}
+              </p>
+            )}
+            {!m.livret && !canIssue && (
               <p className="text-xs text-muted-foreground">
                 La délivrance relève du Gestionnaire Marine Marchande.
               </p>

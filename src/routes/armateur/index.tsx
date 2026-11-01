@@ -25,6 +25,7 @@ import {
 } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
+import { RoleCard, aptitudeAu } from "@/components/dgmm/RoleCard";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
 import { CircularGauge, CountUp } from "@/components/dgmm/Anim";
 import { Aide } from "@/components/dgmm/Aide";
@@ -37,7 +38,7 @@ import {
   useArmateur,
   type ArmateurAccount,
 } from "@/lib/dgmm/auth";
-import { certificateStatus, type CertStatus } from "@/lib/dgmm/rules";
+import { evaluateCertStatus, libelleJours } from "@/lib/dgmm/rules";
 import { FONCTIONS_BORD, armateur as getArmateur } from "@/lib/dgmm/maritime";
 import {
   formatDate,
@@ -189,17 +190,6 @@ function ConnexionArmateur() {
   );
 }
 
-/** Aptitude d'un marin à la date d'appareillage. */
-function aptitudeAu(
-  m: Marin | undefined,
-  visites: Visite[],
-  date: string,
-): { st: CertStatus; cert: Visite | undefined } {
-  if (!m) return { st: "aucun", cert: undefined };
-  const cert = lastCertificate(visites, m.id);
-  return { st: certificateStatus(cert?.stcw.validJusquau, new Date(`${date}T12:00:00`)), cert };
-}
-
 function Tableau({ a }: { a: ArmateurAccount }) {
   const marins = useMarins();
   const visites = useVisites();
@@ -212,6 +202,23 @@ function Tableau({ a }: { a: ArmateurAccount }) {
     return s === "valide" || s === "expire_bientot";
   }).length;
   const [edit, setEdit] = useState<RoleEquipage | "new" | null>(null);
+  const allRoles = useRoles();
+  const alertes = useMemo(() => {
+    const ids = new Set([
+      ...effectif.map((m) => m.id),
+      ...allRoles
+        .filter((r) => r.armateur === a.entreprise)
+        .flatMap((r) => r.membres.map((x) => x.marinId)),
+    ]);
+    return [...ids]
+      .map((id) => marins.find((m) => m.id === id))
+      .filter((m): m is Marin => !!m)
+      .map((m) => ({ m, cert: lastCertificate(visites, m.id) }))
+      .filter((x): x is { m: Marin; cert: Visite } => !!x.cert)
+      .map((x) => ({ ...x, etat: evaluateCertStatus(x.cert.stcw.validJusquau) }))
+      .filter((x) => x.etat.status !== "valide")
+      .sort((p, q) => p.etat.joursRestants - q.etat.joursRestants);
+  }, [effectif, allRoles, a.entreprise, marins, visites]);
 
   return (
     <>
@@ -286,6 +293,105 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         )}
       </Panel>
 
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <Panel
+          title="Vue flotte"
+          description="Navires de la compagnie, équipage à bord et conformité du dernier rôle déclaré"
+          bodyClassName="p-0"
+        >
+          <ul className="stagger divide-y">
+            {flotte.map((n) => {
+              const aBord = marins.filter((m) =>
+                (m.embarquements ?? []).some((e) => e.navire === n.nom && !e.debarquement),
+              );
+              const dernier = [...roles]
+                .filter((r) => r.navire === n.nom)
+                .sort((x, y) => y.appareillage.localeCompare(x.appareillage))[0];
+              const niveaux = dernier
+                ? dernier.membres.map((x) => {
+                    const m = marins.find((y) => y.id === x.marinId);
+                    return m
+                      ? niveauConformite(m, visites, new Date(`${dernier.appareillage}T12:00:00`))
+                      : ("non_conforme" as const);
+                  })
+                : [];
+              return (
+                <li key={n.imo} className="group px-5 py-4">
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
+                      <Ship className="sway size-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <span className="font-display font-semibold text-primary">{n.nom}</span>
+                        <span className="font-mono text-[11px] text-muted-foreground">
+                          IMO {n.imo}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {n.type} · {n.jauge.toLocaleString("fr-FR")} GT · pavillon {n.pavillon}
+                      </div>
+                      <div className="mt-1 text-xs">
+                        {aBord.length ? (
+                          <span>
+                            <strong>{aBord.length}</strong> marin(s) à bord :{" "}
+                            {aBord.map((m) => fullName(m)).join(", ")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Aucun embarquement en cours enregistré.
+                          </span>
+                        )}
+                      </div>
+                      {dernier && (
+                        <div className="mt-2">
+                          <ConformityGauge
+                            compact
+                            niveaux={niveaux}
+                            sujet={`d'équipage (appareillage du ${formatDate(dernier.appareillage)})`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+        <Panel
+          title="Alertes d'expiration"
+          description="Certificats expirés ou expirant sous 30 jours"
+          bodyClassName="p-0"
+        >
+          {alertes.length === 0 ? (
+            <EmptyState icon={CheckCircle2} title="Aucune alerte">
+              Tous vos marins ont un certificat valide au-delà de 30 jours.
+            </EmptyState>
+          ) : (
+            <ul className="stagger divide-y">
+              {alertes.map(({ m, cert, etat }) => (
+                <li
+                  key={m.id}
+                  className={cn(
+                    "flex items-center gap-3 px-5 py-3",
+                    etat.status === "expire" && "glow-alert",
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-primary">{fullName(m)}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {m.profession} · échéance {formatDate(cert.stcw.validJusquau)}
+                    </div>
+                  </div>
+                  <StatusPill status={etat.status} label={libelleJours(etat.joursRestants)} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
       <Panel title="Effectif rattaché à la compagnie" className="mt-6" bodyClassName="p-0">
         {effectif.length === 0 ? (
           <EmptyState icon={Users} title="Aucun marin rattaché" />
@@ -320,129 +426,6 @@ function Tableau({ a }: { a: ArmateurAccount }) {
   );
 }
 
-function RoleCard({
-  r,
-  marins,
-  visites,
-  onEdit,
-}: {
-  r: RoleEquipage;
-  marins: Marin[];
-  visites: Visite[];
-  onEdit: () => void;
-}) {
-  const rows = r.membres.map((x) => {
-    const m = marins.find((y) => y.id === x.marinId);
-    return { ...x, m, ...aptitudeAu(m, visites, r.appareillage) };
-  });
-  const bloquants = rows.filter((x) => x.st !== "valide" && x.st !== "expire_bientot");
-  const ok = bloquants.length === 0 && rows.length > 0;
-  const passe = r.appareillage < new Date().toISOString().slice(0, 10);
-  return (
-    <article
-      className={cn(
-        "group overflow-hidden rounded-lg border",
-        !ok && rows.length > 0 && "glow-alert",
-      )}
-    >
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-3 px-4 py-3",
-          ok ? "bg-success/8" : "bg-destructive/6",
-        )}
-      >
-        <Ship className="sway size-5 text-primary" />
-        <div className="min-w-0 flex-1">
-          <div className="font-display font-semibold text-primary">{r.navire}</div>
-          <div className="text-xs text-muted-foreground">
-            Appareillage {passe ? "effectué le" : "prévu le"} {formatDate(r.appareillage)} ·{" "}
-            {rows.length} marin(s)
-          </div>
-        </div>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
-            ok
-              ? "bg-success text-success-foreground"
-              : "bg-destructive text-destructive-foreground",
-          )}
-        >
-          {ok ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
-          {ok
-            ? "Conforme — appareillage autorisé"
-            : `Non conforme — ${bloquants.length} marin(s) bloquant(s)`}
-        </span>
-        <Button size="sm" variant="outline" onClick={onEdit}>
-          Modifier
-        </Button>
-      </div>
-      <div className="flex items-center gap-4 border-b px-4 py-3">
-        <CircularGauge
-          value={rows.length ? ((rows.length - bloquants.length) / rows.length) * 100 : 0}
-          label={`Aptitude de l'équipage de ${r.navire} à l'appareillage`}
-          size={64}
-          stroke={7}
-        >
-          <span className="font-display text-sm font-bold text-primary">
-            <CountUp
-              value={
-                rows.length ? Math.round(((rows.length - bloquants.length) / rows.length) * 100) : 0
-              }
-            />
-            %
-          </span>
-        </CircularGauge>
-        <div className="min-w-0 flex-1">
-          <ConformityGauge
-            compact
-            sujet="d'équipage"
-            niveaux={rows.map((x) =>
-              x.m
-                ? niveauConformite(x.m, visites, new Date(`${r.appareillage}T12:00:00`))
-                : "non_conforme",
-            )}
-          />
-        </div>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <tr className="border-b">
-              <th className="px-4 py-2 font-semibold">Marin</th>
-              <th className="px-3 py-2 font-semibold">Fonction à bord</th>
-              <th className="px-3 py-2 font-semibold">Livret</th>
-              <th className="px-3 py-2 font-semibold">Échéance médicale</th>
-              <th className="px-4 py-2 font-semibold">À l'appareillage</th>
-            </tr>
-          </thead>
-          <tbody className="stagger divide-y">
-            {rows.map((x) => (
-              <tr
-                key={x.marinId}
-                className={cn(x.st !== "valide" && x.st !== "expire_bientot" && "glow-alert")}
-              >
-                <td className="px-4 py-2">
-                  <div className="font-medium">{fullName(x.m)}</div>
-                  <div className="font-mono text-[11px] text-muted-foreground">{x.m?.nip}</div>
-                </td>
-                <td className="px-3 py-2">{x.fonction}</td>
-                <td className="px-3 py-2 font-mono text-xs">{x.m?.livret || "—"}</td>
-                <td className="px-3 py-2 tabular-nums">{formatDate(x.cert?.stcw.validJusquau)}</td>
-                <td className="px-4 py-2">
-                  <StatusPill
-                    status={x.st}
-                    label={x.st === "expire_bientot" ? "Valide (bientôt)" : undefined}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </article>
-  );
-}
-
 function RoleDialog({
   a,
   role,
@@ -453,6 +436,7 @@ function RoleDialog({
   onClose: () => void;
 }) {
   const marins = useMarins();
+  const visitesRole = useVisites();
   const flotte = useMemo(() => getArmateur(a.entreprise)?.navires ?? [], [a.entreprise]);
   const [navire, setNavire] = useState(role?.navire ?? flotte[0]?.nom ?? "");
   const [date, setDate] = useState(
@@ -472,6 +456,12 @@ function RoleDialog({
     const m = marins.find((x) => x.nip.toUpperCase() === nip.trim().toUpperCase());
     if (!m) return setErr("Aucun marin enregistré avec ce NIP.");
     if (membres.some((x) => x.marinId === m.id)) return setErr("Ce marin figure déjà au rôle.");
+    // Règle DGMM : embarquement d'un marin apte uniquement (certificat valide à la date d'appareillage).
+    const { st } = aptitudeAu(m, visitesRole, date);
+    if (st !== "valide" && st !== "expire_bientot")
+      return setErr(
+        `Embarquement refusé : ${fullName(m)} n'a pas de certificat médical STCW valide au ${formatDate(date)}.`,
+      );
     setMembres([...membres, { marinId: m.id, fonction }]);
     setNip("");
     setErr(null);
@@ -558,7 +548,7 @@ function RoleDialog({
               <input
                 id="r-nip"
                 className={cn(inputClass, "font-mono uppercase")}
-                placeholder="15101-2410-DGM"
+                placeholder="GAB-2024-001284"
                 value={nip}
                 onChange={(e) => setNip(e.target.value)}
               />
@@ -589,6 +579,18 @@ function RoleDialog({
             variant="gold"
             disabled={!navire || !date || membres.length === 0}
             onClick={() => {
+              const inaptes = membres
+                .map((x) => marins.find((y) => y.id === x.marinId))
+                .filter((m) => {
+                  const { st } = aptitudeAu(m, visitesRole, date);
+                  return st !== "valide" && st !== "expire_bientot";
+                });
+              if (inaptes.length) {
+                setErr(
+                  `Appareillage impossible : ${inaptes.map((m) => fullName(m)).join(", ")} ${inaptes.length > 1 ? "n'ont" : "n'a"} pas de certificat valide au ${formatDate(date)}. Retirez-les du rôle ou faites renouveler leur visite.`,
+                );
+                return;
+              }
               saveRole(
                 {
                   ...(role ? { id: role.id } : {}),

@@ -118,7 +118,7 @@ function ConnexionMarin() {
                   id="nip"
                   value={nip}
                   onChange={(e) => setNip(e.target.value)}
-                  placeholder="15101-2410-DGM"
+                  placeholder="GAB-2024-001284"
                   className="h-full flex-1 bg-transparent font-mono text-sm uppercase outline-none"
                   autoComplete="username"
                 />

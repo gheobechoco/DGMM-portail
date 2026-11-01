@@ -19,7 +19,7 @@ import {
   Ship,
 } from "lucide-react";
 import { useSession, type Account } from "@/lib/dgmm/auth";
-import { ARMATEURS, TOUS_NAVIRES, TYPES_FLOTTE } from "@/lib/dgmm/maritime";
+import { ARMATEURS, STATIONS, TOUS_NAVIRES, TYPES_FLOTTE } from "@/lib/dgmm/maritime";
 import { ageBracket, can, isOverdueRegistration, profil } from "@/lib/dgmm/rules";
 import {
   VERDICT_LABELS,
@@ -314,6 +314,7 @@ function PilotageDashboard({ session }: { session: Account }) {
       })),
       professions: countBy(marins, (m) => m.profession),
       compagnies: countBy(marins, (m) => m.entreprise),
+      stations: countBy(marins, (m) => STATIONS.find((x) => x.code === m.station)?.ville ?? ""),
     };
   }, [marins, visites]);
 
@@ -487,7 +488,18 @@ function PilotageDashboard({ session }: { session: Account }) {
         </Panel>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <Panel
+          title="Répartition par station maritime"
+          description="Station d'attache des gens de mer"
+        >
+          <HBars
+            data={d.stations}
+            unit="marins"
+            color="var(--chart-1)"
+            label="Répartition par station"
+          />
+        </Panel>
         <Panel title="Répartition par profession">
           <HBars
             data={d.professions}

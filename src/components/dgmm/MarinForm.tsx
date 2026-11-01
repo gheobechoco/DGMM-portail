@@ -13,6 +13,7 @@ import {
   type Marin,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
+import { STATIONS } from "@/lib/dgmm/maritime";
 
 export type MarinInput = Omit<
   Marin,
@@ -67,6 +68,7 @@ export function emptyMarin(): MarinInput {
     dateMariage: "",
     lieuMariage: "",
     situationMatrimoniale: "",
+    station: "",
     documents: {},
   };
 }
@@ -91,6 +93,7 @@ function toInput(m: Marin): MarinInput {
 
 type Errors = Partial<Record<keyof MarinInput, string>>;
 const VOLET1: (keyof MarinInput)[] = [
+  "station",
   "nom",
   "prenom",
   "sexe",
@@ -114,6 +117,7 @@ function validate(v: MarinInput): Errors {
     if (age > 80) e.dateNaissance = "Vérifiez la date de naissance.";
   }
   if (!v.profession) e.profession = "Choisissez une profession.";
+  if (!v.station) e.station = "Assignez une station maritime d'attache.";
   if (!v.nationalite) e.nationalite = "Choisissez une nationalité.";
   if (!/^0\d{7,8}$/.test(v.tel1.replace(/\s/g, "")))
     e.tel1 = "Numéro gabonais attendu (ex. 077 45 20 17).";
@@ -432,6 +436,23 @@ export function MarinForm({
                   <option value="">Choisir…</option>
                   {QUARTIERS.map((n) => (
                     <option key={n}>{n}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                label="Station maritime d'attache"
+                htmlFor="station"
+                required
+                error={errors.station}
+                valid={ok("station")}
+                className="sm:col-span-2 lg:col-span-3"
+              >
+                <select {...text("station")} className={selectClass}>
+                  <option value="">Choisir la station…</option>
+                  {STATIONS.map((st) => (
+                    <option key={st.code} value={st.code}>
+                      {st.nom} — {st.type} ({st.province})
+                    </option>
                   ))}
                 </select>
               </Field>

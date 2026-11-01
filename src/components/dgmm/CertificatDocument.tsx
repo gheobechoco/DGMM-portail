@@ -144,6 +144,7 @@ export function CertificatDocument({ v, m }: { v: Visite; m: Marin | undefined }
             <Info label="Tension">{v.examens.tension}</Info>
             <Info label="Pouls">{v.examens.pouls && `${v.examens.pouls} bpm`}</Info>
             <Info label="Audition">{v.examens.audition}</Info>
+            <Info label="ECG">{v.examens.ecg ?? ""}</Info>
             <Info label="Vision sans corr.">{v.examens.vision}</Info>
             <Info label="Vision avec corr.">{v.examens.visionCorrigee}</Info>
           </dl>

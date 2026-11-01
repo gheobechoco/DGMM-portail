@@ -6,6 +6,7 @@ import { EmptyState, Info } from "@/components/dgmm/Page";
 import { OfficialHeader } from "@/components/dgmm/OfficialHeader";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { ExportButton } from "@/components/dgmm/Anim";
+import { station as stationRef } from "@/lib/dgmm/maritime";
 import { formatDate, lastCertificate, useMarins, useVisites } from "@/lib/dgmm/store";
 
 export const Route = createFileRoute("/espace/livrets/$id")({
@@ -77,6 +78,7 @@ function Attestation() {
               <Info label="Nationalité">{m.nationalite}</Info>
               <Info label="NIP">{m.nip}</Info>
               <Info label="Quartier d'inscription">{m.quartierInscription}</Info>
+              <Info label="Station d'attache">{stationRef(m.station)?.nom ?? ""}</Info>
               <Info label="Profession">{m.profession}</Info>
               <Info label="Taille">{m.taille ? `${m.taille} cm` : ""}</Info>
               <Info label="Yeux / cheveux">

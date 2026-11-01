@@ -28,7 +28,7 @@ export const ACCOUNTS: Account[] = [
   {
     username: "mdt",
     password: "azerty",
-    nom: "Dr MÉDECIN DU TRAVAIL",
+    nom: "Dr MOUGOULA Christian",
     role: "medecin",
     roleLabel: "Médecin du travail",
   },
