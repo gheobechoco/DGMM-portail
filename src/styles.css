@@ -477,3 +477,99 @@ tr.glow-alert {
 [data-contrast="eleve"] .sceau-filigrane {
   display: none;
 }
+
+/* =====================================================================
+ * MODE NUIT — palette sombre « mer de nuit » (bleu marine profond, accents or).
+ * Le bleu marine institutionnel reste la couleur d'identité (bandeaux, en-têtes),
+ * les textes « primaires » passent en bleu clair pour rester lisibles.
+ * ===================================================================== */
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.165 0.028 262);
+  --foreground: oklch(0.93 0.012 255);
+  --card: oklch(0.215 0.032 262);
+  --card-foreground: oklch(0.93 0.012 255);
+  --popover: oklch(0.235 0.035 262);
+  --popover-foreground: oklch(0.93 0.012 255);
+  --primary: oklch(0.47 0.12 260);
+  --primary-foreground: oklch(0.985 0.003 247.858);
+  --primary-soft: oklch(0.3 0.06 262);
+  --primary-text: oklch(0.86 0.06 255);
+  --secondary: oklch(0.47 0.1 160);
+  --secondary-foreground: oklch(0.98 0.01 160);
+  --secondary-text: oklch(0.8 0.12 160);
+  --muted: oklch(0.255 0.03 262);
+  --muted-foreground: oklch(0.74 0.025 257);
+  --accent: oklch(0.28 0.035 262);
+  --accent-foreground: oklch(0.95 0.01 255);
+  --gold: oklch(0.8 0.13 88);
+  --gold-foreground: oklch(0.205 0.045 262);
+  --success: oklch(0.72 0.15 155);
+  --success-foreground: oklch(0.18 0.03 160);
+  --warning: oklch(0.8 0.14 70);
+  --warning-foreground: oklch(0.2 0.03 70);
+  --destructive: oklch(0.68 0.19 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.32 0.03 262);
+  --input: oklch(0.42 0.035 262);
+  --chart-1: oklch(0.74 0.11 255);
+  --chart-2: oklch(0.72 0.12 160);
+  --chart-4: oklch(0.7 0.13 255);
+  --sidebar: oklch(0.13 0.03 262);
+  --sidebar-accent: oklch(0.24 0.045 262);
+  --sidebar-border: oklch(0.26 0.035 262);
+  --glass-bg: oklch(0.13 0.03 262 / 0.85);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.35), 0 10px 28px -12px oklch(0 0 0 / 0.6);
+  --gradient-navy: linear-gradient(160deg, oklch(0.2 0.05 262), oklch(0.13 0.035 262) 60%, oklch(0.18 0.05 200));
+}
+.dark .text-primary,
+.dark .hover\:text-primary:hover,
+.dark .group:hover .group-hover\:text-primary {
+  color: var(--primary-text);
+}
+.dark .text-secondary {
+  color: var(--secondary-text);
+}
+.dark .bg-muted\/40,
+.dark .bg-muted\/50,
+.dark .bg-muted\/60 {
+  background-color: oklch(0.255 0.03 262 / 0.7);
+}
+
+/* Documents officiels (certificat, attestation) : toujours sur fond clair, à l'écran comme à l'impression. */
+.dark .print-sheet {
+  color-scheme: light;
+  --background: oklch(0.984 0.003 247.858);
+  --foreground: oklch(0.279 0.041 260.031);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.279 0.041 260.031);
+  --primary: var(--mm-blue-dark);
+  --primary-soft: oklch(0.94 0.02 255);
+  --primary-text: var(--mm-blue-dark);
+  --secondary: var(--mm-green-dark);
+  --secondary-text: var(--mm-green-dark);
+  --muted: oklch(0.955 0.008 250);
+  --muted-foreground: oklch(0.52 0.03 257);
+  --success: oklch(0.52 0.12 155);
+  --warning: oklch(0.68 0.15 65);
+  --destructive: oklch(0.56 0.21 27);
+  --border: oklch(0.905 0.014 255);
+  --gold: var(--mm-gold);
+  color: var(--foreground);
+}
+
+/* Transition douce lors du changement de thème */
+html.theme-transition,
+html.theme-transition * {
+  transition: background-color 280ms ease, border-color 280ms ease, color 200ms ease !important;
+}
+
+/* Filigrane en mode nuit : sceau inversé (disque sombre, traits clairs), plus discret. */
+.dark .sceau-filigrane {
+  filter: invert(1) hue-rotate(180deg);
+  opacity: 0.035 !important;
+}
+.dark .print-sheet .sceau-filigrane {
+  filter: none;
+  opacity: 0.05 !important;
+}

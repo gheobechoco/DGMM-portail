@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportDgmmError } from "../lib/dgmm-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { appliquerPrefs, estSombre, usePrefs } from "@/lib/dgmm/prefs";
 
 function NotFoundComponent() {
   return (
@@ -84,10 +85,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const THEME_INIT = `try{var p=JSON.parse(localStorage.getItem("dgmm-prefs")||"{}");var d=p.theme==="sombre"||(p.theme!=="clair"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}}catch(e){}`;
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <head>
+        {/* Applique le thème avant le premier affichage (évite le flash blanc en mode nuit). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <HeadContent />
       </head>
       <body>
@@ -100,10 +105,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const prefs = usePrefs();
+  useEffect(() => appliquerPrefs(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="top-right" theme={estSombre(prefs) ? "dark" : "light"} />
     </QueryClientProvider>
   );
 }

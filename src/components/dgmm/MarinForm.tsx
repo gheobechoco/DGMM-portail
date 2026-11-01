@@ -1,5 +1,17 @@
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Check, FileCheck2, Paperclip, Save, User, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  FileCheck2,
+  Paperclip,
+  Save,
+  User,
+  X,
+  Fingerprint,
+  ScanFace,
+  PenLine,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import {
@@ -13,6 +25,8 @@ import {
   type Marin,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
+import { Aide } from "@/components/dgmm/Aide";
+import { SignaturePad } from "@/components/dgmm/SignaturePad";
 import { STATIONS } from "@/lib/dgmm/maritime";
 
 export type MarinInput = Omit<
@@ -123,6 +137,10 @@ function validate(v: MarinInput): Errors {
     e.tel1 = "Numéro gabonais attendu (ex. 077 45 20 17).";
   if (v.tel2 && !/^0\d{7,8}$/.test(v.tel2.replace(/\s/g, ""))) e.tel2 = "Numéro invalide.";
   if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) e.email = "Adresse e-mail invalide.";
+  if (v.poids && (Number(v.poids) < 35 || Number(v.poids) > 200))
+    e.poids = "Poids en kg (35 à 200).";
+  if (!v.signeParticulier?.trim())
+    e.signeParticulier = "Indiquez les signes particuliers, ou « Néant ».";
   if (v.taille && (Number(v.taille) < 120 || Number(v.taille) > 230))
     e.taille = "Taille en cm (120 à 230).";
   return e;
@@ -173,7 +191,11 @@ function Grid({ children }: { children: ReactNode }) {
 function Stepper({ step, onStep }: { step: 1 | 2; onStep: (s: 1 | 2) => void }) {
   const steps = [
     { n: 1 as const, t: "État civil & contact", d: "Identité, coordonnées, profession" },
-    { n: 2 as const, t: "Signalement & documents", d: "Signalement, situation, pièces jointes" },
+    {
+      n: 2 as const,
+      t: "Description, biométrie & documents",
+      d: "Description physique, biométrie, pièces jointes",
+    },
   ];
   return (
     <ol className="mb-6 grid gap-2 sm:grid-cols-2" aria-label="Étapes de l'enrôlement">
@@ -227,7 +249,9 @@ export function MarinForm({
   onSubmit,
   onCancel,
   submitLabel,
+  agent = "Agent DGMM",
 }: {
+  agent?: string | undefined;
   initial?: Marin | undefined;
   onSubmit: (v: MarinInput) => void;
   onCancel: () => void;
@@ -462,8 +486,12 @@ export function MarinForm({
       ) : (
         <div className="space-y-6">
           <Panel
-            title="Signalement"
-            description="Ces informations figurent sur le livret maritime."
+            title={
+              <span className="inline-flex items-center gap-1.5">
+                Description physique & signes particuliers <Aide terme="description" />
+              </span>
+            }
+            description="Figure sur le livret maritime et la fiche d'aptitude médicale."
           >
             <Grid>
               <Field
@@ -478,6 +506,16 @@ export function MarinForm({
                   inputMode="numeric"
                   min={120}
                   max={230}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Poids (kg)" htmlFor="poids" error={errors.poids} valid={ok("poids")}>
+                <input
+                  {...text("poids")}
+                  type="number"
+                  inputMode="numeric"
+                  min={35}
+                  max={200}
                   className={inputClass}
                 />
               </Field>
@@ -500,11 +538,128 @@ export function MarinForm({
               <Field
                 label="Signes particuliers"
                 htmlFor="signeParticulier"
+                required
+                error={errors.signeParticulier}
+                valid={ok("signeParticulier")}
+                hint="Section obligatoire : cicatrices visibles, tatouages, amputations, taches de naissance — ou « Néant »."
                 className="sm:col-span-2 lg:col-span-3"
               >
-                <input {...text("signeParticulier")} placeholder="Néant" className={inputClass} />
+                <input
+                  {...text("signeParticulier")}
+                  placeholder="Ex. cicatrice de 3 cm à l'avant-bras gauche, tatouage d'ancre épaule droite… ou Néant"
+                  className={inputClass}
+                />
               </Field>
             </Grid>
+          </Panel>
+
+          <Panel
+            title={
+              <span className="inline-flex items-center gap-1.5">
+                <Fingerprint className="size-4" /> Données biométriques <Aide terme="biometrie" />
+              </span>
+            }
+            description="Empreintes digitales numériques, photographie normalisée et signature numérisée : obligatoires pour la délivrance du livret."
+          >
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+                  <ScanFace className="size-4" /> Photographie normalisée
+                </div>
+                {v.documents.photo?.startsWith("data:") ? (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={v.documents.photo}
+                      alt="Photo d'identité normalisée"
+                      className="h-20 w-[62px] rounded-md border object-cover"
+                    />
+                    <p className="text-xs text-success">
+                      Recadrée au format passeport OMI 35 × 45 mm.
+                    </p>
+                  </div>
+                ) : v.documents.photo ? (
+                  <p className="text-xs text-success">Photo d'identité enregistrée.</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    À joindre dans les pièces justificatives ci-dessous (« Photo d'identité »).
+                  </p>
+                )}
+              </div>
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+                  <Fingerprint className="size-4" /> Empreintes digitales
+                </div>
+                {v.biometrie?.empreintes?.statut === "capturees" ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-5 gap-1" aria-label="10 empreintes capturées">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <span
+                          key={i}
+                          className="pop-in grid aspect-square place-items-center rounded bg-success/12 text-success"
+                          style={{ animationDelay: `${i * 40}ms` }}
+                        >
+                          <Fingerprint className="size-3.5" />
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-success">
+                      10 empreintes capturées
+                      {v.biometrie.empreintes.le
+                        ? ` le ${new Date(v.biometrie.empreintes.le).toLocaleDateString("fr-FR")}`
+                        : ""}
+                      {v.biometrie.empreintes.par ? ` par ${v.biometrie.empreintes.par}` : ""}.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        up("biometrie", {
+                          ...v.biometrie,
+                          empreintes: { statut: "a_capturer", doigts: 0 },
+                        })
+                      }
+                    >
+                      Reprendre la capture
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Capture au lecteur d'empreintes du poste d'enrôlement (10 doigts). Confirmez
+                      une fois la capture effectuée.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() =>
+                        up("biometrie", {
+                          ...v.biometrie,
+                          empreintes: {
+                            statut: "capturees",
+                            doigts: 10,
+                            le: new Date().toISOString(),
+                            par: agent,
+                          },
+                        })
+                      }
+                    >
+                      <Fingerprint /> Confirmer la capture des 10 empreintes
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+                  <PenLine className="size-4" /> Signature numérisée
+                </div>
+                <SignaturePad
+                  value={v.biometrie?.signature}
+                  onChange={(sig) => up("biometrie", { ...v.biometrie, signature: sig })}
+                />
+              </div>
+            </div>
           </Panel>
 
           <Panel title="Situation matrimoniale">
@@ -629,7 +784,7 @@ export function MarinForm({
         )}
         {step === 1 ? (
           <Button type="submit" variant="gold">
-            Volet 2 : signalement & documents <ArrowRight />
+            Volet 2 : description, biométrie & documents <ArrowRight />
           </Button>
         ) : (
           <Button type="submit" variant="gold">

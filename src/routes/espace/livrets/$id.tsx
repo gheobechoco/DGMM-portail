@@ -85,7 +85,11 @@ function Attestation() {
               <Info label="Quartier d'inscription">{m.quartierInscription}</Info>
               <Info label="Station d'attache">{stationRef(m.station)?.nom ?? ""}</Info>
               <Info label="Profession">{m.profession}</Info>
-              <Info label="Taille">{m.taille ? `${m.taille} cm` : ""}</Info>
+              <Info label="Taille / poids">
+                {[m.taille && `${m.taille} cm`, m.poids && `${m.poids} kg`]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Info>
               <Info label="Yeux / cheveux">
                 {[m.couleurYeux, m.couleurCheveux].filter(Boolean).join(" / ")}
               </Info>
@@ -108,8 +112,25 @@ function Attestation() {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap justify-between gap-2 border-t px-6 py-4 text-xs text-muted-foreground">
-          <span>Délivré à Libreville le {formatDate(dateDeliv)}</span>
+        <div className="flex flex-wrap items-end justify-between gap-2 border-t px-6 py-4 text-xs text-muted-foreground">
+          <span>
+            Délivré à Libreville le {formatDate(dateDeliv)}
+            <span className="mt-2 block">Signature du titulaire</span>
+            {m.biometrie?.signature ? (
+              <img
+                src={m.biometrie.signature}
+                alt={`Signature de ${m.prenom} ${m.nom}`}
+                className="mt-1 h-12 max-w-[180px] object-contain"
+              />
+            ) : (
+              <span className="mt-1 block h-12 w-44 border-b border-dashed" aria-hidden />
+            )}
+            {m.biometrie?.empreintes?.statut === "capturees" && (
+              <span className="mt-1 block text-[10px]">
+                Empreintes digitales enregistrées (10 doigts)
+              </span>
+            )}
+          </span>
           <span className="text-right">
             Pour le Directeur Général de la Marine Marchande
             <br />

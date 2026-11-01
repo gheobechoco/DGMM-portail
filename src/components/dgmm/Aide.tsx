@@ -49,6 +49,16 @@ export const GLOSSAIRE = {
     texte:
       "Temps de navigation effectif inscrit au livret (navire, fonction, dates). Il est exigé pour l'accès aux brevets STCW supérieurs (officier, capitaine, chef mécanicien).",
   },
+  description: {
+    titre: "Description physique & signes particuliers",
+    texte:
+      "Remplace l'ancien « signalement anthropométrique », terme qui n'existe plus dans les textes ni les formulaires de la Marine marchande gabonaise. On relève la taille, le poids, la couleur des yeux et des cheveux, et — section obligatoire — les signes particuliers servant à l'identification : cicatrices visibles, tatouages, amputations, taches de naissance (ou « Néant »).",
+  },
+  biometrie: {
+    titre: "Données biométriques",
+    texte:
+      "Le vrai remplaçant du signalement à la règle et au compas. À la création du dossier de gens de mer, l'administration enregistre les empreintes digitales numériques, une photographie d'identité normalisée (reconnaissance faciale) et la signature numérisée du marin.",
+  },
 } as const;
 
 export type Terme = keyof typeof GLOSSAIRE;

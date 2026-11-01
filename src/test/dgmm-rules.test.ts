@@ -97,3 +97,28 @@ describe("code de validation du certificat", () => {
     expect(codeValidation(v, "GAB-2024-001285")).not.toBe(a);
   });
 });
+
+describe("description physique & biométrie", () => {
+  it("le dossier n'est complet qu'avec empreintes et signature numérisée", async () => {
+    const { dossierIncomplet, manquants } = await import("@/lib/dgmm/store");
+    const base = {
+      dateNaissance: "1988-06-14",
+      taille: "178",
+      couleurYeux: "Marron",
+      couleurCheveux: "Noir",
+      quartierInscription: "Libreville",
+      signeParticulier: "Néant",
+      documents: { photo: "photo.jpg", piece: "cni.pdf" },
+    } as unknown as Parameters<typeof dossierIncomplet>[0];
+    expect(dossierIncomplet(base)).toBe(true);
+    expect(manquants(base)).toEqual(["Empreintes digitales", "Signature numérisée"]);
+    const complet = {
+      ...base,
+      biometrie: {
+        empreintes: { statut: "capturees" as const, doigts: 10 },
+        signature: "data:image/png;base64,AA",
+      },
+    };
+    expect(dossierIncomplet(complet)).toBe(false);
+  });
+});

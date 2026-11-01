@@ -9,6 +9,8 @@ import {
   Eye,
   FileCheck2,
   FilePen,
+  Fingerprint,
+  PenLine,
   Paperclip,
   Pencil,
   Printer,
@@ -31,6 +33,7 @@ import {
 } from "@/components/dgmm/MarinBits";
 import { DocViewer } from "@/components/dgmm/DocViewer";
 import { Aide } from "@/components/dgmm/Aide";
+import { BioItem } from "@/components/dgmm/BioItem";
 import { station as stationRef } from "@/lib/dgmm/maritime";
 import { useChanged } from "@/components/dgmm/Anim";
 import { SeaService } from "@/components/dgmm/SeaService";
@@ -250,13 +253,73 @@ function Fiche({ session }: { session: Account }) {
               <Info label="Identifiant marin">{m.login}</Info>
             </dl>
           </Panel>
-          <Panel title="Signalement">
+          <Panel
+            title={
+              <span className="inline-flex items-center gap-1.5">
+                Description physique <Aide terme="description" />
+              </span>
+            }
+          >
             <dl className="grid grid-cols-2 gap-4">
               <Info label="Taille">{m.taille ? `${m.taille} cm` : ""}</Info>
+              <Info label="Poids">{m.poids ? `${m.poids} kg` : ""}</Info>
               <Info label="Yeux">{m.couleurYeux}</Info>
               <Info label="Cheveux">{m.couleurCheveux}</Info>
-              <Info label="Signes particuliers">{m.signeParticulier}</Info>
             </dl>
+            <div className="mt-4">
+              <dt className="text-xs text-muted-foreground">Signes particuliers</dt>
+              <dd className="mt-0.5 text-sm font-medium">{m.signeParticulier || "—"}</dd>
+            </div>
+          </Panel>
+          <Panel
+            title={
+              <span className="inline-flex items-center gap-1.5">
+                <Fingerprint className="size-4" /> Données biométriques <Aide terme="biometrie" />
+              </span>
+            }
+            className="lg:col-span-2"
+          >
+            <div className="grid gap-4 sm:grid-cols-3">
+              <BioItem
+                ok={!!m.documents.photo}
+                titre="Photographie normalisée"
+                detail={
+                  m.documents.photo?.startsWith("data:")
+                    ? "Format passeport OMI 35 × 45"
+                    : m.documents.photo
+                      ? "Enregistrée"
+                      : "À joindre"
+                }
+              >
+                <MarinPhoto m={m} className="h-16 w-[50px] rounded-md border text-xs" />
+              </BioItem>
+              <BioItem
+                ok={m.biometrie?.empreintes?.statut === "capturees"}
+                titre="Empreintes digitales"
+                detail={
+                  m.biometrie?.empreintes?.statut === "capturees"
+                    ? `10 doigts${m.biometrie.empreintes.le ? ` · ${formatDate(m.biometrie.empreintes.le)}` : ""}${m.biometrie.empreintes.par ? ` · ${m.biometrie.empreintes.par}` : ""}`
+                    : "À capturer au poste d'enrôlement"
+                }
+              >
+                <Fingerprint className="size-8 text-muted-foreground" />
+              </BioItem>
+              <BioItem
+                ok={!!m.biometrie?.signature}
+                titre="Signature numérisée"
+                detail={m.biometrie?.signature ? "Enregistrée" : "À recueillir"}
+              >
+                {m.biometrie?.signature ? (
+                  <img
+                    src={m.biometrie.signature}
+                    alt={`Signature de ${fullName(m)}`}
+                    className="h-12 max-w-[140px] rounded bg-white object-contain px-1"
+                  />
+                ) : (
+                  <PenLine className="size-8 text-muted-foreground" />
+                )}
+              </BioItem>
+            </div>
           </Panel>
           <p className="text-xs text-muted-foreground lg:col-span-2">
             Créé le {formatDate(m.creeLe)} par {m.creePar} · modifié le {formatDate(m.modifieLe)}
@@ -373,6 +436,10 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
     ["Justificatif de domicile", "residence"],
     ["Contrat de travail", "contrat"],
   ];
+  const bio: [string, boolean][] = [
+    ["Empreintes digitales", m.biometrie?.empreintes?.statut === "capturees"],
+    ["Signature numérisée", !!m.biometrie?.signature],
+  ];
   const miss = manquants(m).filter((x) => !["Photo d'identité", "Pièce d'identité"].includes(x));
   const required = !!m.documents.photo && !!m.documents.piece;
   return (
@@ -416,6 +483,24 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
               );
             })}
           </ul>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+            {bio.map(([label, ok]) => (
+              <li key={label} className="flex items-center gap-2 text-sm">
+                <span
+                  className={cn(
+                    "grid size-5 place-items-center rounded-full",
+                    ok ? "bg-success text-success-foreground" : "bg-warning/15 text-warning",
+                  )}
+                >
+                  {ok ? <Check className="size-3" /> : <Fingerprint className="size-3" />}
+                </span>
+                <span className={ok ? "" : "text-muted-foreground"}>
+                  {label}
+                  {!ok && " — biométrie à compléter"}
+                </span>
+              </li>
+            ))}
+          </ul>
           <DocViewer
             titre={voir ? DOC_LABELS[voir] : ""}
             value={voir ? m.documents[voir] : undefined}
@@ -424,7 +509,7 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
           />
           {miss.length > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Signalement à compléter avant le livret : {miss.join(", ")}.
+              À compléter avant le livret : {miss.join(", ")}.
             </p>
           )}
           {rejet && (
@@ -599,7 +684,7 @@ function LivretPanel({ m, canIssue, auteur }: { m: Marin; canIssue: boolean; aut
     ["Validation administrative DGMM", m.validationAdmin === "validee"],
     ["Validation médicale (centre agréé)", m.validationMedicale === "validee"],
     ["Certificat STCW en cours de validité", st === "valide" || st === "expire_bientot"],
-    ["Dossier complet (signalement, photo, CNI/Passeport)", !dossierIncomplet(m)],
+    ["Dossier complet (description physique, biométrie, CNI/Passeport)", !dossierIncomplet(m)],
   ];
   const ok = eligibleLivret(m, visites);
   const miss = manquants(m);

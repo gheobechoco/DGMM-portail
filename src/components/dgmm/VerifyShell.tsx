@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
-import { Sun } from "lucide-react";
+import { Contrast } from "lucide-react";
+import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { appliquerPrefs, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { Tricolor } from "@/components/dgmm/Brand";
@@ -32,7 +33,7 @@ export function VerifyShell({
         opacite={0.06}
       />
       <Tricolor />
-      <header className="flex items-center justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground sm:px-5">
+      <header className="flex items-center justify-between gap-3 bg-sidebar px-4 py-3 text-primary-foreground sm:px-5">
         <a
           href="/verifier"
           className="flex min-w-0 items-center gap-3"
@@ -58,8 +59,9 @@ export function VerifyShell({
           title={lang === "fr" ? "Contraste élevé" : "High contrast"}
           className="ml-auto grid size-8 shrink-0 place-items-center rounded-md border border-primary-foreground/30 aria-pressed:bg-gold aria-pressed:text-gold-foreground"
         >
-          <Sun className="size-4" />
+          <Contrast className="size-4" />
         </button>
+        <ThemeToggle light className="size-8" />
         <div
           className="flex shrink-0 overflow-hidden rounded-md border border-primary-foreground/30"
           role="group"

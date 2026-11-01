@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { appliquerPrefs } from "@/lib/dgmm/prefs";
+import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { LogOut } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
@@ -25,7 +26,7 @@ export function PublicShell({
         opacite={0.05}
       />
       <Tricolor className="no-print" />
-      <header className="no-print bg-primary text-primary-foreground">
+      <header className="no-print bg-sidebar text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
           <Link to="/" className="flex items-center gap-3">
             <DgmmLogo className="size-10" />
@@ -38,6 +39,7 @@ export function PublicShell({
           </Link>
           <div className="ml-auto flex items-center gap-3">
             {utilisateur && <div className="hidden text-right text-xs sm:block">{utilisateur}</div>}
+            <ThemeToggle light />
             {onLogout ? (
               <button
                 type="button"

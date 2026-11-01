@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
+import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -84,6 +85,7 @@ function LoginPage() {
 
       {/* Formulaire */}
       <main className="relative isolate flex flex-col overflow-hidden">
+        <ThemeToggle className="absolute right-4 top-4 z-10 bg-card" />
         <SceauFiligrane className="absolute -right-24 top-1/2 -z-10 w-[30rem] -translate-y-1/2 lg:-right-40" opacite={0.05} />
         <Tricolor className="lg:hidden" />
         <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10">

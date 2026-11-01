@@ -4,11 +4,13 @@ import { useSyncExternalStore } from "react";
 export interface Prefs {
   densite: "confort" | "compact";
   contraste: "normal" | "eleve";
+  /** Thème : suit le système par défaut, ou forcé en clair / nuit. */
+  theme: "systeme" | "clair" | "sombre";
   tourVu: boolean;
 }
 
 const KEY = "dgmm-prefs";
-const DEFAULT: Prefs = { densite: "confort", contraste: "normal", tourVu: false };
+const DEFAULT: Prefs = { densite: "confort", contraste: "normal", theme: "systeme", tourVu: false };
 const listeners = new Set<() => void>();
 let cache: Prefs | null = null;
 
@@ -27,10 +29,46 @@ function read(): Prefs {
   return cache;
 }
 
+export function systemeSombre(): boolean {
+  return (
+    typeof window !== "undefined" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches
+  );
+}
+
+export function estSombre(p: Prefs = read()): boolean {
+  return p.theme === "sombre" || (p.theme === "systeme" && systemeSombre());
+}
+
+let ecouteSysteme = false;
 export function appliquerPrefs(p: Prefs = read()) {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset["density"] = p.densite;
-  document.documentElement.dataset["contrast"] = p.contraste;
+  const html = document.documentElement;
+  html.dataset["density"] = p.densite;
+  html.dataset["contrast"] = p.contraste;
+  const sombre = estSombre(p);
+  html.classList.toggle("dark", sombre);
+  html.style.colorScheme = sombre ? "dark" : "light";
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", sombre ? "#0d1526" : "#0a192f");
+  // Suit le changement de thème du système tant que l'utilisateur n'a pas choisi.
+  if (!ecouteSysteme && window.matchMedia) {
+    ecouteSysteme = true;
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if (read().theme === "systeme") {
+        appliquerPrefs(read());
+        listeners.forEach((l) => l());
+      }
+    });
+  }
+}
+
+/** Bascule clair ⇄ nuit avec une transition douce. */
+export function basculerTheme() {
+  const html = document.documentElement;
+  html.classList.add("theme-transition");
+  setPrefs({ theme: estSombre() ? "clair" : "sombre" });
+  window.setTimeout(() => html.classList.remove("theme-transition"), 320);
 }
 
 export function setPrefs(patch: Partial<Prefs>) {

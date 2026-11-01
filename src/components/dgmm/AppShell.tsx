@@ -6,7 +6,7 @@ import {
   LayoutDashboard,
   Rows3,
   Rows4,
-  Sun,
+  Contrast,
   LogOut,
   ShieldCheck,
   Ship,
@@ -22,6 +22,7 @@ import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
 import { Omnibar } from "@/components/dgmm/Omnibar";
 import { Tour, type TourStep } from "@/components/dgmm/Tour";
+import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { appliquerPrefs, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
 import { useVisites } from "@/lib/dgmm/store";
@@ -186,7 +187,7 @@ function tourSteps(session: Account): TourStep[] {
       cible: "affichage",
       titre: "Confort d'affichage",
       texte:
-        "Basculez entre les modes confort et compact, activez le contraste « plein soleil » pour les contrôles à quai, et relancez ce guide (touche ?). Autres raccourcis : P pour imprimer, Échap pour fermer.",
+        "Basculez entre les modes confort et compact, entre le mode clair et le mode nuit, activez le contraste « plein soleil » pour les contrôles à quai, et relancez ce guide (touche ?). Autres raccourcis : P pour imprimer, Échap pour fermer.",
     },
   ];
 }
@@ -225,6 +226,14 @@ function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
+            <span>
+              <ThemeToggle />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>Mode nuit / mode clair</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <button
               type="button"
               className={btn}
@@ -232,7 +241,7 @@ function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
               aria-label="Contraste élevé (plein soleil)"
               onClick={() => setPrefs({ contraste: eleve ? "normal" : "eleve" })}
             >
-              <Sun className="size-4" />
+              <Contrast className="size-4" />
             </button>
           </TooltipTrigger>
           <TooltipContent>Contraste élevé · plein soleil</TooltipContent>

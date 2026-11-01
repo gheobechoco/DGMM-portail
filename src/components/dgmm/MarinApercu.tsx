@@ -123,6 +123,11 @@ export function MarinApercu({
                     )}
                   </Info>
                   <Info label="Armateur">{m.entreprise}</Info>
+                  <Info label="Biométrie">
+                    {m.biometrie?.empreintes?.statut === "capturees" && m.biometrie.signature
+                      ? "Complète"
+                      : "À compléter"}
+                  </Info>
                   <Info label="Station">{stationRef(m.station)?.ville ?? ""}</Info>
                   <Info label="Téléphone">{m.tel1}</Info>
                 </dl>

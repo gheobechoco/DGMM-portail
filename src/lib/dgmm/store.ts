@@ -31,6 +31,10 @@ export interface Marin {
   situationMatrimoniale?: string | undefined;
   /** Station maritime d'attache (référentiel DGMM : ST-OWE, ST-POG…). */
   station?: string | undefined;
+  /** Description physique : poids en kg (la taille est dans `taille`). */
+  poids?: string | undefined;
+  /** Données biométriques (remplacent l'ancien « signalement anthropométrique »). */
+  biometrie?: Biometrie | undefined;
   historique?: Evenement[] | undefined;
   embarquements?: Embarquement[] | undefined;
   alertes?: { sms: boolean; email: boolean } | undefined;
@@ -49,6 +53,20 @@ export interface Evenement {
   action: string;
   auteur: string;
   type: "creation" | "modification" | "admin" | "medical" | "livret";
+}
+
+export interface Biometrie {
+  /** Empreintes digitales numériques capturées au poste d'enrôlement. */
+  empreintes?:
+    | {
+        statut: "capturees" | "a_capturer";
+        doigts: number;
+        le?: string | undefined;
+        par?: string | undefined;
+      }
+    | undefined;
+  /** Signature numérisée du marin (image PNG en data URL). */
+  signature?: string | undefined;
 }
 
 /** Ligne du relevé des services en mer (sea service) inscrite au livret. */
@@ -167,7 +185,7 @@ interface State {
   audit: AuditEntry[];
 }
 
-const KEY = "dgmm-gdm-v4";
+const KEY = "dgmm-gdm-v5";
 
 /** Empreinte 64 bits (deux FNV-1a) — démonstration ; en production : SHA-256 côté serveur. */
 export function empreinte(src: string): string {
@@ -303,6 +321,12 @@ const ENTREPRISE_VILLE = [
 ];
 export const PRATICIENS = ["Dr MOUGOULA Christian", "Dr KONGO A."];
 
+/** Signature manuscrite de démonstration (SVG en data URL). */
+function signatureDemo(nom: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="70"><text x="10" y="48" font-family="Brush Script MT, Segoe Script, cursive" font-size="34" fill="#13294B">${nom.replace(/[<>&]/g, "")}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 /** NIP : GAB-AAAA-NNNNNN (année d'enrôlement). */
 function genNip(id: number, d = new Date()) {
   return `GAB-${d.getFullYear()}-${String(1200 + id).padStart(6, "0")}`;
@@ -418,9 +442,10 @@ function seed(): State {
         station: "ST-OWE",
         quartierInscription: "Libreville",
         taille: "178",
+        poids: "76",
         couleurYeux: "Marron",
         couleurCheveux: "Noir",
-        signeParticulier: "Néant",
+        signeParticulier: "Cicatrice de 3 cm à l'avant-bras gauche",
         situationMatrimoniale: "Marié(e)",
       },
     ],
@@ -657,6 +682,14 @@ function seed(): State {
       auteur: "Gestionnaire MM",
       type: "livret",
     });
+  }
+  // Données biométriques des marins validés (empreintes + signature numérisée).
+  for (const m of marins.filter((x) => x.validationAdmin === "validee")) {
+    m.biometrie = {
+      empreintes: { statut: "capturees", doigts: 10, le: m.modifieLe, par: "Agent DGMM" },
+      signature: signatureDemo(`${m.prenom.split(" ")[0]} ${m.nom.split(" ")[0]}`),
+    };
+    m.poids = m.poids ?? String(62 + ((m.id * 7) % 25));
   }
   // Relevé des services en mer pour les marins validés.
   let embId = 1;
@@ -1164,8 +1197,17 @@ const REQUIRED_LIVRET: (keyof Marin)[] = [
   "quartierInscription",
   "signeParticulier",
 ];
+export function biometrieComplete(m: Marin): boolean {
+  return m.biometrie?.empreintes?.statut === "capturees" && !!m.biometrie.signature;
+}
+
 export function dossierIncomplet(m: Marin): boolean {
-  return REQUIRED_LIVRET.some((k) => !m[k]) || !m.documents.photo || !m.documents.piece;
+  return (
+    REQUIRED_LIVRET.some((k) => !m[k]) ||
+    !m.documents.photo ||
+    !m.documents.piece ||
+    !biometrieComplete(m)
+  );
 }
 export function manquants(m: Marin): string[] {
   const labels: Partial<Record<keyof Marin, string>> = {
@@ -1174,11 +1216,13 @@ export function manquants(m: Marin): string[] {
     couleurYeux: "Couleur des yeux",
     couleurCheveux: "Couleur des cheveux",
     quartierInscription: "Quartier d'inscription",
-    signeParticulier: "Signe particulier",
+    signeParticulier: "Signes particuliers",
   };
   const out = REQUIRED_LIVRET.filter((k) => !m[k]).map((k) => labels[k]!);
   if (!m.documents.photo) out.push("Photo d'identité");
   if (!m.documents.piece) out.push("Pièce d'identité");
+  if (m.biometrie?.empreintes?.statut !== "capturees") out.push("Empreintes digitales");
+  if (!m.biometrie?.signature) out.push("Signature numérisée");
   return out;
 }
 
