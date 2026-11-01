@@ -38,6 +38,8 @@ import {
 } from "@/lib/dgmm/store";
 import { EmptyState, Panel, StatCard } from "@/components/dgmm/Page";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
+import { CircularGauge } from "@/components/dgmm/Anim";
+import { cn } from "@/lib/utils";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
 
@@ -179,9 +181,9 @@ function RenewTable({
             <th className="px-5 py-2.5 font-semibold">Statut</th>
           </tr>
         </thead>
-        <tbody className="divide-y">
+        <tbody className="stagger divide-y">
           {rows.map(({ m, st, cert }) => (
-            <tr key={m.id} className="hover:bg-muted/40">
+            <tr key={m.id} className={cn("hover:bg-muted/40", st === "expire" && "glow-alert")}>
               <td className="px-5 py-2.5">
                 <Link
                   to="/espace/marins/$id"
@@ -404,10 +406,29 @@ function PilotageDashboard({ session }: { session: Account }) {
         description="Émeraude : conforme · Ambre : à renouveler sous 60 jours · Rubis : expiré, inapte ou sans certificat · Ardoise : visite en cours"
         className="mt-6"
       >
-        <ConformityGauge
-          sujet="des gens de mer"
-          niveaux={marins.map((m) => niveauConformite(m, visites))}
-        />
+        <div className="flex flex-col items-center gap-6 sm:flex-row">
+          <CircularGauge
+            value={
+              marins.length
+                ? (marins.filter(
+                    (m) =>
+                      niveauConformite(m, visites) !== "non_conforme" &&
+                      niveauConformite(m, visites) !== "brouillon",
+                  ).length /
+                    marins.length) *
+                  100
+                : 0
+            }
+            label="Aptitude globale des gens de mer"
+            size={112}
+          />
+          <div className="w-full flex-1">
+            <ConformityGauge
+              sujet="des gens de mer"
+              niveaux={marins.map((m) => niveauConformite(m, visites))}
+            />
+          </div>
+        </div>
       </Panel>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -427,7 +448,7 @@ function PilotageDashboard({ session }: { session: Account }) {
               Toutes les inscriptions sont traitées dans les délais.
             </EmptyState>
           ) : (
-            <ul className="divide-y">
+            <ul className="stagger divide-y">
               {d.souffrance.slice(0, 6).map((m) => (
                 <li key={m.id}>
                   <Link
@@ -814,7 +835,7 @@ function MedicalDashboard({ session }: { session: Account }) {
               Aucun marin en attente de visite.
             </EmptyState>
           ) : (
-            <ul className="divide-y">
+            <ul className="stagger divide-y">
               {d.fileActive.slice(0, 7).map((m) => {
                 const jours = Math.floor((Date.now() - new Date(m.creeLe).getTime()) / DAY);
                 const draft = d.brouillons.find((v) => v.marinId === m.id);
@@ -907,7 +928,7 @@ function MedicalDashboard({ session }: { session: Account }) {
           {d.duJour.length === 0 ? (
             <EmptyState icon={Stethoscope} title="Aucune visite aujourd'hui" />
           ) : (
-            <ul className="divide-y">
+            <ul className="stagger divide-y">
               {d.duJour.map((v) => (
                 <li key={v.id}>
                   <Link

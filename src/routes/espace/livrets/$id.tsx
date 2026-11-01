@@ -1,11 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, BookX, Check, Printer } from "lucide-react";
+import { ArrowLeft, BookX, Check } from "lucide-react";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { EmptyState, Info } from "@/components/dgmm/Page";
 import { OfficialHeader } from "@/components/dgmm/OfficialHeader";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
-import { Button } from "@/components/ui/button";
+import { ExportButton } from "@/components/dgmm/Anim";
 import { formatDate, lastCertificate, useMarins, useVisites } from "@/lib/dgmm/store";
 
 export const Route = createFileRoute("/espace/livrets/$id")({
@@ -41,9 +41,14 @@ function Attestation() {
         >
           <ArrowLeft className="size-4" /> Fiche du marin
         </Link>
-        <Button size="sm" variant="outline" onClick={() => window.print()}>
-          <Printer /> Imprimer
-        </Button>
+        <ExportButton
+          size="sm"
+          variant="outline"
+          onExport={() => window.print()}
+          doneLabel="Attestation prête"
+        >
+          Exporter l'attestation
+        </ExportButton>
       </div>
       <article className="print-sheet mx-auto max-w-2xl overflow-hidden rounded-xl border bg-card shadow-card">
         <OfficialHeader

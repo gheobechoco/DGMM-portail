@@ -138,7 +138,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
         {rows.length === 0 ? (
           <EmptyState icon={ShieldCheck} title="Aucune visite trouvée" />
         ) : (
-          <ul className="divide-y">
+          <ul className="stagger divide-y">
             {rows.map((v) => {
               const m = byId.get(v.marinId);
               return (

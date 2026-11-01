@@ -1,10 +1,10 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
-import { ArrowLeft, Download, FileX } from "lucide-react";
+import { ArrowLeft, FileX } from "lucide-react";
 import { PublicShell } from "@/components/dgmm/PublicShell";
 import { EmptyState } from "@/components/dgmm/Page";
 import { CertificatDocument } from "@/components/dgmm/CertificatDocument";
-import { Button } from "@/components/ui/button";
+import { ExportButton } from "@/components/dgmm/Anim";
 import { marinSession } from "@/lib/dgmm/auth";
 import { useMarins, useVisites } from "@/lib/dgmm/store";
 
@@ -31,9 +31,9 @@ function MonCertificat() {
           <ArrowLeft className="size-4" /> Mon espace
         </Link>
         {v && (
-          <Button variant="gold" onClick={() => window.print()}>
-            <Download /> Télécharger en PDF
-          </Button>
+          <ExportButton variant="gold" onExport={() => window.print()} doneLabel="PDF prêt">
+            Télécharger en PDF
+          </ExportButton>
         )}
       </div>
       {v ? (

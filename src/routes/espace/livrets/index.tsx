@@ -67,7 +67,7 @@ function Livrets({ auteur }: { auteur: string }) {
           {aDelivrer.length === 0 ? (
             <EmptyState icon={BookOpenCheck} title="Aucun livret en attente" />
           ) : (
-            <ul className="divide-y">
+            <ul className="stagger divide-y">
               {aDelivrer.map((m) => (
                 <li key={m.id} className="flex items-center gap-3 px-5 py-3">
                   <div className="min-w-0 flex-1">
@@ -107,7 +107,7 @@ function Livrets({ auteur }: { auteur: string }) {
           {bloques.length === 0 ? (
             <EmptyState icon={BookX} title="Aucun dossier bloqué" />
           ) : (
-            <ul className="divide-y">
+            <ul className="stagger divide-y">
               {bloques.map((m) => {
                 const st = marinCertStatus(visites, m.id);
                 const miss = manquants(m);
@@ -155,7 +155,7 @@ function Livrets({ auteur }: { auteur: string }) {
                 <th className="px-5 py-2.5" />
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="stagger divide-y">
               {delivres.map((m) => (
                 <tr key={m.id} className="hover:bg-muted/40">
                   <td className="px-5 py-2.5 font-mono text-xs font-semibold text-primary">

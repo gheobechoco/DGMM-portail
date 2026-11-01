@@ -31,6 +31,7 @@ import {
 } from "@/components/dgmm/MarinBits";
 import { DocViewer } from "@/components/dgmm/DocViewer";
 import { Aide } from "@/components/dgmm/Aide";
+import { useChanged } from "@/components/dgmm/Anim";
 import { SeaService } from "@/components/dgmm/SeaService";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,6 +70,11 @@ function Fiche({ session }: { session: Account }) {
   const marins = useMarins();
   const visites = useVisites();
   const m = marins.find((x) => x.id === Number(id));
+  // Confirmation visuelle (rebond + flash) quand un statut change.
+  const flashAdmin = useChanged(m?.validationAdmin);
+  const flashMed = useChanged(m?.validationMedicale);
+  const flashCert = useChanged(marinCertStatus(visites, Number(id)));
+  const flashLivret = useChanged(m?.livret);
   if (!m) {
     return (
       <div className="rounded-xl border bg-card shadow-card">
@@ -154,11 +160,13 @@ function Fiche({ session }: { session: Account }) {
           </div>
         </div>
         <div className="grid grid-cols-1 divide-y sm:grid-cols-4 sm:divide-x sm:divide-y-0">
-          <StatusCell label="Validation administrative">
-            <StatusPill status={m.validationAdmin} />
+          <StatusCell label="Validation administrative" flash={flashAdmin}>
+            <StatusPill key={m.validationAdmin} status={m.validationAdmin} pop={flashAdmin} />
           </StatusCell>
-          <StatusCell label="Validation médicale">
+          <StatusCell label="Validation médicale" flash={flashMed}>
             <StatusPill
+              key={m.validationMedicale}
+              pop={flashMed}
               status={m.validationMedicale}
               label={
                 m.validationMedicale === "validee"
@@ -169,15 +177,15 @@ function Fiche({ session }: { session: Account }) {
               }
             />
           </StatusCell>
-          <StatusCell label="Certificat STCW">
-            <StatusPill status={st} />
+          <StatusCell label="Certificat STCW" flash={flashCert}>
+            <StatusPill key={st} status={st} pop={flashCert} />
             {cert && (
               <span className="text-xs text-muted-foreground">
                 → {formatDate(cert.stcw.validJusquau)}
               </span>
             )}
           </StatusCell>
-          <StatusCell label="Livret maritime">
+          <StatusCell label="Livret maritime" flash={flashLivret}>
             {m.livret ? (
               <span className="font-mono text-sm font-semibold text-primary">{m.livret}</span>
             ) : (
@@ -283,9 +291,17 @@ function Fiche({ session }: { session: Account }) {
   );
 }
 
-function StatusCell({ label, children }: { label: string; children: ReactNode }) {
+function StatusCell({
+  label,
+  children,
+  flash,
+}: {
+  label: string;
+  children: ReactNode;
+  flash?: boolean | undefined;
+}) {
   return (
-    <div className="px-5 py-3">
+    <div className={cn("px-5 py-3", flash && "flash-success")}>
       <div className="mb-1 text-xs text-muted-foreground">{label}</div>
       <div className="flex flex-wrap items-center gap-2">{children}</div>
     </div>

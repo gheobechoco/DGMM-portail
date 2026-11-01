@@ -34,10 +34,20 @@ const STATUS_LABELS = {
   aucun: "Aucun",
 } as const;
 
-export function StatusPill({ status, label }: { status: keyof typeof STATUS_STYLES; label?: string | undefined }) {
+/** Alerte rouge (onde radar) et alerte ambre (respiration) pour attirer l'œil sur l'urgence. */
+const ALERTE_ROUGE = new Set(["expire", "rejetee"]);
+
+export function StatusPill({ status, label, pop }: { status: keyof typeof STATUS_STYLES; label?: string | undefined; pop?: boolean | undefined }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold", STATUS_STYLES[status])}>
-      <span className="size-1.5 rounded-full bg-current" />
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+        STATUS_STYLES[status],
+        status === "expire_bientot" && "pill-breathe",
+        pop && "pop-in",
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full bg-current", ALERTE_ROUGE.has(status) && "dot-ping")} />
       {label ?? STATUS_LABELS[status]}
     </span>
   );

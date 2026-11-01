@@ -26,10 +26,33 @@ export type Permission =
  *   impression des certificats.
  */
 const PERMISSIONS: Record<Role, Permission[]> = {
-  gestionnaire_mm: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "marins.livret", "visites", "certificats.imprimer", "audit", "embarquements"],
+  gestionnaire_mm: [
+    "dashboard",
+    "marins",
+    "marins.creer",
+    "marins.valider_admin",
+    "marins.livret",
+    "visites",
+    "certificats.imprimer",
+    "audit",
+    "embarquements",
+  ],
   rh_marine: ["dashboard", "marins", "marins.creer", "marins.valider_admin", "embarquements"],
-  medecin: ["dashboard", "marins", "visites", "visites.saisir", "visites.signer", "certificats.imprimer"],
-  gestionnaire_medical: ["dashboard", "marins", "visites", "visites.saisir", "certificats.imprimer"],
+  medecin: [
+    "dashboard",
+    "marins",
+    "visites",
+    "visites.saisir",
+    "visites.signer",
+    "certificats.imprimer",
+  ],
+  gestionnaire_medical: [
+    "dashboard",
+    "marins",
+    "visites",
+    "visites.saisir",
+    "certificats.imprimer",
+  ],
 };
 
 /** Profil de tableau de bord : pilotage administratif ou santé. */
@@ -47,7 +70,10 @@ export const DAY = 24 * 60 * 60 * 1000;
 export type CertStatus = "valide" | "expire_bientot" | "expire" | "aucun";
 
 /** Un certificat est « à renouveler » s'il expire dans 30 jours ou moins. */
-export function certificateStatus(validUntil: string | undefined | null, now: Date = new Date()): CertStatus {
+export function certificateStatus(
+  validUntil: string | undefined | null,
+  now: Date = new Date(),
+): CertStatus {
   if (!validUntil) return "aucun";
   const end = new Date(validUntil + "T23:59:59").getTime();
   const diff = end - now.getTime();

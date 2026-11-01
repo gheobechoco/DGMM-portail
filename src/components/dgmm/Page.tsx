@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AlertCircle, Check, type LucideIcon } from "lucide-react";
 import { Aide, type Terme } from "@/components/dgmm/Aide";
+import { CountUp } from "@/components/dgmm/Anim";
 import { cn } from "@/lib/utils";
 
 export function PageHeader({
@@ -90,7 +91,7 @@ export function StatCard({
         <div className="min-w-0">
           <div className="text-xs font-medium text-muted-foreground">{label}</div>
           <div className="mt-1 font-display text-3xl font-bold tabular-nums text-primary">
-            {value}
+            {typeof value === "number" ? <CountUp value={value} /> : value}
           </div>
         </div>
         <span className={cn("grid size-10 shrink-0 place-items-center rounded-lg", TONES[tone])}>

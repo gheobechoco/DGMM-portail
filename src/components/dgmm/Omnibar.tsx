@@ -66,7 +66,7 @@ export function Omnibar({ session }: { session: Account }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-9 w-full max-w-md items-center gap-2 rounded-md border bg-background px-3 text-sm text-muted-foreground transition-colors hover:border-gold hover:text-foreground"
+        className="search-trigger flex h-9 w-full max-w-md items-center gap-2 rounded-md border bg-background px-3 text-sm text-muted-foreground transition-[max-width,border-color,color] duration-300 ease-out hover:max-w-lg hover:border-gold hover:text-foreground focus-visible:max-w-lg"
         aria-label="Recherche globale"
       >
         <Search className="size-4" />

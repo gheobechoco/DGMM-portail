@@ -1,5 +1,6 @@
 import { CheckCircle2, Clock, FilePen, XCircle, type LucideIcon } from "lucide-react";
 import type { Niveau } from "@/lib/dgmm/store";
+import { CountUp } from "@/components/dgmm/Anim";
 import { cn } from "@/lib/utils";
 
 const NIVEAUX: { k: Niveau; label: string; bar: string; text: string; icon: LucideIcon }[] = [
@@ -61,7 +62,7 @@ export function ConformityGauge({
               pct >= 90 ? "text-success" : pct >= 60 ? "text-warning" : "text-destructive",
             )}
           >
-            {pct} %
+            <CountUp value={pct} /> %
           </span>{" "}
           <span className="font-medium text-foreground">{sujet} en règle</span>
           {alerte > 0 && (

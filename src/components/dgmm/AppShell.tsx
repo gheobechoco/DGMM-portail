@@ -92,7 +92,7 @@ function NavLinks({
             )}
             <Icon
               className={cn(
-                "size-4",
+                "sway size-4",
                 active ? "text-gold" : "text-sidebar-foreground/60 group-hover:text-gold",
               )}
             />

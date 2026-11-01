@@ -1,11 +1,12 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Ban, ExternalLink, FileX, PenLine, Printer } from "lucide-react";
+import { ArrowLeft, Ban, ExternalLink, FileX, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { EmptyState, textareaClass } from "@/components/dgmm/Page";
 import { EtatCertificatPill } from "@/components/dgmm/MarinBits";
 import { CertificatDocument } from "@/components/dgmm/CertificatDocument";
+import { ExportButton } from "@/components/dgmm/Anim";
 import { Button } from "@/components/ui/button";
 import { can } from "@/lib/dgmm/rules";
 import type { Account } from "@/lib/dgmm/auth";
@@ -78,9 +79,14 @@ function Certificat({ session }: { session: Account }) {
             </Button>
           )}
           {canPrint && (
-            <Button size="sm" variant="outline" onClick={() => window.print()}>
-              <Printer /> Imprimer
-            </Button>
+            <ExportButton
+              size="sm"
+              variant="outline"
+              onExport={() => window.print()}
+              doneLabel="Certificat prêt"
+            >
+              Exporter le certificat
+            </ExportButton>
           )}
         </div>
       </div>

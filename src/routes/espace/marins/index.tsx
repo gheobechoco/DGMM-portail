@@ -7,6 +7,8 @@ import { StatusPill } from "@/components/dgmm/Brand";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { MarinApercu } from "@/components/dgmm/MarinApercu";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
+import { CountUp } from "@/components/dgmm/Anim";
+import { cn } from "@/lib/utils";
 import type { Account } from "@/lib/dgmm/auth";
 import { Button } from "@/components/ui/button";
 import { can, type CertStatus } from "@/lib/dgmm/rules";
@@ -212,11 +214,14 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
                     <th className="w-8" />
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="stagger divide-y">
                   {rows.map(({ m, st }) => (
                     <tr
                       key={m.id}
-                      className="cursor-pointer hover:bg-muted/40"
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/40",
+                        (st === "expire" || m.validationMedicale === "rejetee") && "glow-alert",
+                      )}
                       onClick={() => setApercu(m.id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -272,7 +277,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
             </div>
 
             {/* Cartes (mobile) */}
-            <ul className="divide-y md:hidden">
+            <ul className="stagger divide-y md:hidden">
               {rows.map(({ m, st }) => (
                 <li key={m.id}>
                   <button
@@ -306,7 +311,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
         )}
         <div className="flex items-center justify-between border-t px-4 py-2.5 text-xs text-muted-foreground">
           <span>
-            {rows.length} résultat{rows.length > 1 ? "s" : ""} sur {marins.length}
+            <CountUp value={rows.length} /> résultat{rows.length > 1 ? "s" : ""} sur {marins.length}
           </span>
           {filtered && (
             <button

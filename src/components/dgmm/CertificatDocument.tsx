@@ -47,6 +47,11 @@ const VERDICT_COLOR: Record<string, string> = {
   "": "border-border text-muted-foreground",
 };
 
+/** Vrai juste après la signature ou le visa : déclenche l'effet d'estampillage. */
+function recent(d: string | undefined) {
+  return !!d && Date.now() - new Date(d).getTime() < 20000;
+}
+
 function horodatage(d: string) {
   return new Date(d).toLocaleString("fr-FR", {
     day: "2-digit",
@@ -209,7 +214,12 @@ export function CertificatDocument({ v, m }: { v: Visite; m: Marin | undefined }
 
         <section className="grid gap-4 border-t pt-5 sm:grid-cols-2">
           <div className="flex items-start gap-3">
-            <Cachet className="size-24 shrink-0" />
+            <Cachet
+              className={cn(
+                "size-24 shrink-0",
+                recent(v.signee ? v.traiteLe : undefined) && "stamp-in",
+              )}
+            />
             <div className="min-w-0 text-sm">
               <div className="text-xs text-muted-foreground">
                 Médecin-chef · Polyclinique EDELWEISS
@@ -231,7 +241,12 @@ export function CertificatDocument({ v, m }: { v: Visite; m: Marin | undefined }
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <DgmmVisa ok={!!visa} />
+            <span
+              className={cn("block shrink-0", recent(visa?.date) && "stamp-in")}
+              style={{ animationDelay: "250ms" }}
+            >
+              <DgmmVisa ok={!!visa} />
+            </span>
             <div className="min-w-0 text-sm">
               <div className="text-xs text-muted-foreground">
                 Visa de la Direction Générale de la Marine Marchande

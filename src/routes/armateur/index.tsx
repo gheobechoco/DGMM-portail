@@ -26,6 +26,7 @@ import {
 import { StatusPill } from "@/components/dgmm/Brand";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
+import { CircularGauge, CountUp } from "@/components/dgmm/Anim";
 import { Aide } from "@/components/dgmm/Aide";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -244,7 +245,16 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         description="Certificats médicaux STCW à ce jour"
         className="mb-6"
       >
-        <ConformityGauge niveaux={effectif.map((m) => niveauConformite(m, visites))} />
+        <div className="flex flex-col items-center gap-6 sm:flex-row">
+          <CircularGauge
+            value={effectif.length ? (conformes / effectif.length) * 100 : 0}
+            label="Aptitude globale de l'effectif"
+            size={108}
+          />
+          <div className="w-full flex-1">
+            <ConformityGauge niveaux={effectif.map((m) => niveauConformite(m, visites))} />
+          </div>
+        </div>
       </Panel>
 
       <Panel
@@ -280,7 +290,7 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         {effectif.length === 0 ? (
           <EmptyState icon={Users} title="Aucun marin rattaché" />
         ) : (
-          <ul className="divide-y">
+          <ul className="stagger divide-y">
             {effectif.map((m) => {
               const { st, cert } = aptitudeAu(m, visites, today);
               return (
@@ -329,14 +339,19 @@ function RoleCard({
   const ok = bloquants.length === 0 && rows.length > 0;
   const passe = r.appareillage < new Date().toISOString().slice(0, 10);
   return (
-    <article className="overflow-hidden rounded-lg border">
+    <article
+      className={cn(
+        "group overflow-hidden rounded-lg border",
+        !ok && rows.length > 0 && "glow-alert",
+      )}
+    >
       <div
         className={cn(
           "flex flex-wrap items-center gap-3 px-4 py-3",
           ok ? "bg-success/8" : "bg-destructive/6",
         )}
       >
-        <Ship className="size-5 text-primary" />
+        <Ship className="sway size-5 text-primary" />
         <div className="min-w-0 flex-1">
           <div className="font-display font-semibold text-primary">{r.navire}</div>
           <div className="text-xs text-muted-foreground">
@@ -361,16 +376,33 @@ function RoleCard({
           Modifier
         </Button>
       </div>
-      <div className="border-b px-4 py-3">
-        <ConformityGauge
-          compact
-          sujet="d'équipage"
-          niveaux={rows.map((x) =>
-            x.m
-              ? niveauConformite(x.m, visites, new Date(`${r.appareillage}T12:00:00`))
-              : "non_conforme",
-          )}
-        />
+      <div className="flex items-center gap-4 border-b px-4 py-3">
+        <CircularGauge
+          value={rows.length ? ((rows.length - bloquants.length) / rows.length) * 100 : 0}
+          label={`Aptitude de l'équipage de ${r.navire} à l'appareillage`}
+          size={64}
+          stroke={7}
+        >
+          <span className="font-display text-sm font-bold text-primary">
+            <CountUp
+              value={
+                rows.length ? Math.round(((rows.length - bloquants.length) / rows.length) * 100) : 0
+              }
+            />
+            %
+          </span>
+        </CircularGauge>
+        <div className="min-w-0 flex-1">
+          <ConformityGauge
+            compact
+            sujet="d'équipage"
+            niveaux={rows.map((x) =>
+              x.m
+                ? niveauConformite(x.m, visites, new Date(`${r.appareillage}T12:00:00`))
+                : "non_conforme",
+            )}
+          />
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -383,11 +415,11 @@ function RoleCard({
               <th className="px-4 py-2 font-semibold">À l'appareillage</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="stagger divide-y">
             {rows.map((x) => (
               <tr
                 key={x.marinId}
-                className={cn(x.st !== "valide" && x.st !== "expire_bientot" && "bg-destructive/5")}
+                className={cn(x.st !== "valide" && x.st !== "expire_bientot" && "glow-alert")}
               >
                 <td className="px-4 py-2">
                   <div className="font-medium">{fullName(x.m)}</div>

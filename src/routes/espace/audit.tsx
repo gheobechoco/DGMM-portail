@@ -174,7 +174,7 @@ function Journal() {
                 <th className="px-4 py-2.5 font-semibold">Empreinte</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="stagger divide-y">
               {rows.map((e) => (
                 <tr key={e.seq} className={cn(verif?.rupture === e.seq && "bg-destructive/10")}>
                   <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{e.seq}</td>
