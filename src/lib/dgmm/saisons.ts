@@ -26,6 +26,7 @@ export type Ambiance =
   | "etincelles"
   | "petales"
   | "feuilles"
+  | "clochettes"
   | "bulles"
   | "confettis"
   | "envol"
@@ -65,16 +66,16 @@ export const HABILLAGES: Record<HabillageId, Habillage> = {
   "droits-femme": {
     id: "droits-femme",
     evenement: "Journée des droits de la femme",
-    accessoire: "Anneau violet et symbole féminin discret",
+    accessoire: "Symbole féminin au poing levé",
     ambiance: "petales",
-    couleurs: ["#8e44ad", "#b57edc", "#d8b4f8"],
+    couleurs: ["#B0197E", "#D1359E", "#F3A6D6"],
   },
   travail: {
     id: "travail",
     evenement: "Fête du Travail",
-    accessoire: "Branche de palmier traditionnelle",
-    ambiance: "feuilles",
-    couleurs: ["#2e8b57", "#3fa463", "#1f6e43"],
+    accessoire: "Brin de muguet",
+    ambiance: "clochettes",
+    couleurs: ["#ffffff", "#f2f6ee"],
   },
   "gens-de-mer": {
     id: "gens-de-mer",
@@ -101,29 +102,29 @@ export const HABILLAGES: Record<HabillageId, Habillage> = {
   "journee-mer": {
     id: "journee-mer",
     evenement: "Journée mondiale de la Mer",
-    accessoire: "Navire marchand fendant les vagues",
-    substitution: "L'ancre est déjà le cœur du sceau : on ajoute le navire marchand.",
+    accessoire: "Voilier fendant les vagues",
+    substitution: "L'ancre est déjà le cœur du sceau : on ajoute un voilier sur les vagues.",
     ambiance: "vagues",
     couleurs: ["#3A75C4", "#7fb8e6"],
   },
   "octobre-rose": {
     id: "octobre-rose",
     evenement: "Octobre Rose",
-    accessoire: "Ruban rose",
+    accessoire: "Ruban rose en satin",
     ambiance: "rubans",
     couleurs: ["#f06292", "#f8a5c2"],
   },
   "novembre-bleu": {
     id: "novembre-bleu",
     evenement: "Novembre Bleu",
-    accessoire: "Moustache bleue",
-    ambiance: "bulles",
-    couleurs: ["#4a90e2", "#9cc6f2", "#d6e9fb"],
+    accessoire: "Ruban bleu",
+    ambiance: "rubans",
+    couleurs: ["#1565C0", "#42A5F5"],
   },
   sida: {
     id: "sida",
     evenement: "Journée mondiale de lutte contre le sida",
-    accessoire: "Ruban rouge",
+    accessoire: "Ruban rouge en satin",
     ambiance: "rubans",
     couleurs: ["#d32f2f"],
   },

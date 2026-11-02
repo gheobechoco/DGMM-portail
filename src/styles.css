@@ -591,3 +591,41 @@ html.theme-transition * {
 @media (prefers-reduced-motion: reduce) {
   .habillage-pop { animation: none; }
 }
+
+/* Animations propres à chaque accessoire du sceau (SVG). */
+.hab-balance, .hab-clochette, .hab-feuille, .hab-tangage, .hab-vague, .hab-pompon,
+.hab-pop-poing, .hab-gerbe, .hab-scintille, .hab-roue, .hab-ecarte-g, .hab-ecarte-d {
+  transform-box: view-box;
+}
+.hab-balance { animation: hab-balance 4.5s ease-in-out infinite; }
+.hab-clochette { animation: hab-clochette 2.4s ease-in-out infinite; }
+.hab-feuille { animation: hab-feuille 6s ease-in-out infinite; }
+.hab-tangage { animation: hab-tangage 3.2s ease-in-out infinite; }
+.hab-vague { animation: hab-vague 2.6s linear infinite; }
+.hab-pompon { animation: hab-pompon 2.8s ease-in-out infinite; }
+.hab-pop-poing { animation: hab-poing 3.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
+.hab-gerbe { animation: hab-gerbe 1.8s ease-out infinite; }
+.hab-scintille { animation: hab-scintille 2.2s ease-in-out infinite; }
+.hab-roue { animation: hab-roue 7s ease-in-out infinite; }
+.hab-ecarte-g { animation: hab-ecarte-g 3s ease-in-out infinite; }
+.hab-ecarte-d { animation: hab-ecarte-d 3s ease-in-out infinite; }
+.hab-reflet { animation: hab-reflet 3.6s ease-in-out infinite; }
+@keyframes hab-balance { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes hab-clochette { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+@keyframes hab-feuille { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+@keyframes hab-tangage { 0%, 100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(4deg) translateY(-3px); } }
+@keyframes hab-vague { from { transform: translateX(0); } to { transform: translateX(-60px); } }
+@keyframes hab-pompon { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+@keyframes hab-poing { 0%, 80%, 100% { transform: scale(1); } 88% { transform: scale(1.08) translateY(-4px); } }
+@keyframes hab-gerbe { 0% { transform: scale(0.3); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1.15); opacity: 0; } }
+@keyframes hab-scintille { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
+@keyframes hab-roue { 0%, 100% { transform: rotate(-25deg); } 50% { transform: rotate(25deg); } }
+@keyframes hab-ecarte-g { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-4px) rotate(-4deg); } }
+@keyframes hab-ecarte-d { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px) rotate(4deg); } }
+@keyframes hab-reflet { 0% { stroke-dashoffset: 100; } 60%, 100% { stroke-dashoffset: -30; } }
+@media (prefers-reduced-motion: reduce) {
+  .hab-balance, .hab-clochette, .hab-feuille, .hab-tangage, .hab-vague, .hab-pompon,
+  .hab-pop-poing, .hab-gerbe, .hab-scintille, .hab-roue, .hab-ecarte-g, .hab-ecarte-d, .hab-reflet {
+    animation: none;
+  }
+}

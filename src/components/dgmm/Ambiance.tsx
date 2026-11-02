@@ -96,6 +96,21 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
           ctx.rotate(p.a); ctx.globalAlpha = 0.75; ctx.fillStyle = p.c;
           ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, Math.PI * 2); ctx.fill();
           break;
+        case "clochettes": {
+          ctx.rotate(Math.sin(p.t * 2) * 0.4); ctx.globalAlpha = 0.9;
+          const k = p.r / 6;
+          ctx.strokeStyle = "#5B8C3A"; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(0, -7 * k); ctx.lineTo(0, -3 * k); ctx.stroke();
+          ctx.fillStyle = p.side || sombre ? "#ffffff" : "#f4f8ef";
+          ctx.strokeStyle = "#a9bf9a"; ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(-5 * k, 5 * k);
+          ctx.bezierCurveTo(-5.5 * k, -1 * k, -3 * k, -3 * k, 0, -3 * k);
+          ctx.bezierCurveTo(3 * k, -3 * k, 5.5 * k, -1 * k, 5 * k, 5 * k);
+          ctx.lineTo(6 * k, 7.5 * k); ctx.quadraticCurveTo(3 * k, 6 * k, 0, 8 * k); ctx.quadraticCurveTo(-3 * k, 6 * k, -6 * k, 7.5 * k);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          break;
+        }
         case "feuilles":
           ctx.rotate(p.a); ctx.globalAlpha = 0.7; ctx.fillStyle = p.c;
           ctx.beginPath(); ctx.ellipse(0, 0, p.r * 1.6, p.r * 0.45, 0, 0, Math.PI * 2); ctx.fill();
