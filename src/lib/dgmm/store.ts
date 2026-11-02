@@ -94,10 +94,22 @@ export interface AuditEntry {
   hash: string;
 }
 
-export type DocKey = "photo" | "piece" | "certificat" | "residence" | "contrat" | "livret";
+export type DocKey =
+  | "photo"
+  | "piece"
+  | "naissance"
+  | "casier"
+  | "stcw"
+  | "certificat"
+  | "residence"
+  | "contrat"
+  | "livret";
 export const DOC_LABELS: Record<DocKey, string> = {
   photo: "Photo d'identité",
   piece: "CNI / Passeport",
+  naissance: "Acte de naissance",
+  casier: "Casier judiciaire",
+  stcw: "Diplômes / certificats STCW",
   certificat: "Certificat d'aptitude",
   residence: "Justificatif de domicile",
   contrat: "Contrat de travail",
@@ -171,7 +183,7 @@ interface State {
   audit: AuditEntry[];
 }
 
-const KEY = "dgmm-gdm-v5";
+const KEY = "dgmm-gdm-v6";
 
 /** Empreinte 64 bits (deux FNV-1a) — démonstration ; en production : SHA-256 côté serveur. */
 export function empreinte(src: string): string {
@@ -326,6 +338,7 @@ function genNumero(id: number, d = new Date()) {
   return `VM-${d.getFullYear()}-${String(id - 3800).padStart(4, "0")}`;
 }
 const STATION_PAR_VILLE: Record<string, string> = {
+  Libreville: "ST-LBV",
   Owendo: "ST-OWE",
   "Port-Gentil": "ST-POG",
   Mayumba: "ST-MAY",
@@ -389,25 +402,25 @@ function seed(): State {
         signeParticulier: "Néant",
       },
     ],
-    ["IBINGA", "Jean", "M", 36, "Mécanicien", "validee", "en_attente", 150],
+    ["IBINGA", "Jean", "M", 36, "Mécanicien", "en_attente", "en_attente", 150],
     ["MBOUMA", "René", "M", 39, "Chef mécanicien", "validee", "validee", 240],
-    ["ABAGHA BRAD", "Brunel Rosy", "F", 19, "Élève officier", "validee", "en_attente", 250],
+    ["ABAGHA BRAD", "Brunel Rosy", "F", 19, "Élève officier", "en_attente", "en_attente", 250],
     ["ABA A ESSONO", "Tanguy", "M", 45, "Maître d'équipage", "validee", "validee", 300],
     ["IBRAHIM", "Maurice", "M", 51, "Cuisinier de bord", "validee", "validee", 280],
     ["NZAMBA", "Prisca", "F", 28, "Officier radio", "validee", "validee", 90],
     ["OBAME", "Serge", "M", 33, "Matelot", "validee", "rejetee", 70],
-    ["MOUSSAVOU", "Arnaud", "M", 21, "Matelot", "validee", "en_attente", 40],
+    ["MOUSSAVOU", "Arnaud", "M", 21, "Matelot", "en_attente", "en_attente", 40],
     ["NDONG", "Cyrille", "M", 23, "Pilote", "validee", "validee", 30],
     ["KOUMBA", "Ghislain", "M", 47, "Capitaine", "validee", "validee", 400],
-    ["MABIKA", "Laure", "F", 20, "Élève officier", "validee", "en_attente", 25],
+    ["MABIKA", "Laure", "F", 20, "Élève officier", "en_attente", "en_attente", 25],
     ["ESSONO", "Dieudonné", "M", 37, "Mécanicien", "validee", "validee", 200],
-    ["BOUANGA", "Divine", "F", 23, "Officier pont", "validee", "en_attente", 20],
+    ["BOUANGA", "Divine", "F", 23, "Officier pont", "en_attente", "en_attente", 20],
     ["MINTSA", "Paul", "M", 40, "Matelot", "en_attente", "en_attente", 3],
     ["OYONO", "Clarisse", "F", 29, "Hôtesse de bord", "en_attente", "en_attente", 9],
     ["LEKOGO", "Fabrice", "M", 31, "Matelot", "en_attente", "en_attente", 11],
     ["NGUEMA", "Hervé", "M", 26, "Mécanicien", "en_attente", "en_attente", 14],
-    ["MOUELE", "Sandrine", "F", 22, "Matelot", "en_attente", "en_attente", 18],
-    ["ONDO", "Rodrigue", "M", 34, "Pilote", "en_attente", "en_attente", 21],
+    ["MOUELE", "Sandrine", "F", 22, "Matelot", "en_attente", "validee", 18],
+    ["ONDO", "Rodrigue", "M", 34, "Pilote", "en_attente", "validee", 21],
     ["TCHIBINDA", "Marc", "M", 44, "Matelot", "rejetee", "en_attente", 60],
     // Marin de référence du dossier technique DGMM.
     [
@@ -486,10 +499,13 @@ function seed(): State {
         dateMariage: "",
         lieuMariage: "",
         documents:
-          va === "validee"
+          va === "validee" || vm === "validee"
             ? {
                 photo: "photo.jpg",
                 piece: "cni.pdf",
+                naissance: "acte-naissance.pdf",
+                casier: "casier-judiciaire.pdf",
+                stcw: "certificats-stcw.pdf",
                 residence: "residence.pdf",
                 contrat: "contrat.pdf",
               }
@@ -498,7 +514,7 @@ function seed(): State {
         validationMedicale: vm,
         login: `${nom.split(" ")[0]!.toLowerCase()}${id}`,
         mdp: "azerty",
-        creePar: i % 2 ? "Agent DGMM" : "Agent RH Marine",
+        creePar: i % 2 ? "Agent DGMM" : "Agent des Gens de Mer",
         creeLe: daysAgo(created),
         modifieLe: daysAgo(Math.max(0, created - 3)),
         ...extra,
@@ -517,6 +533,9 @@ function seed(): State {
     [12, -5, "apte"],
     [13, 600, "apte_restrictions", "Navigation côtière uniquement."],
     [15, 180, "apte"],
+    // Circuit DGMM : visite médicale faite, visa administratif en attente des pièces.
+    [21, 729, "apte"],
+    [22, 728, "apte"],
     [10, 90, "inapte_temporaire", "Hypertension non contrôlée — nouvelle évaluation dans 3 mois."],
   ];
   const visites: Visite[] = visitePlan.map(([marinId, validDays, verdict, details], i) => {
@@ -644,7 +663,7 @@ function seed(): State {
         date: m.modifieLe,
         action:
           m.validationAdmin === "validee"
-            ? "Validation administrative accordée"
+            ? "Visa administratif DGMM accordé"
             : "Dossier rejeté par l'administration",
         auteur: "Agent DGMM",
         type: "admin",
@@ -664,7 +683,7 @@ function seed(): State {
   for (const m of marins.filter((x) => x.livret)) {
     m.historique?.push({
       date: m.modifieLe,
-      action: `Livret ${m.livret} délivré`,
+      action: `Délivrance du livret maritime ${m.livret}`,
       auteur: "Gestionnaire MM",
       type: "livret",
     });
@@ -948,6 +967,8 @@ export function saveVisite(
 
 export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM", motif = "") {
   const s = get();
+  const cibleMarin = s.marins.find((m) => m.id === id);
+  if (etat === "validee" && cibleMarin && motifVisa(cibleMarin, s.visites)) return;
   const action =
     etat === "validee"
       ? "Validation administrative accordée"
@@ -1204,6 +1225,22 @@ export function manquants(m: Marin): string[] {
   if (!m.documents.piece) out.push("Pièce d'identité");
   if (!m.signature) out.push("Signature du titulaire");
   return out;
+}
+
+/** Pièces exigées par l'agent DGMM pour apposer le visa administratif. */
+export const PIECES_VISA: DocKey[] = ["photo", "piece", "naissance", "casier", "stcw"];
+
+/**
+ * Circuit DGMM : la visite médicale d'aptitude précède le dépôt des pièces.
+ * Renvoie ce qui bloque le visa administratif, ou null.
+ */
+export function motifVisa(m: Marin, visites: Visite[], now = new Date()): string | null {
+  const st = marinCertStatus(visites, m.id, now);
+  if (st !== "valide" && st !== "expire_bientot")
+    return "Certificat d'aptitude du Médecin des Gens de Mer requis (visite médicale préalable).";
+  const manque = PIECES_VISA.filter((k) => !m.documents[k]).map((k) => DOC_LABELS[k]);
+  if (manque.length) return `Pièces manquantes : ${manque.join(", ")}.`;
+  return null;
 }
 
 export function eligibleLivret(m: Marin, visites: Visite[], now = new Date()): boolean {

@@ -47,7 +47,7 @@ export const NAV: NavItem[] = [
   },
   { to: "/espace/marins", label: "Gens de mer", icon: Users, perm: "marins" },
   { to: "/espace/visites", label: "Visites médicales", icon: Stethoscope, perm: "visites" },
-  { to: "/espace/livrets", label: "Livrets maritimes", icon: BookOpenCheck, perm: "marins.livret" },
+  { to: "/espace/livrets", label: "Fascicules / livrets", icon: BookOpenCheck, perm: "marins.livret" },
   { to: "/espace/equipages", label: "Rôles d'équipage", icon: Ship, perm: "roles.lecture" },
   { to: "/espace/audit", label: "Journal d'audit", icon: ShieldCheck, perm: "audit" },
   { to: "/reglementation", label: "Réglementation", icon: Scale, perm: "marins" },

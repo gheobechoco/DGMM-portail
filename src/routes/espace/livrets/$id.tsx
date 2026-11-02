@@ -58,7 +58,7 @@ function Attestation() {
           opacite={0.05}
         />
         <OfficialHeader
-          title="Attestation de délivrance du livret maritime"
+          title="Attestation de délivrance du fascicule de marin"
           subtitle="Livret professionnel maritime — Seafarer's identity and record book"
         />
         <div className="grid gap-6 p-6 sm:grid-cols-[140px_1fr]">
@@ -72,7 +72,7 @@ function Attestation() {
           <div>
             <div className="mb-4 rounded-md bg-primary px-4 py-2 text-primary-foreground">
               <div className="text-[10px] uppercase tracking-widest text-gold">
-                N° du livret maritime
+                N° du fascicule (livret maritime)
               </div>
               <div className="font-mono text-xl font-bold">{m.livret}</div>
             </div>
@@ -130,7 +130,7 @@ function Attestation() {
             Pour le Directeur Général de la Marine Marchande
             <br />
             <span className="font-semibold text-primary">
-              {evt?.auteur ?? "Le Gestionnaire MM"}
+              {evt?.auteur ?? "Le Directeur des Gens de Mer"}
             </span>
           </span>
         </div>

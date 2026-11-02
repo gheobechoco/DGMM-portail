@@ -67,7 +67,7 @@ export function StatutStepper({ m, examenRealise }: { m: Marin; examenRealise: b
     { label: "Enrôlé", s: "fait" },
     { label: "Examen médical réalisé", s: examenRealise ? "fait" : "afaire" },
     {
-      label: "Visa médical validé",
+      label: "Aptitude médicale",
       s:
         m.validationMedicale === "validee"
           ? "fait"
@@ -84,7 +84,7 @@ export function StatutStepper({ m, examenRealise }: { m: Marin; examenRealise: b
             ? "bloque"
             : "afaire",
     },
-    { label: "Livret émis", s: m.livret ? "fait" : "afaire" },
+    { label: "Fascicule émis", s: m.livret ? "fait" : "afaire" },
   ];
   const first = steps.findIndex((x) => x.s !== "fait");
   if (first >= 0 && steps[first]!.s === "afaire") steps[first]!.s = "encours";

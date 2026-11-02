@@ -168,6 +168,15 @@ export interface StationMaritime {
 
 export const STATIONS: StationMaritime[] = [
   {
+    code: "ST-LBV",
+    nom: "Direction des Gens de Mer et de la Navigation Maritime (siège DGMM)",
+    type: "Siège — enrôlement & délivrance des titres",
+    ville: "Libreville",
+    province: "Estuaire",
+    vhf: "Canal 16",
+    contact: "",
+  },
+  {
     code: "ST-OWE",
     nom: "Station Maritime d'Owendo",
     type: "Portuaire & Commercial",
@@ -220,6 +229,15 @@ export const STATIONS: StationMaritime[] = [
     province: "Nyanga",
     vhf: "Canal 16",
     contact: "+241 01 86 11 02",
+  },
+  {
+    code: "ST-GAM",
+    nom: "Station Maritime de Gamba",
+    type: "Pétrolier & Façade Sud",
+    ville: "Gamba",
+    province: "Ogooué-Maritime",
+    vhf: "Canal 16",
+    contact: "",
   },
 ];
 

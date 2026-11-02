@@ -206,12 +206,14 @@ function Reglementation() {
                 <span className="inline-flex items-center gap-1">
                   <Radio className="size-3.5 text-secondary" /> VHF {s.vhf}
                 </span>
-                <a
-                  href={`tel:${s.contact.replace(/\s/g, "")}`}
-                  className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-                >
-                  <Phone className="size-3.5" /> {s.contact}
-                </a>
+                {s.contact && (
+                  <a
+                    href={`tel:${s.contact.replace(/\s/g, "")}`}
+                    className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                  >
+                    <Phone className="size-3.5" /> {s.contact}
+                  </a>
+                )}
               </div>
             </li>
           ))}

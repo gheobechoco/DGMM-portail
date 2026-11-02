@@ -42,8 +42,8 @@ function Livrets({ auteur }: { auteur: string }) {
     <>
       <PageHeader
         eyebrow="Titres maritimes"
-        title="Livrets maritimes"
-        subtitle="Délivrance des livrets sécurisés par QR code aux marins aptes et validés."
+        title="Fascicules de marin"
+        subtitle="Génération du fascicule (livret maritime) après validation du Directeur des Gens de Mer — sécurisé par QR code."
       />
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <StatCard

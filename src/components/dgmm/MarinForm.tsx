@@ -57,8 +57,44 @@ export const PROFESSIONS = [
   "Élève officier",
 ];
 const SITUATIONS = ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf / veuve"];
-/** Pièces demandées à l'enrôlement (le certificat d'aptitude est produit par la visite médicale). */
-const FORM_DOCS: DocKey[] = ["photo", "piece", "contrat", "residence", "livret"];
+/**
+ * Pièces déposées auprès de l'agent DGMM (le certificat d'aptitude n'est pas téléversé :
+ * il est produit par la visite du Médecin des Gens de Mer).
+ */
+const FORM_DOCS: DocKey[] = [
+  "photo",
+  "piece",
+  "naissance",
+  "casier",
+  "stcw",
+  "contrat",
+  "residence",
+  "livret",
+];
+
+/** Rappel du circuit officiel d'enrôlement, conduit par l'agent de la DGMM. */
+function CircuitDgmm() {
+  const etapes = [
+    "Visite médicale d'aptitude (Médecin des Gens de Mer, test d'Ishihara)",
+    "Dépôt des pièces : acte de naissance, casier judiciaire, titres STCW, pièce d'identité",
+    "Photo d'identité et signature du marin, recueillies par l'agent",
+    "Visa puis validation du Directeur des Gens de Mer → fascicule de marin",
+  ];
+  return (
+    <aside className="mb-6 rounded-lg border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+      <div className="mb-1.5 font-semibold uppercase tracking-wider text-secondary">
+        Circuit d'enrôlement DGMM — saisie réservée à l'agent de la Marine marchande
+      </div>
+      <ol className="grid gap-1 sm:grid-cols-2">
+        {etapes.map((e, i) => (
+          <li key={e} className="flex gap-2">
+            <span className="font-bold text-primary">{i + 1}.</span> {e}
+          </li>
+        ))}
+      </ol>
+    </aside>
+  );
+}
 
 export function emptyMarin(): MarinInput {
   return {
@@ -313,6 +349,7 @@ export function MarinForm({
       }}
     >
       <Stepper step={step} onStep={setStep} />
+      <CircuitDgmm />
 
       {step === 1 ? (
         <div className="space-y-6">

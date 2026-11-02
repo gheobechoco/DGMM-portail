@@ -18,9 +18,9 @@ export type Permission =
 
 /**
  * Matrice des droits (RBAC) :
- * - Gestionnaire MM : pilotage complet, fiches en écriture, enrôlement, validation administrative,
+ * - Gestionnaire MM (Directeur des Gens de Mer) : pilotage complet, fiches en écriture, enrôlement, validation administrative,
  *   délivrance du livret, impression des certificats.
- * - RH Marine : pilotage restreint RH, fiches en écriture, enrôlement, validation administrative.
+ * - RH Marine (Agent DGMM, siège ou station) : pilotage restreint RH, fiches en écriture, enrôlement, validation administrative.
  * - Médecin du travail : tableau de bord santé, fiches en lecture seule, saisie et signature des visites,
  *   impression des certificats.
  * - Gestionnaire médical : tableau de bord santé, fiches en lecture seule, saisie des visites (sans signature),

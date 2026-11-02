@@ -321,7 +321,7 @@ function PilotageDashboard({ session }: { session: Account }) {
   return (
     <>
       <Bienvenue
-        eyebrow={rh ? "Tableau de bord · RH Marine" : "Tableau de bord de pilotage"}
+        eyebrow={rh ? "Tableau de bord · Agent des Gens de Mer" : "Tableau de bord · Direction des Gens de Mer"}
         nom={greeting(session.nom)}
         message={
           d.souffrance.length > 0 ? (

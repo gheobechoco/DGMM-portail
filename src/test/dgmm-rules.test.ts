@@ -115,3 +115,28 @@ describe("description physique & signature", () => {
     expect(dossierIncomplet({ ...base, signature: "data:image/png;base64,AA" })).toBe(false);
   });
 });
+
+describe("circuit DGMM : visa administratif", () => {
+  it("exige d'abord le certificat médical, puis les pièces officielles", async () => {
+    const { motifVisa } = await import("@/lib/dgmm/store");
+    const m = {
+      id: 99,
+      documents: { photo: "p.jpg", piece: "cni.pdf" },
+    } as unknown as Parameters<typeof motifVisa>[0];
+    expect(motifVisa(m, [])).toMatch(/Médecin des Gens de Mer/);
+    const v = {
+      id: 1,
+      marinId: 99,
+      signee: true,
+      stcw: { verdict: "apte", validJusquau: "2099-01-01" },
+    } as unknown as Visite;
+    expect(motifVisa(m, [v])).toBe(
+      "Pièces manquantes : Acte de naissance, Casier judiciaire, Diplômes / certificats STCW.",
+    );
+    const complet = {
+      ...m,
+      documents: { ...m.documents, naissance: "a", casier: "c", stcw: "s" },
+    } as typeof m;
+    expect(motifVisa(complet, [v])).toBeNull();
+  });
+});

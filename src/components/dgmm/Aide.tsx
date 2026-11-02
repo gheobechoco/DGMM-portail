@@ -42,7 +42,7 @@ export const GLOSSAIRE = {
   visa: {
     titre: "Visa administratif DGMM",
     texte:
-      "Contrôle des pièces (photo, CNI/passeport, justificatifs) par un agent de la DGMM. Avec la validation médicale, il conditionne la délivrance du livret maritime.",
+      "Contrôle par l'agent de la DGMM des pièces déposées : acte de naissance, casier judiciaire, diplômes et certificats STCW, pièce d'identité, photo. Il n'est possible qu'après la visite médicale d'aptitude (certificat du Médecin des Gens de Mer). Après validation du Directeur des Gens de Mer, le fascicule de marin (livret maritime) est généré.",
   },
   seaService: {
     titre: "Services en mer (sea service)",

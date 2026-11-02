@@ -42,6 +42,7 @@ import { can } from "@/lib/dgmm/rules";
 import type { Account } from "@/lib/dgmm/auth";
 import {
   DOC_LABELS,
+  PIECES_VISA,
   age,
   delivrerLivret,
   dossierIncomplet,
@@ -52,6 +53,7 @@ import {
   lastCertificate,
   manquants,
   motifLivret,
+  motifVisa,
   parseDoc,
   marinCertStatus,
   setValidationAdmin,
@@ -203,7 +205,7 @@ function Fiche({ session }: { session: Account }) {
       </section>
 
       {can(session.role, "marins.valider_admin") && m.validationAdmin === "en_attente" && (
-        <ValidationPanel m={m} auteur={session.nom} />
+        <ValidationPanel m={m} visites={visites} auteur={session.nom} />
       )}
 
       <Tabs defaultValue="dossier" className="mt-6">
@@ -414,19 +416,37 @@ function DocsList({ m }: { m: Marin }) {
 }
 
 /** Étape 5 : contrôle des pièces puis validation (ou rejet motivé) du dossier. */
-function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
+function ValidationPanel({
+  m,
+  visites,
+  auteur,
+}: {
+  m: Marin;
+  visites: Visite[];
+  auteur: string;
+}) {
   const [rejet, setRejet] = useState(false);
   const [motif, setMotif] = useState("");
   const [voir, setVoir] = useState<DocKey | null>(null);
   const pieces: [string, DocKey][] = [
-    ["Photo d'identité", "photo"],
-    ["CNI / Passeport", "piece"],
-    ["Justificatif de domicile", "residence"],
-    ["Contrat de travail", "contrat"],
+    ...PIECES_VISA.map((k): [string, DocKey] => [DOC_LABELS[k], k]),
+    ["Justificatif de domicile (facultatif)", "residence"],
+    ["Contrat d'engagement (facultatif)", "contrat"],
   ];
-  const bio: [string, boolean][] = [["Signature du titulaire", !!m.signature]];
+  const cert = lastCertificate(visites, m.id);
+  const certOk = ["valide", "expire_bientot"].includes(marinCertStatus(visites, m.id));
+  const bio: [string, boolean][] = [
+    [
+      certOk && cert
+        ? `Certificat d'aptitude ${cert.numero} (${cert.signataire})`
+        : "Certificat d'aptitude du Médecin des Gens de Mer",
+      certOk,
+    ],
+    ["Signature du titulaire", !!m.signature],
+  ];
   const miss = manquants(m).filter((x) => !["Photo d'identité", "Pièce d'identité"].includes(x));
-  const required = !!m.documents.photo && !!m.documents.piece;
+  const bloquant = motifVisa(m, visites);
+  const required = !bloquant;
   return (
     <section className="mt-4 rounded-xl border border-warning/40 bg-warning/8 p-4 sm:p-5">
       <div className="flex items-start gap-3">
@@ -436,8 +456,8 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
             Visa administratif DGMM <Aide terme="visa" />
           </h2>
           <p className="text-sm text-muted-foreground">
-            Contrôlez les pièces (cliquez pour les visualiser) avant d'apposer le visa
-            administratif.
+            Circuit DGMM : la visite médicale d'aptitude précède le dépôt des pièces. Contrôlez
+            les pièces (cliquez pour les visualiser) avant d'apposer le visa administratif.
           </p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {pieces.map(([label, k]) => {
@@ -492,6 +512,11 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
             open={!!voir}
             onOpenChange={(o) => !o && setVoir(null)}
           />
+          {bloquant && (
+            <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-xs font-medium text-destructive">
+              Visa impossible : {bloquant}
+            </p>
+          )}
           {miss.length > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
               À compléter avant le livret : {miss.join(", ")}.
@@ -545,7 +570,7 @@ function ValidationPanel({ m, auteur }: { m: Marin; auteur: string }) {
               size="sm"
               variant="secondary"
               disabled={!required}
-              title={required ? undefined : "Photo et CNI/Passeport requises"}
+              title={bloquant ?? undefined}
               onClick={() => {
                 setValidationAdmin(m.id, "validee", auteur);
                 toast.success("Visa administratif DGMM apposé", {
