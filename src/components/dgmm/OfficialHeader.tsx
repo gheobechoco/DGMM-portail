@@ -13,7 +13,7 @@ export function OfficialHeader({
     <div>
       <Tricolor />
       <div className="flex items-center gap-4 border-b px-6 py-4">
-        <DgmmLogo className="size-16 shrink-0" />
+        <DgmmLogo className="size-16 shrink-0" habille={false} />
         <div className="flex-1 leading-tight">
           <div className="font-display text-xs font-bold uppercase tracking-[0.14em] text-primary">
             République Gabonaise

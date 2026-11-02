@@ -140,3 +140,27 @@ describe("circuit DGMM : visa administratif", () => {
     expect(motifVisa(complet, [v])).toBeNull();
   });
 });
+
+describe("calendrier des habillages du sceau", () => {
+  it("choisit l'habillage du jour, les dates précises avant les mois", async () => {
+    const { habillageDu } = await import("@/lib/dgmm/saisons");
+    const id = (s: string) => habillageDu(new Date(s + "T12:00:00"))?.id ?? null;
+    expect(id("2027-01-01")).toBe("nouvel-an");
+    expect(id("2027-03-12")).toBe("renovation");
+    expect(id("2027-04-17")).toBe("droits-femme");
+    expect(id("2027-05-01")).toBe("travail");
+    expect(id("2027-06-25")).toBe("gens-de-mer");
+    expect(id("2027-08-16")).toBe("independance");
+    expect(id("2027-08-17")).toBe("independance");
+    expect(id("2027-08-30")).toBe("liberation");
+    expect(id("2026-09-24")).toBe("journee-mer"); // dernier jeudi de septembre 2026
+    expect(id("2026-09-17")).toBeNull();
+    expect(id("2026-10-15")).toBe("octobre-rose");
+    expect(id("2026-11-02")).toBe("novembre-bleu");
+    expect(id("2026-12-01")).toBe("sida");
+    expect(id("2026-12-20")).toBe("noel");
+    expect(id("2026-12-26")).toBe("noel");
+    expect(id("2026-12-27")).toBeNull();
+    expect(id("2027-07-10")).toBeNull();
+  });
+});

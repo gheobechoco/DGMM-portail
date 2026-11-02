@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Rows3,
   Rows4,
+  Sparkles,
   Contrast,
   LogOut,
   ShieldCheck,
@@ -18,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
+import { useHabillage } from "@/lib/dgmm/saisons";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
 import { Omnibar } from "@/components/dgmm/Omnibar";
@@ -116,6 +118,7 @@ function SidebarContent({
   session: Account;
   onNavigate?: (() => void) | undefined;
 }) {
+  const habillage = useHabillage();
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 px-5 py-5">
@@ -123,6 +126,11 @@ function SidebarContent({
         <div className="leading-tight">
           <div className="font-display text-sm font-bold text-white">DGMM</div>
           <div className="text-[11px] text-sidebar-foreground/70">Système GDM · Gens de mer</div>
+          {habillage && (
+            <div className="mt-0.5 text-[11px] font-semibold text-gold" title={habillage.accessoire}>
+              {habillage.evenement}
+            </div>
+          )}
         </div>
       </div>
       <div className="px-3">
@@ -201,6 +209,7 @@ function estSaisie(t: EventTarget | null) {
 
 function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
   const prefs = usePrefs();
+  const habillage = useHabillage();
   const compact = prefs.densite === "compact";
   const eleve = prefs.contraste === "eleve";
   const btn =
@@ -246,6 +255,28 @@ function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
           </TooltipTrigger>
           <TooltipContent>Contraste élevé · plein soleil</TooltipContent>
         </Tooltip>
+        {habillage && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className={btn}
+                aria-pressed={prefs.animationsSaison}
+                aria-label={
+                  prefs.animationsSaison
+                    ? "Couper les animations de la journée"
+                    : "Activer les animations de la journée"
+                }
+                onClick={() => setPrefs({ animationsSaison: !prefs.animationsSaison })}
+              >
+                <Sparkles className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {habillage.evenement} · animations {prefs.animationsSaison ? "actives" : "coupées"}
+            </TooltipContent>
+          </Tooltip>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -328,7 +359,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
         className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[32rem]"
         opacite={0.045}
       />
-      <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block">
+      <aside data-ambiance-zone className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block">
         <Tricolor />
         <SidebarContent session={session} />
       </aside>

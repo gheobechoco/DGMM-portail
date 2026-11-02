@@ -1,0 +1,216 @@
+import { useEffect, useRef } from "react";
+import type { Ambiance as Type, Habillage } from "@/lib/dgmm/saisons";
+import { estSombre, usePrefs } from "@/lib/dgmm/prefs";
+
+interface P {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  a: number; // angle
+  va: number;
+  c: string;
+  t: number; // phase / âge
+  side: boolean;
+  life?: number;
+}
+
+const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Largeur de la barre latérale visible (zone où les particules sont plus denses). */
+function zoneLaterale(): number {
+  const el = document.querySelector<HTMLElement>("[data-ambiance-zone]");
+  if (!el) return 0;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.left < 5 ? r.right : 0;
+}
+
+/**
+ * Animation d'ambiance liée à l'habillage du jour (neige, confettis, pétales…).
+ * Couche décorative : non cliquable, ignorée des lecteurs d'écran, coupée si
+ * l'utilisateur réduit les animations ou la désactive dans les préférences.
+ */
+export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const prefs = usePrefs();
+  const actif = !!habillage && prefs.animationsSaison;
+  const sombre = estSombre(prefs);
+
+  useEffect(() => {
+    const cv = ref.current;
+    if (!cv || !habillage || !actif) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
+    const type: Type = habillage.ambiance;
+    const couleurs = habillage.couleurs;
+    let W = 0, H = 0, side = 0, raf = 0, last = performance.now(), tick = 0;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const resize = () => {
+      W = window.innerWidth; H = window.innerHeight; side = zoneLaterale();
+      cv.width = W * dpr; cv.height = H * dpr;
+      cv.style.width = W + "px"; cv.style.height = H + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const monte = type === "bulles" || type === "etincelles" || type === "envol";
+    const nait = (enHaut: boolean, dansCote: boolean): P => {
+      const xMin = dansCote ? 0 : side, xMax = dansCote ? side : W;
+      const x = rnd(xMin, Math.max(xMin + 1, xMax));
+      const y = enHaut ? (monte ? H + rnd(0, 40) : rnd(-40, -10)) : rnd(0, H);
+      const lent = type === "neige" ? 1 : type === "rubans" ? 0.55 : 0.8;
+      return {
+        x, y,
+        vx: type === "envol" ? rnd(10, 30) : rnd(-8, 8),
+        vy: (monte ? -1 : 1) * rnd(18, 48) * lent,
+        r: type === "neige" ? rnd(1.4, 3.6) : type === "bulles" ? rnd(3, 9) : rnd(4, 8),
+        a: rnd(0, Math.PI * 2), va: rnd(-1.5, 1.5),
+        c: couleurs[Math.floor(Math.random() * couleurs.length)] ?? "#fff",
+        t: rnd(0, 100), side: dansCote,
+      };
+    };
+    const densite = type === "rubans" ? 0.45 : type === "envol" ? 0.35 : 1;
+    const nSide = side ? Math.round(34 * densite) : 0; // complété dès que la barre latérale apparaît
+    const nMain = Math.round(Math.min(46, (W - side) / 34) * densite);
+    let ps: P[] = [];
+    if (type !== "vagues" && type !== "feux") {
+      for (let i = 0; i < nSide; i++) ps.push(nait(false, true));
+      for (let i = 0; i < nMain; i++) ps.push(nait(false, false));
+    }
+
+    const couleurNeige = (p: P) => (p.side || sombre ? "rgba(255,255,255,0.9)" : "rgba(120,155,200,0.55)");
+
+    const dessine = (p: P) => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      switch (type) {
+        case "neige":
+          ctx.fillStyle = couleurNeige(p);
+          if (p.side) { ctx.shadowColor = "rgba(255,255,255,0.8)"; ctx.shadowBlur = 4; }
+          ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+          break;
+        case "petales":
+          ctx.rotate(p.a); ctx.globalAlpha = 0.75; ctx.fillStyle = p.c;
+          ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+          break;
+        case "feuilles":
+          ctx.rotate(p.a); ctx.globalAlpha = 0.7; ctx.fillStyle = p.c;
+          ctx.beginPath(); ctx.ellipse(0, 0, p.r * 1.6, p.r * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 0.8;
+          ctx.beginPath(); ctx.moveTo(-p.r * 1.5, 0); ctx.lineTo(p.r * 1.5, 0); ctx.stroke();
+          break;
+        case "confettis":
+          ctx.rotate(p.a); ctx.scale(1, Math.cos(p.t * 4)); ctx.fillStyle = p.c; ctx.globalAlpha = 0.85;
+          ctx.fillRect(-p.r * 0.6, -p.r * 0.3, p.r * 1.2, p.r * 0.6);
+          break;
+        case "rubans": {
+          ctx.rotate(Math.sin(p.t) * 0.35); ctx.globalAlpha = 0.6; ctx.strokeStyle = p.c;
+          ctx.lineWidth = 2.6; ctx.lineCap = "round"; ctx.lineJoin = "round";
+          const s = p.r / 7;
+          ctx.beginPath();
+          ctx.moveTo(-6 * s, 12 * s); ctx.lineTo(1.5 * s, -2 * s);
+          ctx.bezierCurveTo(4.5 * s, -8 * s, 2.5 * s, -12 * s, 0, -12 * s);
+          ctx.bezierCurveTo(-2.5 * s, -12 * s, -4.5 * s, -8 * s, -1.5 * s, -2 * s);
+          ctx.lineTo(6 * s, 12 * s);
+          ctx.stroke();
+          break;
+        }
+        case "bulles":
+          ctx.globalAlpha = 0.55; ctx.strokeStyle = p.side || sombre ? p.c : "#5b8fc9"; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = 0.35; ctx.fillStyle = "#fff";
+          ctx.beginPath(); ctx.arc(-p.r * 0.35, -p.r * 0.35, p.r * 0.25, 0, Math.PI * 2); ctx.fill();
+          break;
+        case "etincelles": {
+          const tw = 0.4 + 0.6 * Math.abs(Math.sin(p.t * 3));
+          ctx.globalAlpha = tw; ctx.fillStyle = p.c;
+          ctx.beginPath();
+          for (let k = 0; k < 4; k++) {
+            const a = (k * Math.PI) / 2;
+            ctx.lineTo(Math.cos(a) * p.r * 0.9, Math.sin(a) * p.r * 0.9);
+            ctx.lineTo(Math.cos(a + Math.PI / 4) * p.r * 0.25, Math.sin(a + Math.PI / 4) * p.r * 0.25);
+          }
+          ctx.closePath(); ctx.fill();
+          break;
+        }
+        case "envol": {
+          const b = Math.sin(p.t * 6) * 4;
+          ctx.globalAlpha = 0.75; ctx.strokeStyle = p.side || sombre ? "#ffffff" : "#5b6f8c"; ctx.lineWidth = 2; ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(-p.r * 1.4, -b); ctx.quadraticCurveTo(-p.r * 0.6, -p.r * 0.6, 0, 0);
+          ctx.quadraticCurveTo(p.r * 0.6, -p.r * 0.6, p.r * 1.4, -b); ctx.stroke();
+          break;
+        }
+      }
+      ctx.restore();
+    };
+
+    // Feux d'artifice : gerbes qui éclatent et retombent.
+    const gerbes: P[] = [];
+    const eclate = () => {
+      const dansCote = side > 0 && Math.random() < 0.4;
+      const cx = dansCote ? rnd(20, side - 20) : rnd(side + 60, W - 60);
+      const cy = rnd(60, H * 0.45);
+      const c = couleurs[Math.floor(Math.random() * couleurs.length)] ?? "#fff";
+      for (let k = 0; k < 34; k++) {
+        const a = (k / 34) * Math.PI * 2, v = rnd(60, 130);
+        gerbes.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 2, a: 0, va: 0, c, t: 0, side: dansCote, life: rnd(1.1, 1.6) });
+      }
+    };
+
+    const boucle = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now; tick += dt;
+      if (document.hidden) { raf = requestAnimationFrame(boucle); return; }
+      ctx.clearRect(0, 0, W, H);
+      if (type === "vagues") {
+        const bandes = [[0.2, 22, 0.9], [0.14, 16, 1.4], [0.1, 10, 2.1]] as const;
+        bandes.forEach(([al, amp, sp], i) => {
+          ctx.beginPath(); ctx.moveTo(0, H);
+          for (let x = 0; x <= W; x += 12) ctx.lineTo(x, H - 18 - i * 9 + Math.sin(x / 90 + tick * sp + i) * amp * 0.5);
+          ctx.lineTo(W, H); ctx.closePath();
+          ctx.fillStyle = (couleurs[i % couleurs.length] ?? "#3A75C4") + Math.round(al * 255).toString(16).padStart(2, "0");
+          ctx.fill();
+        });
+      } else if (type === "feux") {
+        if (Math.random() < dt * 0.9) eclate();
+        for (let i = gerbes.length - 1; i >= 0; i--) {
+          const g = gerbes[i]!;
+          g.t += dt; g.vy += 60 * dt; g.vx *= 0.985; g.vy *= 0.985;
+          g.x += g.vx * dt; g.y += g.vy * dt;
+          const vie = 1 - g.t / (g.life ?? 1.4);
+          if (vie <= 0) { gerbes.splice(i, 1); continue; }
+          ctx.globalAlpha = vie * (g.side || sombre ? 1 : 0.8); ctx.fillStyle = g.c;
+          ctx.beginPath(); ctx.arc(g.x, g.y, 2, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      } else {
+        for (const p of ps) {
+          p.t += dt; p.a += p.va * dt;
+          p.x += (p.vx + Math.sin(p.t * 1.3) * 12) * dt;
+          p.y += p.vy * dt;
+          const sortie = monte ? p.y < -30 : p.y > H + 30;
+          if (sortie || p.x < -40 || p.x > W + 40) Object.assign(p, nait(true, p.side && side > 0));
+          dessine(p);
+        }
+      }
+      raf = requestAnimationFrame(boucle);
+    };
+    raf = requestAnimationFrame(boucle);
+    const zone = window.setInterval(() => {
+      const s = zoneLaterale();
+      if (s === side) return;
+      const avant = side;
+      side = s;
+      if (type === "vagues" || type === "feux") return;
+      if (!s) ps = ps.map((p) => (p.side ? nait(false, false) : p));
+      else if (!avant) for (let i = 0; i < Math.round(34 * densite); i++) ps.push(nait(false, true));
+    }, 400);
+    return () => { cancelAnimationFrame(raf); window.clearInterval(zone); window.removeEventListener("resize", resize); };
+  }, [habillage, actif, sombre]);
+
+  if (!actif) return null;
+  return <canvas ref={ref} aria-hidden className="no-print pointer-events-none fixed inset-0 z-[35]" />;
+}

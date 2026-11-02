@@ -7,10 +7,12 @@ export interface Prefs {
   /** Thème : suit le système par défaut, ou forcé en clair / nuit. */
   theme: "systeme" | "clair" | "sombre";
   tourVu: boolean;
+  /** Animations d'ambiance des journées spéciales (neige, confettis…). */
+  animationsSaison: boolean;
 }
 
 const KEY = "dgmm-prefs";
-const DEFAULT: Prefs = { densite: "confort", contraste: "normal", theme: "systeme", tourVu: false };
+const DEFAULT: Prefs = { densite: "confort", contraste: "normal", theme: "systeme", tourVu: false, animationsSaison: true };
 const listeners = new Set<() => void>();
 let cache: Prefs | null = null;
 
