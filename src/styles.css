@@ -659,3 +659,104 @@ html.theme-transition * {
 @media (prefers-reduced-motion: reduce) {
   .sigle-r { transition: none; }
 }
+
+/* Survol des cartes : la carte se soulève et son bord prend la teinte or. */
+.carte-survol {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.carte-survol:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--gold) 65%, var(--border));
+  box-shadow: 0 14px 30px -14px color-mix(in oklab, var(--primary) 55%, transparent);
+}
+.panneau-survol { transition: box-shadow 0.25s ease, border-color 0.25s ease; }
+.panneau-survol:hover {
+  border-color: color-mix(in oklab, var(--gold) 35%, var(--border));
+  box-shadow: 0 10px 26px -16px color-mix(in oklab, var(--primary) 45%, transparent);
+}
+
+/* Sélection : chaque élément qui devient choisi « répond » d'un petit rebond
+   et d'une onde dans sa propre couleur (l'animation se joue à chaque nouvelle sélection). */
+@keyframes selection-rebond {
+  0% { transform: scale(0.94); }
+  55% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes selection-onde {
+  from { box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 45%, transparent); }
+  to { box-shadow: 0 0 0 10px transparent; }
+}
+[role="switch"][data-state="checked"],
+[role="radio"][aria-checked="true"],
+[aria-pressed="true"],
+[role="tab"][data-state="active"],
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  animation: selection-rebond 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), selection-onde 0.6s ease-out;
+}
+[role="switch"][data-state="checked"] { color: var(--primary); }
+.choix {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+}
+.choix:hover { border-color: color-mix(in oklab, var(--gold) 55%, var(--border)); }
+.choix[data-actif="true"] {
+  border-color: color-mix(in oklab, var(--success) 70%, transparent);
+  background: color-mix(in oklab, var(--success) 9%, transparent);
+  color: inherit;
+  animation: selection-rebond 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.choix[data-actif="true"] .choix-icone { color: var(--success); animation: cloche 0.9s ease-in-out; }
+@keyframes cloche {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(18deg); }
+  40% { transform: rotate(-14deg); }
+  60% { transform: rotate(9deg); }
+  80% { transform: rotate(-5deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .carte-survol, .carte-survol:hover { transform: none; }
+  [role="switch"][data-state="checked"], [role="radio"][aria-checked="true"], [aria-pressed="true"],
+  [role="tab"][data-state="active"], input:checked, .choix[data-actif="true"], .choix[data-actif="true"] .choix-icone {
+    animation: none;
+  }
+}
+
+/* Écran de chargement : le sceau entre en tournant, son anneau se dessine, l'ancre tombe en place. */
+.chargement { transition: opacity 0.5s ease, transform 0.5s ease; }
+.chargement-sortie { opacity: 0; transform: scale(1.04); }
+.chargement-halo {
+  position: absolute; width: 22rem; height: 22rem; border-radius: 9999px;
+  background: radial-gradient(circle, color-mix(in oklab, var(--gold) 35%, transparent) 0%, transparent 65%);
+  animation: halo 2.6s ease-in-out infinite;
+}
+@keyframes halo { 0%, 100% { transform: scale(0.85); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
+.chargement-sceau { animation: sceau-entree 1.1s cubic-bezier(0.2, 0.9, 0.25, 1.15) both; }
+@keyframes sceau-entree { from { opacity: 0; transform: rotate(-120deg) scale(0.4); } to { opacity: 1; transform: rotate(0) scale(1); } }
+.chargement-sceau svg > circle { stroke-dasharray: 905; animation: anneau 1.4s ease-out 0.3s both; }
+@keyframes anneau { from { stroke-dashoffset: 905; } to { stroke-dashoffset: 0; } }
+.chargement-sceau svg > text { animation: texte-sceau 0.8s ease-out 0.9s both; }
+@keyframes texte-sceau { from { opacity: 0; letter-spacing: 8px; } to { opacity: 1; letter-spacing: 2px; } }
+.chargement-sceau svg > g[transform^="translate(150,152)"] {
+  transform-box: view-box;
+  animation: ancre 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s both;
+}
+@keyframes ancre { from { opacity: 0; transform: translate(150px, 60px) scale(1.15) translate(-100px, -91px); } to { opacity: 1; transform: translate(150px, 152px) scale(1.15) translate(-100px, -91px); } }
+.chargement-titre { animation: monte 0.7s ease-out 1.2s both; }
+@keyframes monte { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.chargement-barre > div { animation: barre 2.4s cubic-bezier(0.6, 0, 0.3, 1) 0.2s both; }
+@keyframes barre { from { width: 0; } to { width: 100%; } }
+
+/* Choix du profil : fond photographique en fondu enchaîné, cartes qui se soulèvent. */
+.profil-fond { opacity: 0; transform: scale(1.06); transition: opacity 0.8s ease, transform 6s ease-out; }
+.profil-fond-actif { opacity: 1; transform: scale(1); }
+.profil-carte { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease; }
+.profil-carte:hover, .profil-carte:focus-visible { transform: translateY(-6px); box-shadow: 0 24px 50px -20px rgb(0 0 0 / 0.7); outline: none; }
+.profil-carte[aria-checked="true"] { transform: scale(1.03); box-shadow: 0 0 0 3px var(--gold), 0 24px 50px -20px rgb(0 0 0 / 0.7); }
+@media (prefers-reduced-motion: reduce) {
+  .chargement-sceau, .chargement-sceau svg > *, .chargement-titre, .chargement-barre > div, .chargement-halo { animation: none !important; }
+  .profil-fond, .profil-carte { transition: opacity 0.2s; transform: none !important; }
+}

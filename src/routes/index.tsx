@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight, Settings2 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { Sigle } from "@/components/dgmm/Sigle";
+import { Chargement, ChoixProfil, FONDS } from "@/components/dgmm/Accueil";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,48 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Accès sécurisé au portail de gestion des gens de mer de la Direction Générale de la Marine Marchande." },
     ],
   }),
-  component: LoginPage,
+  validateSearch: (s: Record<string, unknown>): { profil?: "gestion" | undefined } => ({
+    profil: s["profil"] === "gestion" ? "gestion" : undefined,
+  }),
+  component: Accueil,
 });
+
+const VU = "dgmm-accueil-vu";
+
+/** Accueil : écran de chargement (une fois par session), choix du profil, puis connexion. */
+function Accueil() {
+  const navigate = useNavigate();
+  const { profil } = Route.useSearch();
+  const [etape, setEtape] = useState<"init" | "chargement" | "profil">("init");
+  useEffect(() => {
+    if (getSession()) {
+      navigate({ to: "/espace" });
+      return;
+    }
+    let vu = false;
+    try { vu = !!window.sessionStorage.getItem(VU); } catch { /* stockage indisponible */ }
+    setEtape(vu ? "profil" : "chargement");
+  }, [navigate]);
+  if (profil === "gestion") return <LoginPage />;
+  if (etape === "init") return <div className="min-h-screen bg-navy-gradient" />;
+  // Le choix du profil est déjà en place sous l'écran de chargement, qui s'efface par-dessus.
+  return (
+    <>
+      <ChoixProfil
+        onGestion={() => navigate({ to: "/", search: { profil: "gestion" } })}
+        onChoix={(p) => navigate({ to: p === "marin" ? "/mon-espace" : "/armateur" })}
+      />
+      {etape === "chargement" && (
+        <Chargement
+          onFini={() => {
+            try { window.sessionStorage.setItem(VU, "1"); } catch { /* stockage indisponible */ }
+            setEtape("profil");
+          }}
+        />
+      )}
+    </>
+  );
+}
 
 const ROLE_ICONS = { gestionnaire_mm: LayoutDashboard, rh_marine: FolderArchive, medecin: Stethoscope, gestionnaire_medical: ShieldCheck, admin_systeme: Settings2 };
 
@@ -59,7 +100,9 @@ function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Panneau institutionnel */}
-      <aside className="relative hidden overflow-hidden bg-navy-gradient text-primary-foreground lg:flex lg:flex-col">
+      <aside className="relative isolate hidden overflow-hidden bg-navy-gradient text-primary-foreground lg:flex lg:flex-col">
+        <div aria-hidden className="profil-fond profil-fond-actif absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${FONDS.gestion})` }} />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0a192f]/90 via-[#0a192f]/75 to-[#0a192f]/55" />
         <SceauFiligrane className="absolute -bottom-32 -right-32 w-[34rem]" opacite={0.07} />
         <Tricolor />
         <WaveLines />
@@ -96,6 +139,7 @@ function LoginPage() {
               <h1 className="mt-4 font-display text-xl font-bold text-primary">Direction Générale de la Marine Marchande</h1>
             </div>
             <div className="mb-8 hidden lg:block">
+              <Link to="/" className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary">← Changer de profil</Link>
               <h2 className="font-display text-3xl font-bold text-primary">Connexion</h2>
               <p className="mt-1 text-sm text-muted-foreground">Accédez à votre espace professionnel sécurisé.</p>
             </div>

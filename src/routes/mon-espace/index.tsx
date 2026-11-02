@@ -95,7 +95,7 @@ function ConnexionMarin() {
     journaliser(`Marin ${m.nip}`, "Connexion à l'espace marin", `${m.nom} ${m.prenom} (${m.nip})`);
   };
   return (
-    <PublicShell titre="Espace Marin">
+    <PublicShell titre="Espace Marin" fond="/images/profils/marins.jpg">
       <div className="mx-auto max-w-md">
         <div className="rounded-xl border bg-card p-6 shadow-card">
           <div className="mb-5 flex items-center gap-3">
@@ -174,14 +174,14 @@ function ConnexionMarin() {
             </div>
           )}
         </div>
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-4 rounded-lg bg-card/90 px-3 py-2 text-center text-xs text-muted-foreground backdrop-blur">
           Pas encore de dossier ?{" "}
           <Link to="/inscription/marin" className="font-semibold text-primary hover:underline">
             Pré-inscription
           </Link>
           <span className="mx-2">·</span>
           Agent de la DGMM ?{" "}
-          <Link to="/" className="font-semibold text-primary hover:underline">
+          <Link to="/" search={{ profil: "gestion" }} className="font-semibold text-primary hover:underline">
             Espace professionnel
           </Link>
         </p>
@@ -336,9 +336,9 @@ function Tableau({ m }: { m: Marin }) {
           description="Rappels avant l'échéance de votre certificat."
         >
           <div className="space-y-4">
-            <label className="flex items-center justify-between gap-3">
+            <label className="choix flex cursor-pointer items-center justify-between gap-3" data-actif={alertes.sms}>
               <span className="flex items-center gap-2 text-sm">
-                <MessageSquare className="size-4 text-muted-foreground" />
+                <MessageSquare className="choix-icone size-4 text-muted-foreground" />
                 <span>
                   SMS
                   <span className="block text-xs text-muted-foreground">
@@ -355,9 +355,9 @@ function Tableau({ m }: { m: Marin }) {
                 }}
               />
             </label>
-            <label className="flex items-center justify-between gap-3">
+            <label className="choix flex cursor-pointer items-center justify-between gap-3" data-actif={alertes.email}>
               <span className="flex items-center gap-2 text-sm">
-                <Mail className="size-4 text-muted-foreground" />
+                <Mail className="choix-icone size-4 text-muted-foreground" />
                 <span>
                   E-mail
                   <span className="block text-xs text-muted-foreground">

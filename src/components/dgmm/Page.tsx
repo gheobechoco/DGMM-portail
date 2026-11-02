@@ -47,7 +47,7 @@ export function Panel({
   bodyClassName?: string | undefined;
 }) {
   return (
-    <section className={cn("rounded-xl border bg-card shadow-card", className)}>
+    <section className={cn("panneau-survol rounded-xl border bg-card shadow-card", className)}>
       {(title || actions) && (
         <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
           <div className="min-w-0">
@@ -86,7 +86,7 @@ export function StatCard({
   tone?: keyof typeof TONES | undefined;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-card">
+    <div className="carte-survol rounded-xl border bg-card p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-xs font-medium text-muted-foreground">{label}</div>

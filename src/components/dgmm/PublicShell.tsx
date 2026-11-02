@@ -12,8 +12,11 @@ export function PublicShell({
   utilisateur,
   onLogout,
   children,
+  fond,
 }: {
   titre: string;
+  /** Photographie de fond (pages de connexion des espaces externes). */
+  fond?: string | undefined;
   utilisateur?: ReactNode;
   onLogout?: (() => void) | undefined;
   children: ReactNode;
@@ -21,6 +24,12 @@ export function PublicShell({
   useEffect(() => appliquerPrefs(), []);
   return (
     <div className="relative isolate flex min-h-screen flex-col bg-background">
+      {fond && (
+        <>
+          <div aria-hidden className="profil-fond profil-fond-actif fixed inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${fond})` }} />
+          <div aria-hidden className="fixed inset-0 -z-10 bg-gradient-to-b from-[#0a192f]/70 via-[#0a192f]/45 to-[#0a192f]/80" />
+        </>
+      )}
       <SceauFiligrane
         className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[34rem]"
         opacite={0.05}

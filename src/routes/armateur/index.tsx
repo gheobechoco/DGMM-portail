@@ -102,7 +102,7 @@ function ConnexionArmateur() {
     journaliser(`Armateur ${a.entreprise}`, "Connexion à l'espace armateur", a.entreprise);
   };
   return (
-    <PublicShell titre="Espace Armateurs">
+    <PublicShell titre="Espace Armateurs" fond="/images/profils/navire.jpg">
       <div className="mx-auto max-w-md">
         <div className="rounded-xl border bg-card p-6 shadow-card">
           <div className="mb-5 flex items-center gap-3">
@@ -180,7 +180,7 @@ function ConnexionArmateur() {
             </div>
           </div>
         </div>
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-4 rounded-lg bg-card/90 px-3 py-2 text-center text-xs text-muted-foreground backdrop-blur">
           Pas encore de compte ?{" "}
           <Link to="/inscription/armateur" className="font-semibold text-primary hover:underline">
             Inscrire votre compagnie
