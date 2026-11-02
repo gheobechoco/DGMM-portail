@@ -26,7 +26,7 @@ function Nouveau() {
           <PageHeader
             eyebrow="Enrôlement"
             title="Nouveau marin"
-            subtitle="Le dossier sera soumis à la validation administrative puis à la visite médicale d'aptitude."
+            subtitle="Le marin passe la visite médicale d'aptitude, puis l'agent contrôle ses pièces avant le visa administratif."
           />
           <MarinForm
             submitLabel="Enregistrer le dossier"
