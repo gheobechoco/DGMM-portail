@@ -41,6 +41,7 @@ function Modifier() {
               initial={visite}
               marins={marins}
               canSign={can(session.role, "visites.signer")}
+              brouillonCree={!visite.signee}
               signataire={session.nom}
               onCancel={() => navigate({ to: "/espace/visites/$id", params: { id } })}
               onSubmit={(v) => {

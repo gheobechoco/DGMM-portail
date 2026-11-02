@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight, Settings2 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
+import { Sigle } from "@/components/dgmm/Sigle";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
@@ -66,7 +67,7 @@ function LoginPage() {
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <Anchor className="size-5 text-gold" />
-              <span className="font-display text-sm font-semibold tracking-wide">DGMM · Système GDM</span>
+              <span className="font-display text-sm font-semibold tracking-wide"><Sigle s="DGMM" /> · Système <Sigle s="GDM" /></span>
             </div>
             <RepubliqueBlock light />
           </div>
@@ -76,7 +77,7 @@ function LoginPage() {
               Direction Générale de la <span className="text-gold">Marine Marchande</span>
             </h1>
             <p className="mt-4 text-base text-primary-foreground/75">
-              Gestion des gens de mer : enrôlement, aptitude médicale aux normes STCW et délivrance des livrets maritimes sécurisés par QR code.
+              Gestion des gens de mer : enrôlement, aptitude médicale aux normes <Sigle s="STCW" className="font-semibold text-primary-foreground" /> et délivrance des livrets maritimes sécurisés par QR code.
             </p>
           </div>
           <p className="text-xs text-primary-foreground/50">© {new Date().getFullYear()} Direction Générale de la Marine Marchande — Tous droits réservés</p>
@@ -207,9 +208,15 @@ function LoginPage() {
               </Link>
             </div>
             <div className="mt-3 flex justify-center gap-4 text-xs">
-              <Link to="/verifier" className="font-semibold text-primary hover:underline">Vérifier un titre (PSC)</Link>
+              <Link to="/verifier" className="font-semibold text-primary hover:underline">Vérifier un titre (<Sigle s="PSC" />)</Link>
               <span className="text-border">|</span>
-              <Link to="/reglementation" className="font-semibold text-primary hover:underline">Réglementation & AVURNAV</Link>
+              <Link to="/reglementation" className="font-semibold text-primary hover:underline">Réglementation & <Sigle s="AVURNAV" /></Link>
+            </div>
+            <div className="mt-4 rounded-lg bg-muted/50 px-4 py-3 text-center text-xs text-muted-foreground">
+              Pas encore de compte ?{" "}
+              <Link to="/inscription/marin" className="font-semibold text-primary hover:underline">Pré-inscription marin</Link>
+              <span className="mx-2 text-border">·</span>
+              <Link to="/inscription/armateur" className="font-semibold text-primary hover:underline">Inscription armateur</Link>
             </div>
           </div>
         </div>

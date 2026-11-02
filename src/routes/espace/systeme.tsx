@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   Activity,
+  Building2,
   AlertTriangle,
   CheckCircle2,
   Database,
@@ -29,7 +30,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { ACCOUNTS, ARMATEUR_ACCOUNTS, type Account } from "@/lib/dgmm/auth";
+import { ACCOUNTS, comptesArmateurs, type Account } from "@/lib/dgmm/auth";
+import { traiterDemandeArmateur, useInscriptions } from "@/lib/dgmm/inscriptions";
 import { can, isOverdueRegistration, type Permission, type Role } from "@/lib/dgmm/rules";
 import { ARMATEURS, AVURNAV, STATIONS, TEXTES, TOUS_NAVIRES } from "@/lib/dgmm/maritime";
 import { estSombre, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
@@ -135,6 +137,7 @@ const ANIMATION_LABEL: Record<string, string> = {
 function Console({ session }: { session: Account }) {
   const sys = useSysteme();
   const actif = habillageActif(sys, new Date(), null);
+  const nbDemandes = useInscriptions().armateurs.filter((d) => d.statut === "en_attente").length;
   return (
     <>
       <PageHeader
@@ -156,11 +159,13 @@ function Console({ session }: { session: Account }) {
           <TabsTrigger value="etat"><Activity className="mr-1.5 size-4" /> État du système</TabsTrigger>
           <TabsTrigger value="habillages"><Sparkles className="mr-1.5 size-4" /> Habillages et animations</TabsTrigger>
           <TabsTrigger value="comptes"><Users className="mr-1.5 size-4" /> Comptes et droits</TabsTrigger>
+          <TabsTrigger value="demandes"><Building2 className="mr-1.5 size-4" /> Demandes armateurs{nbDemandes ? ` (${nbDemandes})` : ""}</TabsTrigger>
           <TabsTrigger value="maintenance"><Wrench className="mr-1.5 size-4" /> Maintenance et données</TabsTrigger>
         </TabsList>
         <TabsContent value="etat"><EtatSysteme /></TabsContent>
         <TabsContent value="habillages"><Habillages session={session} /></TabsContent>
         <TabsContent value="comptes"><Comptes /></TabsContent>
+        <TabsContent value="demandes"><DemandesArmateurs session={session} /></TabsContent>
         <TabsContent value="maintenance"><Maintenance session={session} /></TabsContent>
       </Tabs>
     </>
@@ -496,6 +501,7 @@ const PERMS: [Permission, string][] = [
 
 function Comptes() {
   const marins = useMarins();
+  useInscriptions();
   const roles = [...new Map(ACCOUNTS.map((a) => [a.role, a.roleLabel])).entries()] as [Role, string][];
   return (
     <div className="space-y-6">
@@ -514,7 +520,7 @@ function Comptes() {
         </Panel>
         <Panel title="Comptes externes" bodyClassName="p-0">
           <ul className="divide-y">
-            {ARMATEUR_ACCOUNTS.map((a) => (
+            {comptesArmateurs().map((a) => (
               <Ligne key={a.username} titre={a.entreprise} detail={`Espace Armateurs · identifiant ${a.username} · ${a.contact}`} etat="ok" />
             ))}
             <Ligne titre="Espace Marin" detail={`${marins.length} comptes marins (connexion par NIP et mot de passe personnel)`} etat="ok" />
@@ -644,6 +650,75 @@ function Maintenance({ session }: { session: Account }) {
         <ShieldCheck className="mt-0.5 size-4 shrink-0" />
         Toutes les actions de cette console sont inscrites au journal d'audit sous votre nom. <HardDrive className="ml-2 mt-0.5 size-4 shrink-0" /> Les données sont conservées dans le navigateur de ce poste.
       </p>
+    </div>
+  );
+}
+
+/* ---------- 5. Demandes d'inscription des armateurs ---------- */
+
+function DemandesArmateurs({ session }: { session: Account }) {
+  const { armateurs } = useInscriptions();
+  const [refus, setRefus] = useState<number | null>(null);
+  const [motif, setMotif] = useState("");
+  if (!armateurs.length)
+    return (
+      <Panel>
+        <p className="text-sm text-muted-foreground">
+          Aucune demande pour l'instant. Les compagnies s'inscrivent depuis la page publique{" "}
+          <Link to="/inscription/armateur" className="font-semibold text-primary hover:underline">Inscription armateur</Link>.
+        </p>
+      </Panel>
+    );
+  const STATUT: Record<string, [Etat, string]> = { en_attente: ["attention", "À examiner"], validee: ["ok", "Compte actif"], refusee: ["erreur", "Refusée"] };
+  return (
+    <div className="space-y-4">
+      {armateurs.map((d) => {
+        const [etat, label] = STATUT[d.statut] ?? ["info", d.statut];
+        return (
+          <Panel
+            key={d.id}
+            title={<span className="flex flex-wrap items-center gap-2">{d.raisonSociale} <span className="font-mono text-xs font-normal text-muted-foreground">{d.numero}</span></span>}
+            description={`Déposée le ${new Date(d.creeLe).toLocaleDateString("fr-FR")} · ${d.segment} · ${d.ville}, siège : ${d.pays}`}
+            actions={<Pastille etat={etat} label={label} />}
+          >
+            <div className="grid gap-4 text-sm md:grid-cols-3">
+              <dl className="space-y-1.5">
+                <div><dt className="text-xs text-muted-foreground">RCCM</dt><dd className="font-mono text-xs">{d.rccm}</dd></div>
+                {d.nif && <div><dt className="text-xs text-muted-foreground">NIF</dt><dd className="font-mono text-xs">{d.nif}</dd></div>}
+                <div><dt className="text-xs text-muted-foreground">Identifiant demandé</dt><dd className="font-mono text-xs">{d.identifiant}</dd></div>
+              </dl>
+              <dl className="space-y-1.5">
+                <div><dt className="text-xs text-muted-foreground">Responsable</dt><dd>{d.contactNom}{d.contactFonction ? `, ${d.contactFonction}` : ""}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Contact</dt><dd>{d.tel} · {d.email}</dd></div>
+              </dl>
+              <div>
+                <div className="text-xs text-muted-foreground">Flotte déclarée ({d.navires.length})</div>
+                <ul className="mt-1 space-y-0.5">{d.navires.map((n) => <li key={n.imo} className="text-xs"><span className="font-medium">{n.nom}</span> · OMI {n.imo}{n.jauge ? ` · ${n.jauge} GT` : ""}</li>)}</ul>
+              </div>
+            </div>
+            {d.motif && <p className="mt-3 text-xs text-muted-foreground">Motif du refus : {d.motif}</p>}
+            {d.statut === "en_attente" && (
+              <div className="mt-4 flex flex-wrap items-end justify-end gap-2 border-t pt-4">
+                {refus === d.id ? (
+                  <>
+                    <label className="min-w-60 flex-1 text-xs font-medium">
+                      Motif du refus
+                      <input id={`refus-${d.id}`} className="field-dgmm mt-1 h-9 w-full rounded-md bg-card px-3 text-sm" value={motif} onChange={(e) => setMotif(e.target.value)} placeholder="Ex. RCCM introuvable au registre" />
+                    </label>
+                    <Button size="sm" variant="ghost" onClick={() => setRefus(null)}>Annuler</Button>
+                    <Button size="sm" variant="destructive" disabled={!motif.trim()} onClick={() => { traiterDemandeArmateur(d.id, { statut: "refusee", motif: motif.trim(), traitePar: session.nom }); journaliser(session.nom, `Demande armateur ${d.numero} refusée : ${motif.trim()}`, d.raisonSociale); setRefus(null); toast.success("Demande refusée"); }}>Confirmer le refus</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => { setRefus(d.id); setMotif(""); }}><XCircle /> Refuser</Button>
+                    <Button size="sm" variant="secondary" onClick={() => { traiterDemandeArmateur(d.id, { statut: "validee", traitePar: session.nom }); journaliser(session.nom, `Demande armateur ${d.numero} validée : compte ${d.identifiant} ouvert`, d.raisonSociale); toast.success("Compte armateur activé", { description: `${d.raisonSociale} peut se connecter avec « ${d.identifiant} ».` }); }}><CheckCircle2 /> Valider et ouvrir le compte</Button>
+                  </>
+                )}
+              </div>
+            )}
+          </Panel>
+        );
+      })}
     </div>
   );
 }

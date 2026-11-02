@@ -175,6 +175,11 @@ function ConnexionMarin() {
           )}
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
+          Pas encore de dossier ?{" "}
+          <Link to="/inscription/marin" className="font-semibold text-primary hover:underline">
+            Pré-inscription
+          </Link>
+          <span className="mx-2">·</span>
           Agent de la DGMM ?{" "}
           <Link to="/" className="font-semibold text-primary hover:underline">
             Espace professionnel

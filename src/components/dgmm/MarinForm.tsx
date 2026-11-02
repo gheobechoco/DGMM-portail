@@ -281,16 +281,21 @@ function Stepper({ step, onStep }: { step: 1 | 2; onStep: (s: 1 | 2) => void }) 
 
 export function MarinForm({
   initial,
+  preRempli,
   onSubmit,
   onCancel,
   submitLabel,
 }: {
   initial?: Marin | undefined;
+  /** Champs repris d'une pré-inscription en ligne. */
+  preRempli?: Partial<MarinInput> | undefined;
   onSubmit: (v: MarinInput) => void;
   onCancel: () => void;
   submitLabel: string;
 }) {
-  const [v, setV] = useState<MarinInput>(() => (initial ? toInput(initial) : emptyMarin()));
+  const [v, setV] = useState<MarinInput>(() =>
+    initial ? toInput(initial) : { ...emptyMarin(), ...preRempli },
+  );
   const [step, setStep] = useState<1 | 2>(1);
   const [touched, setTouched] = useState<{ 1: boolean; 2: boolean }>({ 1: false, 2: false });
   const [vus, setVus] = useState<Set<keyof MarinInput>>(() => new Set());

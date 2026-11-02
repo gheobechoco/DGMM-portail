@@ -37,13 +37,17 @@ function Nouvelle() {
             signataire={session.nom}
             onCancel={() => navigate({ to: "/espace/visites" })}
             onSubmit={(v) => {
-              const saved = saveVisite(v);
-              toast.success(
-                saved.signee
-                  ? `Certificat ${saved.numero} signé`
-                  : `Brouillon ${saved.numero} enregistré`,
+              const saved = saveVisite({ ...v, signee: false });
+              toast.success(`Brouillon ${saved.numero} enregistré`, {
+                description: can(session.role, "visites.signer")
+                  ? "Vérifiez la saisie, puis signez le certificat pour terminer la visite."
+                  : "Le médecin agréé pourra le signer.",
+              });
+              navigate(
+                can(session.role, "visites.signer")
+                  ? { to: "/espace/visites/modifier/$id", params: { id: String(saved.id) } }
+                  : { to: "/espace/visites/$id", params: { id: String(saved.id) } },
               );
-              navigate({ to: "/espace/visites/$id", params: { id: String(saved.id) } });
             }}
           />
         </>

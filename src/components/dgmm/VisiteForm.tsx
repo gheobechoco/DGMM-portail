@@ -219,10 +219,13 @@ export function VisiteForm({
   signataire,
   onSubmit,
   onCancel,
+  brouillonCree = false,
 }: {
   initial: VisiteInput;
   marins: Marin[];
   canSign: boolean;
+  /** La signature n'est proposée qu'une fois le brouillon enregistré. */
+  brouillonCree?: boolean | undefined;
   signataire: string;
   onSubmit: (v: VisiteInput) => void;
   onCancel: () => void;
@@ -778,9 +781,11 @@ export function VisiteForm({
           ) : (
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <HeartPulse className="size-3.5" />
-              {canSign
-                ? "La signature numérique valide le certificat et met à jour l'aptitude du marin."
-                : "Saisie enregistrée en brouillon : seul le médecin agréé peut signer."}
+              {!canSign
+                ? "Saisie enregistrée en brouillon : seul le médecin agréé peut signer."
+                : brouillonCree
+                  ? "Brouillon enregistré : vérifiez la saisie puis signez pour terminer la visite."
+                  : "Enregistrez d'abord le brouillon : le bouton « Signer le certificat » apparaîtra ensuite."}
             </span>
           )}
         </div>
@@ -808,7 +813,7 @@ export function VisiteForm({
           <Button type="submit" variant="outline">
             <Save /> Enregistrer le brouillon
           </Button>
-          {canSign && (
+          {canSign && brouillonCree && (
             <Button type="button" variant="gold" onClick={submit(true)}>
               <FileSignature /> Signer le certificat
             </Button>

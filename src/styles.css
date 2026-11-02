@@ -629,3 +629,33 @@ html.theme-transition * {
     animation: none;
   }
 }
+
+/* Sigles dépliables (DGMM, GDM, STCW…) : le sens complet se déroule au survol. */
+.sigle {
+  text-decoration: none;
+  cursor: help;
+  white-space: nowrap;
+  border-radius: 4px;
+  outline-offset: 3px;
+}
+.sigle-l { transition: color 0.25s ease; }
+.sigle-r {
+  display: inline-grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  vertical-align: bottom;
+  transition:
+    grid-template-columns 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 70ms),
+    opacity 0.3s ease calc(var(--i, 0) * 70ms);
+}
+.sigle-r > span { overflow: hidden; min-width: 0; white-space: pre; }
+.sigle:hover .sigle-r,
+.sigle:focus-visible .sigle-r {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+.sigle:hover .sigle-l,
+.sigle:focus-visible .sigle-l { color: var(--gold); }
+@media (prefers-reduced-motion: reduce) {
+  .sigle-r { transition: none; }
+}

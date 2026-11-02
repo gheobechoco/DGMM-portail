@@ -15,8 +15,11 @@ import { Route as ReglementationRouteImport } from './routes/reglementation'
 import { Route as ArmateurIndexRouteImport } from './routes/armateur/index'
 import { Route as EspaceIndexRouteImport } from './routes/espace/index'
 import { Route as EspaceAuditRouteImport } from './routes/espace/audit'
+import { Route as EspaceDemandesRouteImport } from './routes/espace/demandes'
 import { Route as EspaceEquipagesRouteImport } from './routes/espace/equipages'
 import { Route as EspaceSystemeRouteImport } from './routes/espace/systeme'
+import { Route as InscriptionArmateurRouteImport } from './routes/inscription.armateur'
+import { Route as InscriptionMarinRouteImport } from './routes/inscription.marin'
 import { Route as MonEspaceIndexRouteImport } from './routes/mon-espace/index'
 import { Route as VerifierIndexRouteImport } from './routes/verifier.index'
 import { Route as VerifierNipRouteImport } from './routes/verifier.$nip'
@@ -63,6 +66,11 @@ const EspaceAuditRoute = EspaceAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => EspaceRoute,
 } as any)
+const EspaceDemandesRoute = EspaceDemandesRouteImport.update({
+  id: '/demandes',
+  path: '/demandes',
+  getParentRoute: () => EspaceRoute,
+} as any)
 const EspaceEquipagesRoute = EspaceEquipagesRouteImport.update({
   id: '/equipages',
   path: '/equipages',
@@ -72,6 +80,16 @@ const EspaceSystemeRoute = EspaceSystemeRouteImport.update({
   id: '/systeme',
   path: '/systeme',
   getParentRoute: () => EspaceRoute,
+} as any)
+const InscriptionArmateurRoute = InscriptionArmateurRouteImport.update({
+  id: '/inscription/armateur',
+  path: '/inscription/armateur',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InscriptionMarinRoute = InscriptionMarinRouteImport.update({
+  id: '/inscription/marin',
+  path: '/inscription/marin',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const MonEspaceIndexRoute = MonEspaceIndexRouteImport.update({
   id: '/mon-espace/',
@@ -154,8 +172,11 @@ export interface FileRoutesByFullPath {
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
+  '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
   '/espace/systeme': typeof EspaceSystemeRoute
+  '/inscription/armateur': typeof InscriptionArmateurRoute
+  '/inscription/marin': typeof InscriptionMarinRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
@@ -178,8 +199,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
+  '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
   '/espace/systeme': typeof EspaceSystemeRoute
+  '/inscription/armateur': typeof InscriptionArmateurRoute
+  '/inscription/marin': typeof InscriptionMarinRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur': typeof ArmateurIndexRoute
   '/espace': typeof EspaceIndexRoute
@@ -204,8 +228,11 @@ export interface FileRoutesById {
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
+  '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
   '/espace/systeme': typeof EspaceSystemeRoute
+  '/inscription/armateur': typeof InscriptionArmateurRoute
+  '/inscription/marin': typeof InscriptionMarinRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
@@ -231,8 +258,11 @@ export interface FileRouteTypes {
     | '/espace'
     | '/reglementation'
     | '/espace/audit'
+    | '/espace/demandes'
     | '/espace/equipages'
     | '/espace/systeme'
+    | '/inscription/armateur'
+    | '/inscription/marin'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
@@ -255,8 +285,11 @@ export interface FileRouteTypes {
     | '/'
     | '/reglementation'
     | '/espace/audit'
+    | '/espace/demandes'
     | '/espace/equipages'
     | '/espace/systeme'
+    | '/inscription/armateur'
+    | '/inscription/marin'
     | '/verifier/$nip'
     | '/armateur'
     | '/espace'
@@ -280,8 +313,11 @@ export interface FileRouteTypes {
     | '/espace'
     | '/reglementation'
     | '/espace/audit'
+    | '/espace/demandes'
     | '/espace/equipages'
     | '/espace/systeme'
+    | '/inscription/armateur'
+    | '/inscription/marin'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
@@ -305,6 +341,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EspaceRoute: typeof EspaceRouteWithChildren
   ReglementationRoute: typeof ReglementationRoute
+  InscriptionArmateurRoute: typeof InscriptionArmateurRoute
+  InscriptionMarinRoute: typeof InscriptionMarinRoute
   VerifierNipRoute: typeof VerifierNipRoute
   ArmateurIndexRoute: typeof ArmateurIndexRoute
   MonEspaceIndexRoute: typeof MonEspaceIndexRoute
@@ -357,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceAuditRouteImport
       parentRoute: typeof EspaceRoute
     }
+    '/espace/demandes': {
+      id: '/espace/demandes'
+      path: '/demandes'
+      fullPath: '/espace/demandes'
+      preLoaderRoute: typeof EspaceDemandesRouteImport
+      parentRoute: typeof EspaceRoute
+    }
     '/espace/equipages': {
       id: '/espace/equipages'
       path: '/equipages'
@@ -370,6 +415,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/espace/systeme'
       preLoaderRoute: typeof EspaceSystemeRouteImport
       parentRoute: typeof EspaceRoute
+    }
+    '/inscription/armateur': {
+      id: '/inscription/armateur'
+      path: '/inscription/armateur'
+      fullPath: '/inscription/armateur'
+      preLoaderRoute: typeof InscriptionArmateurRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inscription/marin': {
+      id: '/inscription/marin'
+      path: '/inscription/marin'
+      fullPath: '/inscription/marin'
+      preLoaderRoute: typeof InscriptionMarinRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/mon-espace/': {
       id: '/mon-espace/'
@@ -481,6 +540,7 @@ declare module '@tanstack/react-router' {
 
 interface EspaceRouteChildren {
   EspaceAuditRoute: typeof EspaceAuditRoute
+  EspaceDemandesRoute: typeof EspaceDemandesRoute
   EspaceEquipagesRoute: typeof EspaceEquipagesRoute
   EspaceSystemeRoute: typeof EspaceSystemeRoute
   EspaceIndexRoute: typeof EspaceIndexRoute
@@ -498,6 +558,7 @@ interface EspaceRouteChildren {
 
 const EspaceRouteChildren: EspaceRouteChildren = {
   EspaceAuditRoute: EspaceAuditRoute,
+  EspaceDemandesRoute: EspaceDemandesRoute,
   EspaceEquipagesRoute: EspaceEquipagesRoute,
   EspaceSystemeRoute: EspaceSystemeRoute,
   EspaceIndexRoute: EspaceIndexRoute,
@@ -520,6 +581,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EspaceRoute: EspaceRouteWithChildren,
   ReglementationRoute: ReglementationRoute,
+  InscriptionArmateurRoute: InscriptionArmateurRoute,
+  InscriptionMarinRoute: InscriptionMarinRoute,
   VerifierNipRoute: VerifierNipRoute,
   ArmateurIndexRoute: ArmateurIndexRoute,
   MonEspaceIndexRoute: MonEspaceIndexRoute,

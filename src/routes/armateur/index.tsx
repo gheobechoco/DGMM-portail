@@ -181,6 +181,11 @@ function ConnexionArmateur() {
           </div>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
+          Pas encore de compte ?{" "}
+          <Link to="/inscription/armateur" className="font-semibold text-primary hover:underline">
+            Inscrire votre compagnie
+          </Link>
+          <span className="mx-2">·</span>
           <Link to="/" className="font-semibold text-primary hover:underline">
             Retour au portail
           </Link>
@@ -194,7 +199,7 @@ function Tableau({ a }: { a: ArmateurAccount }) {
   const marins = useMarins();
   const visites = useVisites();
   const roles = useRoles().filter((r) => r.armateur === a.entreprise);
-  const flotte = getArmateur(a.entreprise)?.navires ?? [];
+  const flotte = getArmateur(a.entreprise)?.navires ?? a.navires ?? [];
   const effectif = marins.filter((m) => m.entreprise === a.entreprise);
   const today = new Date().toISOString().slice(0, 10);
   const conformes = effectif.filter((m) => {
@@ -437,7 +442,7 @@ function RoleDialog({
 }) {
   const marins = useMarins();
   const visitesRole = useVisites();
-  const flotte = useMemo(() => getArmateur(a.entreprise)?.navires ?? [], [a.entreprise]);
+  const flotte = useMemo(() => getArmateur(a.entreprise)?.navires ?? a.navires ?? [], [a.entreprise, a.navires]);
   const [navire, setNavire] = useState(role?.navire ?? flotte[0]?.nom ?? "");
   const [date, setDate] = useState(
     role?.appareillage ?? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),

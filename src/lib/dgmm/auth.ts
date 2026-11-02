@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import type { Navire } from "@/lib/dgmm/maritime";
+import { getInscriptions, useInscriptions } from "@/lib/dgmm/inscriptions";
 import type { Role } from "./rules";
 
 export interface Account {
@@ -128,6 +130,22 @@ export interface ArmateurAccount {
   password: string;
   entreprise: string;
   contact: string;
+  /** Flotte déclarée lors de l'inscription (armateurs hors référentiel). */
+  navires?: Navire[] | undefined;
+}
+
+/** Comptes de démonstration + armateurs dont l'inscription a été validée par la DGMM. */
+export function comptesArmateurs(): ArmateurAccount[] {
+  const valides = getInscriptions()
+    .armateurs.filter((d) => d.statut === "validee")
+    .map((d) => ({
+      username: d.identifiant,
+      password: d.motDePasse,
+      entreprise: d.raisonSociale,
+      contact: `${d.contactNom} · ${d.contactFonction}`,
+      navires: d.navires,
+    }));
+  return [...ARMATEUR_ACCOUNTS, ...valides];
 }
 
 // Comptes armateurs de démonstration.
@@ -149,7 +167,7 @@ export const ARMATEUR_ACCOUNTS: ArmateurAccount[] = [
 export const armateurSession = sessionStore("dgmm-armateur-session");
 
 export function loginArmateur(username: string, password: string): ArmateurAccount | null {
-  const a = ARMATEUR_ACCOUNTS.find(
+  const a = comptesArmateurs().find(
     (x) => x.username === username.trim().toLowerCase() && x.password === password,
   );
   if (a) armateurSession.write(a.username);
@@ -157,5 +175,6 @@ export function loginArmateur(username: string, password: string): ArmateurAccou
 }
 export function useArmateur(): ArmateurAccount | null {
   const u = armateurSession.use();
-  return ARMATEUR_ACCOUNTS.find((a) => a.username === u) ?? null;
+  useInscriptions();
+  return comptesArmateurs().find((a) => a.username === u) ?? null;
 }
