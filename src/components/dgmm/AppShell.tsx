@@ -6,7 +6,9 @@ import {
   LayoutDashboard,
   Rows3,
   Rows4,
+  Settings2,
   Sparkles,
+  Wrench,
   Contrast,
   LogOut,
   ShieldCheck,
@@ -20,6 +22,7 @@ import {
 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { useHabillage } from "@/lib/dgmm/saisons";
+import { useSysteme } from "@/lib/dgmm/systeme";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
 import { Omnibar } from "@/components/dgmm/Omnibar";
@@ -53,6 +56,7 @@ export const NAV: NavItem[] = [
   { to: "/espace/equipages", label: "Rôles d'équipage", icon: Ship, perm: "roles.lecture" },
   { to: "/espace/audit", label: "Journal d'audit", icon: ShieldCheck, perm: "audit" },
   { to: "/reglementation", label: "Réglementation", icon: Scale, perm: "marins" },
+  { to: "/espace/systeme", label: "Administration système", icon: Settings2, perm: "systeme" },
 ];
 
 function initials(nom: string) {
@@ -210,6 +214,7 @@ function estSaisie(t: EventTarget | null) {
 function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
   const prefs = usePrefs();
   const habillage = useHabillage();
+  const sys = useSysteme();
   const compact = prefs.densite === "compact";
   const eleve = prefs.contraste === "eleve";
   const btn =
@@ -255,7 +260,7 @@ function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
           </TooltipTrigger>
           <TooltipContent>Contraste élevé · plein soleil</TooltipContent>
         </Tooltip>
-        {habillage && (
+        {habillage && sys.animations && (
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -295,6 +300,24 @@ function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
         </Tooltip>
       </div>
     </TooltipProvider>
+  );
+}
+
+/** Message de maintenance diffusé par l'administrateur système. */
+function BanniereMaintenance() {
+  const sys = useSysteme();
+  if (!sys.maintenance.actif) return null;
+  return (
+    <div
+      role="status"
+      className="no-print mb-5 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm"
+    >
+      <Wrench className="mt-0.5 size-4 shrink-0 text-warning" />
+      <span>
+        <strong className="font-semibold text-primary">Maintenance · </strong>
+        {sys.maintenance.message}
+      </span>
+    </div>
   );
 }
 
@@ -418,6 +441,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8 print:max-w-none print:p-0">
+          <BanniereMaintenance />
           {children}
         </main>
       </div>

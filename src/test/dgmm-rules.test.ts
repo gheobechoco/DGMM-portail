@@ -164,3 +164,24 @@ describe("calendrier des habillages du sceau", () => {
     expect(id("2027-07-10")).toBeNull();
   });
 });
+
+describe("administrateur système", () => {
+  it("supervise sans acte métier", () => {
+    expect(can("admin_systeme", "systeme")).toBe(true);
+    expect(can("admin_systeme", "audit")).toBe(true);
+    expect(can("admin_systeme", "visites.signer")).toBe(false);
+    expect(can("admin_systeme", "marins.valider_admin")).toBe(false);
+    expect(can("admin_systeme", "marins.livret")).toBe(false);
+    expect(can("gestionnaire_mm", "systeme")).toBe(false);
+  });
+  it("l'habillage suit les réglages de l'administrateur", async () => {
+    const { habillageActif } = await import("@/lib/dgmm/saisons");
+    const base = { habillageMode: "calendrier", habillageForce: "noel", evenementsInactifs: [], animations: true, intensite: "normale", maintenance: { actif: false, message: "" } } as const;
+    const nov = new Date("2026-11-02T12:00:00");
+    expect(habillageActif({ ...base, evenementsInactifs: [] }, nov, null)?.id).toBe("novembre-bleu");
+    expect(habillageActif({ ...base, evenementsInactifs: ["novembre-bleu"] }, nov, null)).toBeNull();
+    expect(habillageActif({ ...base, evenementsInactifs: [], habillageMode: "force" }, nov, null)?.id).toBe("noel");
+    expect(habillageActif({ ...base, evenementsInactifs: [], habillageMode: "desactive" }, nov, null)).toBeNull();
+    expect(habillageActif({ ...base, evenementsInactifs: [], habillageMode: "desactive" }, nov, "travail")?.id).toBe("travail");
+  });
+});

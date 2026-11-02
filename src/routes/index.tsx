@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight, Settings2 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
   component: LoginPage,
 });
 
-const ROLE_ICONS = { gestionnaire_mm: LayoutDashboard, rh_marine: FolderArchive, medecin: Stethoscope, gestionnaire_medical: ShieldCheck };
+const ROLE_ICONS = { gestionnaire_mm: LayoutDashboard, rh_marine: FolderArchive, medecin: Stethoscope, gestionnaire_medical: ShieldCheck, admin_systeme: Settings2 };
 
 function LoginPage() {
   const navigate = useNavigate();

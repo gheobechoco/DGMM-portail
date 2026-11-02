@@ -18,6 +18,7 @@ const CATEGORIES: [string, RegExp][] = [
   ["Signatures & révocations", /signature|révocation/i],
   ["Enrôlements & modifications", /enrôlement|modification|embarquement|débarquement/i],
   ["Connexions externes", /connexion|alerte|rôle d'équipage/i],
+  ["Administration système", /système|sauvegarde|réinitialisation|maintenance|habillage|animations|calendrier/i],
 ];
 
 function Journal() {

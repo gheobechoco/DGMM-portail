@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSysteme, type Systeme } from "@/lib/dgmm/systeme";
 
 /**
  * Calendrier des habillages du sceau DGMM.
@@ -179,26 +180,49 @@ export function habillageDu(date: Date): Habillage | null {
 
 const APERCU = "dgmm-habillage-apercu";
 
+/** Lit l'aperçu demandé par l'adresse (?habillage=…) et le garde pour la session. */
+function apercuSession(): string | null {
+  try {
+    const q = new URLSearchParams(window.location.search).get("habillage");
+    if (q === "auto") window.sessionStorage.removeItem(APERCU);
+    else if (q) window.sessionStorage.setItem(APERCU, q);
+    return window.sessionStorage.getItem(APERCU);
+  } catch {
+    return null;
+  }
+}
+
+/** Habillage à afficher selon les réglages de l'administrateur et la date. */
+export function habillageActif(sys: Systeme, date: Date, apercu: string | null): Habillage | null {
+  if (apercu === "aucun") return null;
+  if (apercu && apercu in HABILLAGES) return HABILLAGES[apercu as HabillageId];
+  if (sys.habillageMode === "desactive") return null;
+  if (sys.habillageMode === "force") return HABILLAGES[sys.habillageForce] ?? null;
+  const h = habillageDu(date);
+  return h && !sys.evenementsInactifs.includes(h.id) ? h : null;
+}
+
 /**
  * Habillage actif. Pour prévisualiser un autre événement : ajouter `?habillage=noel`
- * (ou tout autre identifiant) à l'adresse ; `?habillage=auto` revient au calendrier,
+ * (ou tout autre identifiant) à l'adresse ; `?habillage=auto` revient aux réglages,
  * `?habillage=aucun` retire tout habillage pendant la session.
  */
 export function useHabillage(): Habillage | null {
-  const [h, setH] = useState<Habillage | null>(null);
-  useEffect(() => {
-    let force: string | null = null;
-    try {
-      const q = new URLSearchParams(window.location.search).get("habillage");
-      if (q === "auto") window.sessionStorage.removeItem(APERCU);
-      else if (q) window.sessionStorage.setItem(APERCU, q);
-      force = window.sessionStorage.getItem(APERCU);
-    } catch {
-      /* stockage indisponible : calendrier seul */
-    }
-    if (force === "aucun") setH(null);
-    else if (force && force in HABILLAGES) setH(HABILLAGES[force as HabillageId]);
-    else setH(habillageDu(new Date()));
-  }, []);
-  return h;
+  const sys = useSysteme();
+  const [apercu, setApercu] = useState<string | null | undefined>(undefined);
+  useEffect(() => setApercu(apercuSession()), []);
+  // Avant l'hydratation, aucun habillage : le rendu serveur reste identique.
+  if (apercu === undefined) return null;
+  return habillageActif(sys, new Date(), apercu);
+}
+
+/** Prochaine date de chaque événement (à partir d'aujourd'hui). */
+export function prochaineDate(id: HabillageId, depuis = new Date()): Date {
+  const debut = new Date(depuis.getFullYear(), depuis.getMonth(), depuis.getDate());
+  for (let k = 0; k < 400; k++) {
+    const d = new Date(debut);
+    d.setDate(debut.getDate() + k);
+    if (habillageDu(d)?.id === id) return d;
+  }
+  return debut;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Ambiance as Type, Habillage } from "@/lib/dgmm/saisons";
 import { estSombre, usePrefs } from "@/lib/dgmm/prefs";
+import { INTENSITE, useSysteme } from "@/lib/dgmm/systeme";
 
 interface P {
   x: number;
@@ -34,7 +35,9 @@ function zoneLaterale(): number {
 export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const prefs = usePrefs();
-  const actif = !!habillage && prefs.animationsSaison;
+  const sys = useSysteme();
+  const actif = !!habillage && prefs.animationsSaison && sys.animations;
+  const facteur = INTENSITE[sys.intensite];
   const sombre = estSombre(prefs);
 
   useEffect(() => {
@@ -72,7 +75,7 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
         t: rnd(0, 100), side: dansCote,
       };
     };
-    const densite = type === "rubans" ? 0.45 : type === "envol" ? 0.35 : 1;
+    const densite = (type === "rubans" ? 0.45 : type === "envol" ? 0.35 : 1) * facteur;
     const nSide = side ? Math.round(34 * densite) : 0; // complété dès que la barre latérale apparaît
     const nMain = Math.round(Math.min(46, (W - side) / 34) * densite);
     let ps: P[] = [];
@@ -190,7 +193,7 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
           ctx.fill();
         });
       } else if (type === "feux") {
-        if (Math.random() < dt * 0.9) eclate();
+        if (Math.random() < dt * 0.9 * facteur) eclate();
         for (let i = gerbes.length - 1; i >= 0; i--) {
           const g = gerbes[i]!;
           g.t += dt; g.vy += 60 * dt; g.vx *= 0.985; g.vy *= 0.985;
@@ -224,7 +227,7 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
       else if (!avant) for (let i = 0; i < Math.round(34 * densite); i++) ps.push(nait(false, true));
     }, 400);
     return () => { cancelAnimationFrame(raf); window.clearInterval(zone); window.removeEventListener("resize", resize); };
-  }, [habillage, actif, sombre]);
+  }, [habillage, actif, sombre, facteur]);
 
   if (!actif) return null;
   return <canvas ref={ref} aria-hidden className="no-print pointer-events-none fixed inset-0 z-[35]" />;

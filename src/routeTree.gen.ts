@@ -16,6 +16,7 @@ import { Route as ArmateurIndexRouteImport } from './routes/armateur/index'
 import { Route as EspaceIndexRouteImport } from './routes/espace/index'
 import { Route as EspaceAuditRouteImport } from './routes/espace/audit'
 import { Route as EspaceEquipagesRouteImport } from './routes/espace/equipages'
+import { Route as EspaceSystemeRouteImport } from './routes/espace/systeme'
 import { Route as MonEspaceIndexRouteImport } from './routes/mon-espace/index'
 import { Route as VerifierIndexRouteImport } from './routes/verifier.index'
 import { Route as VerifierNipRouteImport } from './routes/verifier.$nip'
@@ -65,6 +66,11 @@ const EspaceAuditRoute = EspaceAuditRouteImport.update({
 const EspaceEquipagesRoute = EspaceEquipagesRouteImport.update({
   id: '/equipages',
   path: '/equipages',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceSystemeRoute = EspaceSystemeRouteImport.update({
+  id: '/systeme',
+  path: '/systeme',
   getParentRoute: () => EspaceRoute,
 } as any)
 const MonEspaceIndexRoute = MonEspaceIndexRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/systeme': typeof EspaceSystemeRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/systeme': typeof EspaceSystemeRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur': typeof ArmateurIndexRoute
   '/espace': typeof EspaceIndexRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/systeme': typeof EspaceSystemeRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/reglementation'
     | '/espace/audit'
     | '/espace/equipages'
+    | '/espace/systeme'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
@@ -246,6 +256,7 @@ export interface FileRouteTypes {
     | '/reglementation'
     | '/espace/audit'
     | '/espace/equipages'
+    | '/espace/systeme'
     | '/verifier/$nip'
     | '/armateur'
     | '/espace'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/reglementation'
     | '/espace/audit'
     | '/espace/equipages'
+    | '/espace/systeme'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
@@ -350,6 +362,13 @@ declare module '@tanstack/react-router' {
       path: '/equipages'
       fullPath: '/espace/equipages'
       preLoaderRoute: typeof EspaceEquipagesRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/systeme': {
+      id: '/espace/systeme'
+      path: '/systeme'
+      fullPath: '/espace/systeme'
+      preLoaderRoute: typeof EspaceSystemeRouteImport
       parentRoute: typeof EspaceRoute
     }
     '/mon-espace/': {
@@ -463,6 +482,7 @@ declare module '@tanstack/react-router' {
 interface EspaceRouteChildren {
   EspaceAuditRoute: typeof EspaceAuditRoute
   EspaceEquipagesRoute: typeof EspaceEquipagesRoute
+  EspaceSystemeRoute: typeof EspaceSystemeRoute
   EspaceIndexRoute: typeof EspaceIndexRoute
   EspaceLivretsIdRoute: typeof EspaceLivretsIdRoute
   EspaceMarinsIdRoute: typeof EspaceMarinsIdRoute
@@ -479,6 +499,7 @@ interface EspaceRouteChildren {
 const EspaceRouteChildren: EspaceRouteChildren = {
   EspaceAuditRoute: EspaceAuditRoute,
   EspaceEquipagesRoute: EspaceEquipagesRoute,
+  EspaceSystemeRoute: EspaceSystemeRoute,
   EspaceIndexRoute: EspaceIndexRoute,
   EspaceLivretsIdRoute: EspaceLivretsIdRoute,
   EspaceMarinsIdRoute: EspaceMarinsIdRoute,

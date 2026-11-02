@@ -1176,8 +1176,35 @@ export function setAlertes(marinId: number, alertes: { sms: boolean; email: bool
   );
 }
 
-export function resetDemo() {
-  set(seed());
+export function resetDemo(auteur = "Administrateur système") {
+  set(seed(), { acteur: auteur, action: "Réinitialisation des données de démonstration", cible: "Système" });
+}
+
+/** Clé de stockage des données (version du schéma). */
+export const CLE_DONNEES = KEY;
+
+/** Sauvegarde complète (JSON) : marins, visites, rôles d'équipage, journal d'audit. */
+export function exporterDonnees(): string {
+  const s = get();
+  return JSON.stringify({ format: "dgmm-gdm", version: KEY, exporteLe: nowIso(), ...s }, null, 2);
+}
+
+/** Restaure une sauvegarde après contrôle de sa forme. Renvoie un message d'erreur, ou null. */
+export function importerDonnees(json: string, auteur: string): string | null {
+  let d: Partial<State> & { format?: string };
+  try {
+    d = JSON.parse(json) as Partial<State> & { format?: string };
+  } catch {
+    return "Le fichier n'est pas un JSON valide.";
+  }
+  if (d.format !== "dgmm-gdm") return "Ce fichier n'est pas une sauvegarde du portail DGMM.";
+  if (!Array.isArray(d.marins) || !Array.isArray(d.visites) || !Array.isArray(d.audit))
+    return "Sauvegarde incomplète : marins, visites ou journal d'audit manquants.";
+  set(
+    { marins: d.marins, visites: d.visites, roles: Array.isArray(d.roles) ? d.roles : [], audit: d.audit },
+    { acteur: auteur, action: `Restauration d'une sauvegarde (${d.marins.length} marins)`, cible: "Système" },
+  );
+  return null;
 }
 
 /** Dernier certificat signé d'un marin. */

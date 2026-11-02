@@ -39,6 +39,13 @@ export const ACCOUNTS: Account[] = [
     role: "gestionnaire_medical",
     roleLabel: "Gestionnaire médical",
   },
+  {
+    username: "admin",
+    password: "azerty",
+    nom: "Administrateur système",
+    role: "admin_systeme",
+    roleLabel: "Administrateur système",
+  },
 ];
 
 const KEY = "dgmm-session";

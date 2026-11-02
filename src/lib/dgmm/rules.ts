@@ -1,6 +1,11 @@
 // Règles métier pures (testées dans src/test/dgmm-rules.test.ts).
 
-export type Role = "gestionnaire_mm" | "rh_marine" | "medecin" | "gestionnaire_medical";
+export type Role =
+  | "gestionnaire_mm"
+  | "rh_marine"
+  | "medecin"
+  | "gestionnaire_medical"
+  | "admin_systeme";
 
 export type Permission =
   | "dashboard"
@@ -14,7 +19,8 @@ export type Permission =
   | "certificats.imprimer"
   | "audit"
   | "embarquements"
-  | "roles.lecture";
+  | "roles.lecture"
+  | "systeme";
 
 /**
  * Matrice des droits (RBAC) :
@@ -62,6 +68,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "visites.saisir",
     "certificats.imprimer",
   ],
+  // Administrateur système : supervision et réglages, sans acte métier (ni visa, ni signature).
+  admin_systeme: ["dashboard", "marins", "visites", "audit", "roles.lecture", "systeme"],
 };
 
 /** Profil de tableau de bord : pilotage administratif ou santé. */

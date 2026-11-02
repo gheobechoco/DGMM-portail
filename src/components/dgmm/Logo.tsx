@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { useHabillage } from "@/lib/dgmm/saisons";
+import { HABILLAGES, useHabillage, type HabillageId } from "@/lib/dgmm/saisons";
 import { Accessoire } from "@/components/dgmm/Habillages";
 
 const NAVY = "#13294B";
@@ -19,14 +19,17 @@ export function DgmmLogo({
   className,
   title = "Direction Générale de la Marine Marchande",
   habille = true,
+  apercu,
 }: {
   className?: string;
   title?: string;
   /** false sur les documents officiels : le sceau y reste toujours nu. */
   habille?: boolean | undefined;
+  /** Force un habillage précis (aperçus de la console d'administration). */
+  apercu?: HabillageId | undefined;
 }) {
   const h = useHabillage();
-  const deco = habille ? h : null;
+  const deco = !habille ? null : apercu ? HABILLAGES[apercu] : h;
   const uid = useId().replace(/:/g, "");
   const haut = `arc-haut-${uid}`;
   const bas = `arc-bas-${uid}`;
