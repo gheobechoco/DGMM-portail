@@ -28,6 +28,52 @@ function zoneLaterale(): number {
   return r.width > 0 && r.left < 5 ? r.right : 0;
 }
 
+/* ---------- Zones de lecture à laisser libres ---------- */
+
+/**
+ * Blocs de contenu que l'ambiance ne doit jamais recouvrir : cartes et panneaux,
+ * tableaux, images, cartes géographiques, champs et boutons, fenêtres.
+ */
+const SELECTEUR_BLOCS = [
+  ".bg-card", ".shadow-card", "[class*='rounded'][class*='border']",
+  "table", "img", "svg", "video", "iframe", "canvas:not([data-ambiance])", "[role=img]",
+  "input", "select", "textarea", "button", "[role=radio]", "[role=tab]",
+  ".maplibregl-map", "[data-ambiance-obstacle]",
+].join(",");
+/** Marge laissée autour du contenu (px) pour que rien ne frôle le texte. */
+const MARGE = 10;
+
+/**
+ * Rectangles (coordonnées de l'écran) occupés par du contenu visible : blocs ci-dessus
+ * et lignes de texte libres (titres, paragraphes, libellés hors cartes).
+ * Un bloc qui couvre presque toute la largeur est un fond de page, pas du contenu.
+ */
+function zonesOccupees(): DOMRect[] {
+  const W = window.innerWidth, H = window.innerHeight;
+  const vu = (r: DOMRect) => r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
+  const out: DOMRect[] = [];
+  document.querySelectorAll<HTMLElement>(SELECTEUR_BLOCS).forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (vu(r) && !(r.width > W * 0.97 && r.height > H * 0.6)) out.push(r);
+  });
+  const parcours = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.nodeValue && n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+  });
+  const plage = document.createRange();
+  while (parcours.nextNode()) {
+    const n = parcours.currentNode;
+    const parent = n.parentElement;
+    // Déjà couvert par son bloc, ou invisible (lecteurs d'écran, scripts).
+    if (!parent || parent.closest(SELECTEUR_BLOCS) || parent.closest(".sr-only,script,style,noscript")) continue;
+    plage.selectNodeContents(n);
+    for (const r of plage.getClientRects()) if (vu(r)) out.push(r);
+  }
+  return out;
+}
+
+const dansZone = (x: number, y: number, zones: DOMRect[], m = MARGE) =>
+  zones.some((r) => x > r.left - m && x < r.right + m && y > r.top - m && y < r.bottom + m);
+
 /**
  * Animation d'ambiance liée à l'habillage du jour (neige, confettis, pétales…).
  * Couche décorative : non cliquable, ignorée des lecteurs d'écran, coupée si
@@ -72,6 +118,20 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
     const type: Type = habillage.ambiance;
     const couleurs = habillage.couleurs;
     let W = 0, H = 0, side = 0, raf = 0, last = performance.now(), tick = 0;
+    // Contenu à préserver, recalculé régulièrement et après chaque défilement.
+    let zones: DOMRect[] = [];
+    let fenetreOuverte = false;
+    let defileLe = 0;
+    const mesurer = () => {
+      fenetreOuverte = !!document.querySelector("[role=dialog],[role=alertdialog]");
+      zones = fenetreOuverte ? [] : zonesOccupees();
+    };
+    let attente = 0;
+    const auDefilement = () => {
+      defileLe = performance.now();
+      window.clearTimeout(attente);
+      attente = window.setTimeout(mesurer, 160);
+    };
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const resize = () => {
       W = window.innerWidth; H = window.innerHeight; side = zoneLaterale();
@@ -80,7 +140,12 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
+    mesurer();
     window.addEventListener("resize", resize);
+    window.addEventListener("resize", auDefilement);
+    // capture : le défilement peut venir d'un conteneur intérieur, pas seulement de la page.
+    document.addEventListener("scroll", auDefilement, { capture: true, passive: true });
+    const mesure = window.setInterval(mesurer, 700);
 
     const monte = type === "bulles" || type === "etincelles" || type === "envol";
     const nait = (enHaut: boolean, dansCote: boolean): P => {
@@ -192,8 +257,14 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
     const gerbes: P[] = [];
     const eclate = () => {
       const dansCote = side > 0 && Math.random() < 0.4;
-      const cx = dansCote ? rnd(20, side - 20) : rnd(side + 60, W - 60);
-      const cy = rnd(60, H * 0.45);
+      // Les gerbes éclatent dans un espace libre (jusqu'à 12 essais, sinon on renonce).
+      let cx = 0, cy = 0, libre = false;
+      for (let essai = 0; essai < 12 && !libre; essai++) {
+        cx = dansCote ? rnd(20, side - 20) : rnd(side + 60, W - 60);
+        cy = rnd(60, H * 0.6);
+        libre = !dansZone(cx, cy, zones, 70);
+      }
+      if (!libre) return;
       const c = couleurs[Math.floor(Math.random() * couleurs.length)] ?? "#fff";
       for (let k = 0; k < 34; k++) {
         const a = (k / 34) * Math.PI * 2, v = rnd(60, 130);
@@ -207,6 +278,9 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
       // Onglet caché, ou pause du cycle une fois le fondu terminé : on ne dessine rien.
       if (document.hidden || (!visibleRef.current && cv.style.opacity === "0")) { raf = requestAnimationFrame(boucle); return; }
       ctx.clearRect(0, 0, W, H);
+      // Pendant un défilement les zones bougent : on suspend l'affichage le temps de remesurer.
+      // Une fenêtre (dialogue) ouverte demande toute l'attention : rien n'est dessiné.
+      const enPause = fenetreOuverte || now - defileLe < 260;
       if (type === "vagues") {
         const bandes = [[0.2, 22, 0.9], [0.14, 16, 1.4], [0.1, 10, 2.1]] as const;
         bandes.forEach(([al, amp, sp], i) => {
@@ -238,6 +312,15 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
           dessine(p);
         }
       }
+      if (enPause) ctx.clearRect(0, 0, W, H);
+      else if (zones.length) {
+        // Gomme le contenu : l'ambiance ne reste visible que sur les bords et les espaces vides.
+        ctx.save();
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.fillStyle = "#000";
+        for (const r of zones) ctx.fillRect(r.left - MARGE, r.top - MARGE, r.width + 2 * MARGE, r.height + 2 * MARGE);
+        ctx.restore();
+      }
       raf = requestAnimationFrame(boucle);
     };
     raf = requestAnimationFrame(boucle);
@@ -250,13 +333,22 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
       if (!s) ps = ps.map((p) => (p.side ? nait(false, false) : p));
       else if (!avant) for (let i = 0; i < Math.round(34 * densite); i++) ps.push(nait(false, true));
     }, 400);
-    return () => { cancelAnimationFrame(raf); window.clearInterval(zone); window.removeEventListener("resize", resize); };
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearInterval(zone);
+      window.clearInterval(mesure);
+      window.clearTimeout(attente);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", auDefilement);
+      document.removeEventListener("scroll", auDefilement, { capture: true });
+    };
   }, [habillage, actif, sombre, facteur]);
 
   if (!actif) return null;
   return (
     <canvas
       ref={ref}
+      data-ambiance
       aria-hidden
       style={{ opacity: visible ? 1 : 0 }}
       className="no-print pointer-events-none fixed inset-0 z-[35] transition-opacity duration-[1500ms] ease-in-out"
