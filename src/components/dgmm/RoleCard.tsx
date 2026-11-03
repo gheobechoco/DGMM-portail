@@ -14,6 +14,8 @@ import {
   type Visite,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
+import { TOUS_NAVIRES } from "@/lib/dgmm/maritime";
+import { effectifMinimal } from "@/lib/dgmm/conformite";
 
 /** Aptitude d'un marin à la date d'appareillage. */
 export function aptitudeAu(
@@ -43,7 +45,10 @@ export function RoleCard({
     return { ...x, m, ...aptitudeAu(m, visites, r.appareillage) };
   });
   const bloquants = rows.filter((x) => x.st !== "valide" && x.st !== "expire_bientot");
-  const ok = bloquants.length === 0 && rows.length > 0;
+  const navire = TOUS_NAVIRES.find((n) => n.nom === r.navire);
+  const minimum = navire ? effectifMinimal(navire.jauge) : 0;
+  const sousEffectif = rows.length < minimum;
+  const ok = bloquants.length === 0 && rows.length > 0 && !sousEffectif;
   const passe = r.appareillage < new Date().toISOString().slice(0, 10);
   return (
     <article
@@ -64,6 +69,11 @@ export function RoleCard({
           <div className="text-xs text-muted-foreground">
             Appareillage {passe ? "effectué le" : "prévu le"} {formatDate(r.appareillage)} ·{" "}
             {rows.length} marin(s)
+            {minimum > 0 && (
+              <span className={cn("ml-1", sousEffectif && "font-semibold text-destructive")}>
+                · effectif minimal de sécurité {minimum} (indicatif)
+              </span>
+            )}
           </div>
         </div>
         <span
@@ -77,7 +87,9 @@ export function RoleCard({
           {ok ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
           {ok
             ? "Conforme — appareillage autorisé"
-            : `Non conforme — ${bloquants.length} marin(s) bloquant(s)`}
+            : sousEffectif && !bloquants.length
+              ? `Non conforme — effectif minimal ${minimum} non atteint`
+              : `Non conforme — ${bloquants.length} marin(s) bloquant(s)`}
         </span>
         {onEdit && (
           <Button size="sm" variant="outline" onClick={onEdit}>
