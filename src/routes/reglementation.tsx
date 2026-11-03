@@ -208,9 +208,6 @@ function Reglementation() {
                 {s.type} · {s.province}
               </div>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                <span className="inline-flex items-center gap-1">
-                  <Radio className="size-3.5 text-secondary" /> VHF {s.vhf}
-                </span>
                 {s.contact && (
                   <a
                     href={`tel:${s.contact.replace(/\s/g, "")}`}

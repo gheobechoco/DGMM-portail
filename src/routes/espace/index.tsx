@@ -806,6 +806,23 @@ function MedicalDashboard({ session }: { session: Account }) {
         }
       />
 
+      <div className="mb-6 rounded-lg border border-l-4 border-l-secondary bg-card p-4 text-sm">
+        {can(session.role, "visites.signer") ? (
+          <>
+            <strong className="text-primary">Votre mission : la décision médicale.</strong>{" "}
+            Vous examinez le marin, rendez le verdict d'aptitude STCW (dont le test d'Ishihara) et
+            signez le certificat. Vous seul pouvez signer.
+          </>
+        ) : (
+          <>
+            <strong className="text-primary">Votre mission : l'accueil et la préparation.</strong>{" "}
+            Vous convoquez les marins, gérez la file du jour et saisissez les mesures de base. Le
+            dossier est ensuite transmis au médecin, seul habilité à signer.
+          </>
+        )}
+      </div>
+
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Visites du jour"

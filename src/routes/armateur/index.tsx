@@ -28,6 +28,7 @@ import {
 import { StatusPill } from "@/components/dgmm/Brand";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { RoleCard, aptitudeAu } from "@/components/dgmm/RoleCard";
+import { ArmateurOutils } from "@/components/dgmm/ArmateurOutils";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
 import { CircularGauge, CountUp } from "@/components/dgmm/Anim";
 import { Aide } from "@/components/dgmm/Aide";
@@ -277,6 +278,9 @@ function Tableau({ a }: { a: ArmateurAccount }) {
           </div>
         </div>
       </Panel>
+
+      <ArmateurOutils />
+
 
       <Panel
         title={
