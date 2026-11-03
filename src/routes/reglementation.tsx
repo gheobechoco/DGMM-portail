@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -188,6 +188,11 @@ function Reglementation() {
           <span className="flex items-center gap-2">
             <MapPin className="size-4" /> Stations maritimes et fluviales
           </span>
+        }
+        actions={
+          <Link to="/carte" className="text-xs font-semibold text-primary hover:underline">
+            Voir sur la carte 3D
+          </Link>
         }
         className="mt-6"
         bodyClassName="p-0"

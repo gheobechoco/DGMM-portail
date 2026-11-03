@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CarteRouteImport } from './routes/carte'
 import { Route as EspaceRouteImport } from './routes/espace'
 import { Route as ReglementationRouteImport } from './routes/reglementation'
 import { Route as ArmateurIndexRouteImport } from './routes/armateur/index'
@@ -21,6 +22,7 @@ import { Route as EspaceSystemeRouteImport } from './routes/espace/systeme'
 import { Route as InscriptionArmateurRouteImport } from './routes/inscription.armateur'
 import { Route as InscriptionMarinRouteImport } from './routes/inscription.marin'
 import { Route as MonEspaceIndexRouteImport } from './routes/mon-espace/index'
+import { Route as MonEspaceTrajetRouteImport } from './routes/mon-espace/trajet'
 import { Route as VerifierIndexRouteImport } from './routes/verifier.index'
 import { Route as VerifierNipRouteImport } from './routes/verifier.$nip'
 import { Route as EspaceLivretsIndexRouteImport } from './routes/espace/livrets/index'
@@ -39,6 +41,11 @@ import { Route as EspaceVisitesModifierIdRouteImport } from './routes/espace/vis
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarteRoute = CarteRouteImport.update({
+  id: '/carte',
+  path: '/carte',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EspaceRoute = EspaceRouteImport.update({
@@ -94,6 +101,11 @@ const InscriptionMarinRoute = InscriptionMarinRouteImport.update({
 const MonEspaceIndexRoute = MonEspaceIndexRouteImport.update({
   id: '/mon-espace/',
   path: '/mon-espace/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonEspaceTrajetRoute = MonEspaceTrajetRouteImport.update({
+  id: '/mon-espace/trajet',
+  path: '/mon-espace/trajet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifierIndexRoute = VerifierIndexRouteImport.update({
@@ -169,6 +181,7 @@ const EspaceVisitesModifierIdRoute = EspaceVisitesModifierIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/carte': typeof CarteRoute
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
@@ -177,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/mon-espace/trajet': typeof MonEspaceTrajetRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
@@ -197,6 +211,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/carte': typeof CarteRoute
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
   '/espace/demandes': typeof EspaceDemandesRoute
@@ -204,6 +219,7 @@ export interface FileRoutesByTo {
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/mon-espace/trajet': typeof MonEspaceTrajetRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur': typeof ArmateurIndexRoute
   '/espace': typeof EspaceIndexRoute
@@ -225,6 +241,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/carte': typeof CarteRoute
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
   '/espace/audit': typeof EspaceAuditRoute
@@ -233,6 +250,7 @@ export interface FileRoutesById {
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/mon-espace/trajet': typeof MonEspaceTrajetRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
@@ -255,6 +273,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/carte'
     | '/espace'
     | '/reglementation'
     | '/espace/audit'
@@ -263,6 +282,7 @@ export interface FileRouteTypes {
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/mon-espace/trajet'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
@@ -283,6 +303,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/carte'
     | '/reglementation'
     | '/espace/audit'
     | '/espace/demandes'
@@ -290,6 +311,7 @@ export interface FileRouteTypes {
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/mon-espace/trajet'
     | '/verifier/$nip'
     | '/armateur'
     | '/espace'
@@ -310,6 +332,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/carte'
     | '/espace'
     | '/reglementation'
     | '/espace/audit'
@@ -318,6 +341,7 @@ export interface FileRouteTypes {
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/mon-espace/trajet'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
@@ -339,10 +363,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CarteRoute: typeof CarteRoute
   EspaceRoute: typeof EspaceRouteWithChildren
   ReglementationRoute: typeof ReglementationRoute
   InscriptionArmateurRoute: typeof InscriptionArmateurRoute
   InscriptionMarinRoute: typeof InscriptionMarinRoute
+  MonEspaceTrajetRoute: typeof MonEspaceTrajetRoute
   VerifierNipRoute: typeof VerifierNipRoute
   ArmateurIndexRoute: typeof ArmateurIndexRoute
   MonEspaceIndexRoute: typeof MonEspaceIndexRoute
@@ -358,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carte': {
+      id: '/carte'
+      path: '/carte'
+      fullPath: '/carte'
+      preLoaderRoute: typeof CarteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/espace': {
@@ -435,6 +468,13 @@ declare module '@tanstack/react-router' {
       path: '/mon-espace'
       fullPath: '/mon-espace/'
       preLoaderRoute: typeof MonEspaceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mon-espace/trajet': {
+      id: '/mon-espace/trajet'
+      path: '/mon-espace/trajet'
+      fullPath: '/mon-espace/trajet'
+      preLoaderRoute: typeof MonEspaceTrajetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verifier/': {
@@ -579,10 +619,12 @@ const EspaceRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CarteRoute: CarteRoute,
   EspaceRoute: EspaceRouteWithChildren,
   ReglementationRoute: ReglementationRoute,
   InscriptionArmateurRoute: InscriptionArmateurRoute,
   InscriptionMarinRoute: InscriptionMarinRoute,
+  MonEspaceTrajetRoute: MonEspaceTrajetRoute,
   VerifierNipRoute: VerifierNipRoute,
   ArmateurIndexRoute: ArmateurIndexRoute,
   MonEspaceIndexRoute: MonEspaceIndexRoute,

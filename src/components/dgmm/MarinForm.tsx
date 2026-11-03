@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import {
   DOC_LABELS,
-  ENTREPRISES,
+  ENTREPRISES_CHOIX,
   NATIONALITES,
   QUARTIERS,
   QUARTIERS_RESIDENCE,
@@ -485,7 +485,7 @@ export function MarinForm({
               <Field label="Entreprise maritime / armateur" htmlFor="entreprise">
                 <select {...text("entreprise")} className={selectClass}>
                   <option value="">Aucune</option>
-                  {ENTREPRISES.map((n) => (
+                  {ENTREPRISES_CHOIX.map((n) => (
                     <option key={n}>{n}</option>
                   ))}
                 </select>

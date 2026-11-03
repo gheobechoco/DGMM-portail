@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PublicShell } from "@/components/dgmm/PublicShell";
+import { EcranConnexion } from "@/components/dgmm/Accueil";
 import {
   EmptyState,
   Field,
@@ -102,9 +103,9 @@ function ConnexionArmateur() {
     journaliser(`Armateur ${a.entreprise}`, "Connexion à l'espace armateur", a.entreprise);
   };
   return (
-    <PublicShell titre="Espace Armateurs" fond="/images/profils/navire.jpg">
-      <div className="mx-auto max-w-md">
-        <div className="rounded-xl border bg-card p-6 shadow-card">
+    <EcranConnexion profil="armateur" titre="Espace Armateurs" accroche="Votre flotte, vos rôles d'équipage et l'aptitude médicale de vos marins avant chaque appareillage.">
+      <div>
+        <div>
           <div className="mb-5 flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-lg bg-primary-soft text-primary">
               <Building2 className="size-5" />
@@ -180,7 +181,7 @@ function ConnexionArmateur() {
             </div>
           </div>
         </div>
-        <p className="mt-4 rounded-lg bg-card/90 px-3 py-2 text-center text-xs text-muted-foreground backdrop-blur">
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           Pas encore de compte ?{" "}
           <Link to="/inscription/armateur" className="font-semibold text-primary hover:underline">
             Inscrire votre compagnie
@@ -191,7 +192,7 @@ function ConnexionArmateur() {
           </Link>
         </p>
       </div>
-    </PublicShell>
+    </EcranConnexion>
   );
 }
 

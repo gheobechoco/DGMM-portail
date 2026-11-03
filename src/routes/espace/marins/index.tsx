@@ -20,7 +20,7 @@ import {
   niveauConformite,
   useMarins,
   useVisites,
-  ENTREPRISES,
+  ENTREPRISES_CHOIX,
   type Etat,
 } from "@/lib/dgmm/store";
 
@@ -189,7 +189,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
               onChange={(e) => set({ armateur: e.target.value || undefined })}
             >
               <option value="">Tous armateurs</option>
-              {ENTREPRISES.map((e) => (
+              {ENTREPRISES_CHOIX.map((e) => (
                 <option key={e}>{e}</option>
               ))}
             </select>

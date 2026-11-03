@@ -231,6 +231,15 @@ export const STATIONS: StationMaritime[] = [
     contact: "+241 01 86 11 02",
   },
   {
+    code: "ST-OMB",
+    nom: "Station Maritime d'Omboué",
+    type: "Station secondaire — cabotage et lagune Fernan-Vaz",
+    ville: "Omboué",
+    province: "Ogooué-Maritime",
+    vhf: "Canal 16",
+    contact: "",
+  },
+  {
     code: "ST-GAM",
     nom: "Station Maritime de Gamba",
     type: "Pétrolier & Façade Sud",

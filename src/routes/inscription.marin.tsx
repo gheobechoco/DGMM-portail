@@ -1,13 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { CalendarCheck2, CheckCircle2, ClipboardList, MapPin, Stethoscope, UserRound } from "lucide-react";
-import { PublicShell } from "@/components/dgmm/PublicShell";
+import { EcranConnexion } from "@/components/dgmm/Accueil";
 import { Field, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import { Sigle } from "@/components/dgmm/Sigle";
 import { Button } from "@/components/ui/button";
 import { PROFESSIONS } from "@/components/dgmm/MarinForm";
 import { STATIONS } from "@/lib/dgmm/maritime";
-import { ENTREPRISES, NATIONALITES } from "@/lib/dgmm/store";
+import { ENTREPRISES_CHOIX, NATIONALITES } from "@/lib/dgmm/store";
 import { deposerPreInscription, type PreInscription } from "@/lib/dgmm/inscriptions";
 
 export const Route = createFileRoute("/inscription/marin")({
@@ -68,7 +68,7 @@ function PreInscriptionMarin() {
   if (fait) {
     const st = STATIONS.find((s) => s.code === fait.station);
     return (
-      <PublicShell titre="Pré-inscription marin">
+      <EcranConnexion profil="marin" titre="Pré-inscription marin" accroche="Préparez votre rendez-vous à la station maritime : votre dossier et votre NIP seront créés par l'agent de la DGMM." large>
         <div className="mx-auto max-w-2xl space-y-6">
           <div className="rounded-xl border border-success/40 bg-success/8 p-6 text-center">
             <CheckCircle2 className="mx-auto size-12 text-success" />
@@ -89,12 +89,12 @@ function PreInscriptionMarin() {
           </Panel>
           <div className="text-center"><Link to="/" className="text-sm font-semibold text-primary hover:underline">Retour à l'accueil</Link></div>
         </div>
-      </PublicShell>
+      </EcranConnexion>
     );
   }
 
   return (
-    <PublicShell titre="Pré-inscription marin">
+    <EcranConnexion profil="marin" titre="Pré-inscription marin" accroche="Préparez votre rendez-vous à la station maritime : votre dossier et votre NIP seront créés par l'agent de la DGMM." large>
       <div className="mb-6 max-w-3xl">
         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary">Devenir marin au Gabon</div>
         <h1 className="mt-1 font-display text-3xl font-bold text-primary">Pré-inscription des gens de mer</h1>
@@ -103,7 +103,7 @@ function PreInscriptionMarin() {
         </p>
       </div>
 
-      <ol className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="mb-8 grid gap-3 sm:grid-cols-2">
         {ETAPES.map(({ icon: Icon, titre, texte }, i) => (
           <li key={titre} className="rounded-xl border bg-card p-4">
             <div className="flex items-center gap-2"><span className="grid size-7 place-items-center rounded-full bg-gold/20 text-xs font-bold text-primary">{i + 1}</span><Icon className="size-4 text-secondary" /></div>
@@ -113,7 +113,7 @@ function PreInscriptionMarin() {
         ))}
       </ol>
 
-      <form onSubmit={envoyer} noValidate className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <form onSubmit={envoyer} noValidate className="grid gap-6">
         <div className="space-y-6">
           <Panel title="Identité">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -140,7 +140,7 @@ function PreInscriptionMarin() {
                 <select id="profession" className={selectClass} value={f.profession} onChange={(e) => up("profession", e.target.value)}><option value="">Choisir…</option>{PROFESSIONS.map((p) => <option key={p}>{p}</option>)}</select>
               </Field>
               <Field label="Compagnie qui vous embauche" htmlFor="entreprise" hint="Facultatif">
-                <select id="entreprise" className={selectClass} value={f.entreprise} onChange={(e) => up("entreprise", e.target.value)}><option value="">Aucune pour l'instant</option>{ENTREPRISES.map((p) => <option key={p}>{p}</option>)}</select>
+                <select id="entreprise" className={selectClass} value={f.entreprise} onChange={(e) => up("entreprise", e.target.value)}><option value="">Aucune pour l'instant</option>{ENTREPRISES_CHOIX.map((p) => <option key={p}>{p}</option>)}</select>
               </Field>
               <Field label="Station où vous présenter" htmlFor="station" required error={err("station")} className="sm:col-span-2">
                 <select id="station" className={selectClass} value={f.station} onChange={(e) => up("station", e.target.value)}><option value="">Choisir…</option>{STATIONS.map((s) => <option key={s.code} value={s.code}>{s.nom} ({s.ville})</option>)}</select>
@@ -168,6 +168,6 @@ function PreInscriptionMarin() {
           <p className="text-xs text-muted-foreground">Déjà enregistré ? <Link to="/mon-espace" className="font-semibold text-primary hover:underline">Espace Marin</Link></p>
         </aside>
       </form>
-    </PublicShell>
+    </EcranConnexion>
   );
 }

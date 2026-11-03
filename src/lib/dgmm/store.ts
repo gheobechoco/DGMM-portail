@@ -35,6 +35,8 @@ export interface Marin {
   poids?: string | undefined;
   /** Signature du marin, tracée à l'écran lors de l'enrôlement (image PNG en data URL). */
   signature?: string | undefined;
+  /** Position du domicile placée par le marin sur la carte (sinon : centre de son quartier). */
+  domicile?: { lat: number; lng: number } | undefined;
   historique?: Evenement[] | undefined;
   embarquements?: Embarquement[] | undefined;
   alertes?: { sms: boolean; email: boolean } | undefined;
@@ -308,6 +310,19 @@ export const ENTREPRISES = [
   "Satram",
   "Perenco Marine",
   "Edelweiss Maritime",
+];
+
+/** Compagnies proposées dans les formulaires : armateurs de démonstration et entreprises maritimes du Gabon. */
+export const ENTREPRISES_CHOIX = [
+  ...ENTREPRISES,
+  "CMA CGM Gabon",
+  "Maersk Gabon",
+  "MSC Gabon",
+  "AGL Gabon",
+  "SOTRASMAR",
+  "ART Gabon",
+  "Sogakai",
+  "NLS Gabon",
 ];
 const ENTREPRISE_VILLE = [
   "Owendo",

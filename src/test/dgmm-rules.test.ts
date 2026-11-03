@@ -185,3 +185,21 @@ describe("administrateur système", () => {
     expect(habillageActif({ ...base, evenementsInactifs: [], habillageMode: "desactive" }, nov, "travail")?.id).toBe("travail");
   });
 });
+
+describe("référentiel géographique", () => {
+  it("rattache les entreprises à leurs stations et estime les trajets", async () => {
+    const g = await import("@/lib/dgmm/geo");
+    const { STATIONS } = await import("@/lib/dgmm/maritime");
+    const codes = new Set(STATIONS.map((s) => s.code));
+    for (const e of g.ENTREPRISES_MARITIMES) for (const c of e.stations) expect(codes.has(c)).toBe(true);
+    for (const s of STATIONS) expect(g.POSITION_STATION[s.code]).toBeDefined();
+    const owendo = g.POSITION_STATION["ST-OWE"]!, pog = g.POSITION_STATION["ST-POG"]!;
+    expect(g.distanceKm(owendo, pog)).toBeGreaterThan(130);
+    expect(g.distanceKm(owendo, pog)).toBeLessThan(160);
+    const v = g.estimer(owendo, g.lieuEntreprise("CMA CGM Gabon")!, "voiture");
+    const p = g.estimer(owendo, g.lieuEntreprise("CMA CGM Gabon")!, "pied");
+    expect(p.minutes).toBeGreaterThan(v.minutes);
+    expect(g.lienGoogleMaps(owendo, null, "pied")).toContain("travelmode=walking");
+    expect(g.duree(95)).toBe("1 h 35");
+  });
+});

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Anchor, ArrowRight, Building2, ShieldCheck, Stethoscope } from "lucide-react";
-import { DgmmLogo } from "@/components/dgmm/Logo";
+import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
+import { appliquerPrefs } from "@/lib/dgmm/prefs";
 import { Sigle } from "@/components/dgmm/Sigle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
@@ -127,11 +128,76 @@ export function ChoixProfil({ onGestion, onChoix }: { onGestion: () => void; onC
             <ShieldCheck className="size-3.5" /> Vérifier un titre (<Sigle s="PSC" />)
           </Link>
           <Link to="/reglementation" className="font-semibold text-primary-foreground/85 hover:text-gold">Réglementation & <Sigle s="AVURNAV" /></Link>
+          <Link to="/carte" className="font-semibold text-primary-foreground/85 hover:text-gold">Carte des entreprises et stations</Link>
           <Link to="/inscription/marin" className="font-semibold text-primary-foreground/85 hover:text-gold">Pré-inscription marin</Link>
           <Link to="/inscription/armateur" className="font-semibold text-primary-foreground/85 hover:text-gold">Inscription armateur</Link>
         </div>
       </main>
       <footer className="px-5 py-4 text-center text-xs text-primary-foreground/55">© {new Date().getFullYear()} Direction Générale de la Marine Marchande · République Gabonaise</footer>
+    </div>
+  );
+}
+
+/**
+ * Gabarit des pages de connexion et d'inscription : panneau institutionnel avec le sceau
+ * de la DGMM sur la photographie du profil, formulaire à droite (comme la connexion des agents).
+ */
+export function EcranConnexion({
+  profil,
+  titre,
+  accroche,
+  large,
+  children,
+}: {
+  profil: Profil;
+  titre: string;
+  accroche: string;
+  /** Formulaire long (inscriptions) : colonne plus large. */
+  large?: boolean | undefined;
+  children: ReactNode;
+}) {
+  useEffect(() => appliquerPrefs(), []);
+  return (
+    <div className={cn("grid min-h-screen", large ? "lg:grid-cols-[0.85fr_1.15fr]" : "lg:grid-cols-[1.1fr_1fr]")}>
+      <aside className="relative isolate hidden bg-navy-gradient text-primary-foreground lg:block">
+        <div className="sticky top-0 flex h-screen flex-col justify-between overflow-hidden p-12">
+          <div aria-hidden className="profil-fond profil-fond-actif absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${FONDS[profil]})` }} />
+          <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0a192f]/90 via-[#0a192f]/72 to-[#0a192f]/50" />
+          <div className="flex items-start justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <Anchor className="size-5 text-gold" />
+              <span className="font-display text-sm font-semibold tracking-wide"><Sigle s="DGMM" /> · Système <Sigle s="GDM" /></span>
+            </Link>
+            <RepubliqueBlock light />
+          </div>
+          <div className="max-w-lg">
+            <DgmmLogo className="mb-8 size-40 drop-shadow-xl" />
+            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">{titre}</div>
+            <h1 className="mt-2 font-display text-4xl font-bold leading-tight">
+              Direction Générale de la <span className="text-gold">Marine Marchande</span>
+            </h1>
+            <p className="mt-4 text-base text-primary-foreground/80">{accroche}</p>
+          </div>
+          <p className="text-xs text-primary-foreground/55">© {new Date().getFullYear()} Direction Générale de la Marine Marchande — Tous droits réservés</p>
+        </div>
+      </aside>
+      <main className="relative isolate flex flex-col overflow-hidden">
+        <ThemeToggle className="absolute right-4 top-4 z-10 bg-card" />
+        <SceauFiligrane className="absolute -right-24 top-1/2 -z-10 w-[30rem] -translate-y-1/2 lg:-right-40" opacite={0.05} />
+        <Tricolor className="lg:hidden" />
+        <div className="flex flex-1 justify-center px-5 py-10 sm:px-10 lg:items-center">
+          <div className={cn("w-full", large ? "max-w-2xl" : "max-w-md")}>
+            <div className="mb-6 flex flex-col items-center text-center lg:hidden">
+              <DgmmLogo className="size-24" />
+              <div className="mt-3 font-display text-lg font-bold text-primary">Direction Générale de la Marine Marchande</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">{titre}</div>
+            </div>
+            <Link to="/" className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary">← Changer de profil</Link>
+            {children}
+          </div>
+        </div>
+        <footer className="border-t px-6 py-4 text-center text-xs text-muted-foreground">Direction Générale de la Marine Marchande · République Gabonaise</footer>
+      </main>
     </div>
   );
 }

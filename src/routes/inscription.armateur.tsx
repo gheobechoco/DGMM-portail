@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Building2, CheckCircle2, Plus, Ship, Trash2 } from "lucide-react";
-import { PublicShell } from "@/components/dgmm/PublicShell";
+import { EcranConnexion } from "@/components/dgmm/Accueil";
 import { Field, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import { Sigle } from "@/components/dgmm/Sigle";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ function InscriptionArmateur() {
 
   if (fait) {
     return (
-      <PublicShell titre="Inscription armateur">
+      <EcranConnexion profil="armateur" titre="Inscription armateur" accroche="Ouvrez le compte de votre compagnie pour déclarer vos rôles d'équipage et suivre l'aptitude de vos marins." large>
         <div className="mx-auto max-w-2xl space-y-6">
           <div className="rounded-xl border border-success/40 bg-success/8 p-6 text-center">
             <CheckCircle2 className="mx-auto size-12 text-success" />
@@ -86,12 +86,12 @@ function InscriptionArmateur() {
           </Panel>
           <div className="text-center"><Link to="/armateur" className="text-sm font-semibold text-primary hover:underline">Aller à l'Espace Armateurs</Link></div>
         </div>
-      </PublicShell>
+      </EcranConnexion>
     );
   }
 
   return (
-    <PublicShell titre="Inscription armateur">
+    <EcranConnexion profil="armateur" titre="Inscription armateur" accroche="Ouvrez le compte de votre compagnie pour déclarer vos rôles d'équipage et suivre l'aptitude de vos marins." large>
       <div className="mb-6 max-w-3xl">
         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary">Compagnies maritimes</div>
         <h1 className="mt-1 font-display text-3xl font-bold text-primary">Ouvrir un compte armateur</h1>
@@ -101,8 +101,8 @@ function InscriptionArmateur() {
       </div>
       <form onSubmit={envoyer} noValidate className="space-y-6">
         <Panel title={<span className="inline-flex items-center gap-2"><Building2 className="size-4 text-secondary" /> Entreprise</span>}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Raison sociale" htmlFor="raisonSociale" required error={err("raisonSociale")} className="lg:col-span-2"><input id="raisonSociale" className={inputClass} value={f.raisonSociale} onChange={(x) => up("raisonSociale", x.target.value)} autoComplete="organization" /></Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Raison sociale" htmlFor="raisonSociale" required error={err("raisonSociale")} className="sm:col-span-2"><input id="raisonSociale" className={inputClass} value={f.raisonSociale} onChange={(x) => up("raisonSociale", x.target.value)} autoComplete="organization" /></Field>
             <Field label="Activité principale" htmlFor="segment" required error={err("segment")}>
               <select id="segment" className={selectClass} value={f.segment} onChange={(x) => up("segment", x.target.value)}><option value="">Choisir…</option>{TYPES_FLOTTE.map((t) => <option key={t}>{t}</option>)}</select>
             </Field>
@@ -116,7 +116,7 @@ function InscriptionArmateur() {
         </Panel>
 
         <Panel title="Responsable du compte">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nom et prénom" htmlFor="contactNom" required error={err("contactNom")}><input id="contactNom" className={inputClass} value={f.contactNom} onChange={(x) => up("contactNom", x.target.value)} autoComplete="name" /></Field>
             <Field label="Fonction" htmlFor="contactFonction"><input id="contactFonction" className={inputClass} value={f.contactFonction} onChange={(x) => up("contactFonction", x.target.value)} placeholder="Responsable armement" /></Field>
             <Field label="Téléphone" htmlFor="tel" required error={err("tel")}><input id="tel" type="tel" className={inputClass} value={f.tel} onChange={(x) => up("tel", x.target.value)} autoComplete="tel" /></Field>
@@ -160,6 +160,6 @@ function InscriptionArmateur() {
           </div>
         </div>
       </form>
-    </PublicShell>
+    </EcranConnexion>
   );
 }

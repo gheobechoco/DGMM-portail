@@ -3,6 +3,8 @@ import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { useState, type FormEvent } from "react";
 import {
   AlertTriangle,
+  ArrowRight,
+  MapPinned,
   Anchor,
   BellRing,
   BookOpenCheck,
@@ -16,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PublicShell } from "@/components/dgmm/PublicShell";
+import { EcranConnexion } from "@/components/dgmm/Accueil";
 import { EmptyState, Panel, StatCard } from "@/components/dgmm/Page";
 import { StatusPill } from "@/components/dgmm/Brand";
 import {
@@ -95,9 +98,9 @@ function ConnexionMarin() {
     journaliser(`Marin ${m.nip}`, "Connexion à l'espace marin", `${m.nom} ${m.prenom} (${m.nip})`);
   };
   return (
-    <PublicShell titre="Espace Marin" fond="/images/profils/marins.jpg">
-      <div className="mx-auto max-w-md">
-        <div className="rounded-xl border bg-card p-6 shadow-card">
+    <EcranConnexion profil="marin" titre="Espace Marin" accroche="Votre dossier, votre certificat d'aptitude, votre fascicule et vos jours en mer, au même endroit.">
+      <div>
+        <div>
           <div className="mb-5 flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-lg bg-primary-soft text-primary">
               <Anchor className="size-5" />
@@ -174,7 +177,7 @@ function ConnexionMarin() {
             </div>
           )}
         </div>
-        <p className="mt-4 rounded-lg bg-card/90 px-3 py-2 text-center text-xs text-muted-foreground backdrop-blur">
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           Pas encore de dossier ?{" "}
           <Link to="/inscription/marin" className="font-semibold text-primary hover:underline">
             Pré-inscription
@@ -186,7 +189,7 @@ function ConnexionMarin() {
           </Link>
         </p>
       </div>
-    </PublicShell>
+    </EcranConnexion>
   );
 }
 
@@ -231,6 +234,20 @@ function Tableau({ m }: { m: Marin }) {
           <StatutStepper m={m} examenRealise={visites.length > 0} />
         </div>
       </section>
+
+      <Link
+        to="/mon-espace/trajet"
+        className="carte-survol mb-6 flex items-center gap-4 rounded-xl border bg-card p-4 shadow-card"
+      >
+        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-secondary/15 text-secondary">
+          <MapPinned className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-primary">Mon trajet en 3D</span>
+          <span className="block text-sm text-muted-foreground">De votre domicile à votre lieu de travail et à votre station maritime, avec les temps en voiture et à pied.</span>
+        </span>
+        <ArrowRight className="size-5 text-muted-foreground" />
+      </Link>
 
       {jours !== null && jours <= 60 && (
         <div
