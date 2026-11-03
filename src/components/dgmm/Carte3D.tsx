@@ -1,9 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Map as CarteML, Marker, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { STYLE_PLAN, STYLE_SATELLITE } from "@/lib/dgmm/styleCarte";
 
 /**
- * Carte 3D (MapLibre, fond OpenStreetMap / OpenFreeMap avec bâtiments en relief).
+ * Carte 3D (MapLibre) : fond « Plan » façon Google Maps ou « Satellite », données
+ * OpenStreetMap (OpenFreeMap), bâtiments en relief au zoom rapproché.
  * Elle place des points (domicile, lieu de travail, station, entreprise) et peut
  * « raconter » un trajet : la caméra survole chaque étape pendant que le tracé se dessine.
  */
@@ -30,51 +32,6 @@ export interface Carte3DRef {
   allerA: (id: string) => void;
   vueGenerale: () => void;
 }
-
-const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
-const OFM = "https://tiles.openfreemap.org";
-
-/**
- * Vue satellite : imagerie aérienne (maisons, toits, mer, mangroves réellement visibles),
- * avec par-dessus les bâtiments OpenStreetMap en relief, les grands axes et les noms de lieux.
- */
-const STYLE_SATELLITE: StyleSpecification = {
-  version: 8,
-  glyphs: `${OFM}/fonts/{fontstack}/{range}.pbf`,
-  sources: {
-    imagerie: {
-      type: "raster",
-      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: "Imagerie © Esri, Maxar, Earthstar Geographics",
-    },
-    osm: { type: "vector", url: `${OFM}/planet` },
-  },
-  layers: [
-    { id: "fond", type: "background", paint: { "background-color": "#0b2a45" } },
-    { id: "imagerie", type: "raster", source: "imagerie" },
-    {
-      id: "routes", type: "line", source: "osm", "source-layer": "transportation", minzoom: 11,
-      filter: ["match", ["get", "class"], ["motorway", "trunk", "primary", "secondary", "tertiary"], true, false],
-      paint: { "line-color": "#ffffff", "line-opacity": 0.45, "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 17, 3] },
-    },
-    {
-      id: "batiments-3d", type: "fill-extrusion", source: "osm", "source-layer": "building", minzoom: 14,
-      paint: {
-        "fill-extrusion-color": "#f3ead8",
-        "fill-extrusion-opacity": 0.6,
-        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
-        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-      },
-    },
-    {
-      id: "noms", type: "symbol", source: "osm", "source-layer": "place",
-      layout: { "text-field": ["coalesce", ["get", "name:fr"], ["get", "name"]], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 8, 11, 15, 15] },
-      paint: { "text-color": "#ffffff", "text-halo-color": "rgba(0,0,0,0.75)", "text-halo-width": 1.4 },
-    },
-  ],
-};
 
 export type FondCarte = "plan" | "satellite";
 const STYLE_SECOURS: StyleSpecification = {
@@ -259,7 +216,7 @@ export const Carte3D = forwardRef<
       lib.current = L;
       const m = new L.Map({
         container: boite.current,
-        style: STYLE_URL,
+        style: STYLE_PLAN,
         center: [9.45, 0.39],
         zoom: 10,
         pitch: 45,
@@ -268,10 +225,6 @@ export const Carte3D = forwardRef<
       carte.current = m;
       m.addControl(new L.NavigationControl({ visualizePitch: true }), "top-right");
       const preparer = () => {
-        if (!secoursActif.current) {
-          fondCharge.current = true;
-          window.clearTimeout(minuteur);
-        }
         if (!m.getSource("traces")) {
           m.addSource("traces", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
           m.addLayer({ id: "traces-halo", type: "line", source: "traces", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 9, "line-opacity": 0.85 } });
@@ -282,8 +235,16 @@ export const Carte3D = forwardRef<
       };
       m.on("style.load", preparer);
       // Fond de carte injoignable (hors ligne, réseau filtré) : on garde les tracés sur un fond uni.
-      // Attention : isStyleLoaded() reste faux tant qu'une tuile se charge (donc pendant tout
-      // survol animé) ; on se fie uniquement à l'événement « style.load » du fond réel.
+      // Le style est intégré au code : c'est l'arrivée des données (description des tuiles ou
+      // première tuile) qui prouve que le serveur répond. Ne pas se fier à isStyleLoaded(),
+      // qui reste faux tant qu'une tuile se charge, donc pendant tout survol animé.
+      m.on("data", (e: { dataType?: string; sourceId?: string; sourceDataType?: string; tile?: unknown }) => {
+        if (fondCharge.current || secoursActif.current) return;
+        if (e.dataType === "source" && e.sourceId === "osm" && (e.sourceDataType === "metadata" || e.tile)) {
+          fondCharge.current = true;
+          window.clearTimeout(minuteur);
+        }
+      });
       const basculerSecours = () => {
         if (fondCharge.current || secoursActif.current) return;
         secoursActif.current = true;
@@ -292,8 +253,8 @@ export const Carte3D = forwardRef<
       };
       minuteur = window.setTimeout(basculerSecours, 15000);
       m.on("error", (e: { error?: { status?: number; message?: string } }) => {
-        // Le fichier de style lui-même est inaccessible : inutile d'attendre.
-        if (!fondCharge.current && /styles\/liberty|Failed to fetch|NetworkError/i.test(e.error?.message ?? "")) basculerSecours();
+        // Le serveur de tuiles ne répond pas du tout : inutile d'attendre.
+        if (!fondCharge.current && /planet|Failed to fetch|NetworkError|Load failed/i.test(e.error?.message ?? "")) basculerSecours();
       });
       m.on("click", (e) => etat.current.onCarteClic?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }));
     });
@@ -329,7 +290,7 @@ export const Carte3D = forwardRef<
     const m = carte.current;
     if (premierFond.current) { premierFond.current = false; return; }
     if (!m || secoursActif.current) return;
-    m.setStyle(fond === "satellite" ? STYLE_SATELLITE : STYLE_URL);
+    m.setStyle(fond === "satellite" ? STYLE_SATELLITE : STYLE_PLAN);
   }, [fond]);
 
   // Premier affichage : récit animé, ou vue d'ensemble.
@@ -360,7 +321,7 @@ export const Carte3D = forwardRef<
               onClick={() => setFond(f)}
               className={fond === f ? "bg-primary px-3 py-1.5 text-primary-foreground" : "px-3 py-1.5 text-foreground hover:bg-muted"}
             >
-              {f === "plan" ? "Plan 3D" : "Satellite"}
+              {f === "plan" ? "Plan" : "Satellite"}
             </button>
           ))}
         </div>

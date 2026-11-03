@@ -80,9 +80,9 @@ const dansZone = (x: number, y: number, zones: DOMRect[], m = MARGE) =>
  * l'utilisateur réduit les animations ou la désactive dans les préférences.
  */
 const PAGES_SANS_AMBIANCE = ["/carte", "/mon-espace/trajet"];
-/** Durées du cycle d'ambiance (millisecondes). */
+/** Durées du cycle d'ambiance (millisecondes) : un passage de 25 s, puis 3 à 4 min de calme. */
 const DUREE_VISIBLE = 25_000;
-const DUREE_PAUSE = 45_000;
+const pauseAleatoire = () => 180_000 + Math.random() * 60_000;
 
 export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -92,7 +92,7 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
   // Pas d'ambiance sur les pages de carte : la carte doit rester parfaitement lisible.
   const pageCarte = PAGES_SANS_AMBIANCE.some((p) => chemin.startsWith(p));
   const actif = !!habillage && prefs.animationsSaison && sys.animations && !pageCarte;
-  // L'ambiance passe par intervalles : visible un moment, puis pause, puis reprise.
+  // L'ambiance passe par intervalles : visible 25 s à l'arrivée, puis revient toutes les 3 à 4 min.
   const [visible, setVisible] = useState(true);
   const visibleRef = useRef(true);
   useEffect(() => {
@@ -101,7 +101,7 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
     const cycle = (on: boolean) => {
       visibleRef.current = on;
       setVisible(on);
-      t = window.setTimeout(() => cycle(!on), on ? DUREE_VISIBLE : DUREE_PAUSE);
+      t = window.setTimeout(() => cycle(!on), on ? DUREE_VISIBLE : pauseAleatoire());
     };
     cycle(true);
     return () => window.clearTimeout(t);

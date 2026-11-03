@@ -32,6 +32,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ACCOUNTS, comptesArmateurs, type Account } from "@/lib/dgmm/auth";
 import { traiterDemandeArmateur, useInscriptions } from "@/lib/dgmm/inscriptions";
+import { DossierCompagnie, FlotteDemande, flotteDecidee } from "@/components/dgmm/FlotteDemande";
+import { SEGMENT_PAR_CATEGORIE } from "@/lib/dgmm/registre";
 import { can, isOverdueRegistration, type Permission, type Role } from "@/lib/dgmm/rules";
 import { ARMATEURS, AVURNAV, STATIONS, TEXTES, TOUS_NAVIRES } from "@/lib/dgmm/maritime";
 import { estSombre, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
@@ -692,10 +694,12 @@ function DemandesArmateurs({ session }: { session: Account }) {
                 <div><dt className="text-xs text-muted-foreground">Contact</dt><dd>{d.tel} · {d.email}</dd></div>
               </dl>
               <div>
-                <div className="text-xs text-muted-foreground">Flotte déclarée ({d.navires.length})</div>
-                <ul className="mt-1 space-y-0.5">{d.navires.map((n) => <li key={n.imo} className="text-xs"><span className="font-medium">{n.nom}</span> · OMI {n.imo}{n.jauge ? ` · ${n.jauge} GT` : ""}</li>)}</ul>
+                <div className="text-xs text-muted-foreground">Flotte déclarée</div>
+                <div className="text-sm font-semibold">{d.flotte?.length ?? d.navires.length} navire(s){d.flotte ? ` · ${flotteDecidee(d).approuves} nom(s) approuvé(s)` : ""}</div>
               </div>
             </div>
+            <DossierCompagnie d={d} />
+            <FlotteDemande d={d} auteur={session.nom} />
             {d.motif && <p className="mt-3 text-xs text-muted-foreground">Motif du refus : {d.motif}</p>}
             {d.statut === "en_attente" && (
               <div className="mt-4 flex flex-wrap items-end justify-end gap-2 border-t pt-4">
@@ -711,7 +715,14 @@ function DemandesArmateurs({ session }: { session: Account }) {
                 ) : (
                   <>
                     <Button size="sm" variant="outline" onClick={() => { setRefus(d.id); setMotif(""); }}><XCircle /> Refuser</Button>
-                    <Button size="sm" variant="secondary" onClick={() => { traiterDemandeArmateur(d.id, { statut: "validee", traitePar: session.nom }); journaliser(session.nom, `Demande armateur ${d.numero} validée : compte ${d.identifiant} ouvert`, d.raisonSociale); toast.success("Compte armateur activé", { description: `${d.raisonSociale} peut se connecter avec « ${d.identifiant} ».` }); }}><CheckCircle2 /> Valider et ouvrir le compte</Button>
+                    {!flotteDecidee(d).pret && <span className="text-xs text-muted-foreground">{flotteDecidee(d).enAttente ? `${flotteDecidee(d).enAttente} nom(s) de navire à examiner avant validation.` : "Aucun nom approuvé : refusez la demande ou attendez une nouvelle proposition."}</span>}
+                    <Button size="sm" variant="secondary" disabled={!flotteDecidee(d).pret} onClick={() => {
+                      // Seuls les navires dont le nom est approuvé entrent au registre et dans le compte.
+                      const navires = d.flotte ? d.flotte.filter((n) => n.nomStatut === "approuve").map((n) => ({ nom: n.nom, imo: n.imo.replace("IMO", ""), type: SEGMENT_PAR_CATEGORIE[n.categorie], jauge: n.jauge, pavillon: "Gabon" })) : d.navires;
+                      traiterDemandeArmateur(d.id, { statut: "validee", traitePar: session.nom, navires });
+                      journaliser(session.nom, `Demande armateur ${d.numero} validée : compte ${d.identifiant} ouvert, ${navires.length} navire(s) inscrit(s)`, d.raisonSociale);
+                      toast.success("Compte armateur activé", { description: `${d.raisonSociale} peut se connecter avec « ${d.identifiant} ».` });
+                    }}><CheckCircle2 /> Valider et ouvrir le compte</Button>
                   </>
                 )}
               </div>

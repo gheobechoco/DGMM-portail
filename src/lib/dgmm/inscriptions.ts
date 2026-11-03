@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Navire, TypeFlotte } from "@/lib/dgmm/maritime";
+import type { NavireDeclare } from "@/lib/dgmm/registre";
 
 /**
  * Demandes déposées depuis les pages publiques :
@@ -55,14 +56,28 @@ export interface DemandeArmateur {
   navires: Navire[];
   identifiant: string;
   motDePasse: string;
-  adresseSiege?: string;
-  dpaNom?: string;
-  dpaTel?: string;
-  flotteDetails?: { imo: string; indicatif: string; mmsi: string; portAttache: string }[];
-  pieces?: string[];
+  adresseSiege?: string | undefined;
+  boitePostale?: string | undefined;
+  /** Personne désignée à terre (code ISM), joignable 24 h/24. */
+  dpaNom?: string | undefined;
+  dpaTel?: string | undefined;
+  dpaEmail?: string | undefined;
+  /** Fiche complète de chaque navire (nom soumis à l'approbation de la DGMM). */
+  flotte?: NavireDeclare[] | undefined;
+  /** Pièces de la compagnie : nom du fichier joint. */
+  piecesSociete?: Partial<Record<PieceSociete, string>> | undefined;
   motif?: string | undefined;
   traitePar?: string | undefined;
 }
+
+export type PieceSociete = "rccm" | "nif" | "agrement" | "assurance" | "mandat";
+export const PIECES_SOCIETE: Record<PieceSociete, { titre: string; detail: string; obligatoire: boolean }> = {
+  rccm: { titre: "Extrait RCCM", detail: "Immatriculation au registre du commerce", obligatoire: true },
+  nif: { titre: "Attestation NIF", detail: "Numéro d'identification fiscale (DGI)", obligatoire: true },
+  assurance: { titre: "Assurance P&I ou corps et machines", detail: "Attestation en cours de validité", obligatoire: true },
+  mandat: { titre: "Pouvoir du représentant", detail: "Autorise le signataire à ouvrir le compte de la compagnie", obligatoire: true },
+  agrement: { titre: "Agrément d'armateur", detail: "Si déjà délivré par le ministère", obligatoire: false },
+};
 
 interface Etat {
   pre: PreInscription[];
@@ -148,6 +163,24 @@ export function deposerDemandeArmateur(
 export function traiterDemandeArmateur(id: number, patch: Partial<DemandeArmateur>) {
   const e = lire();
   ecrire({ ...e, armateurs: e.armateurs.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+}
+
+/** Décision de la DGMM sur le nom d'un navire (et attribution de l'indicatif d'appel si demandé). */
+export function deciderNomNavire(id: number, index: number, decision: "approuve" | "refuse", motif?: string, indicatif?: string) {
+  const e = lire();
+  ecrire({
+    ...e,
+    armateurs: e.armateurs.map((d) =>
+      d.id !== id || !d.flotte
+        ? d
+        : {
+            ...d,
+            flotte: d.flotte.map((n, i) =>
+              i !== index ? n : { ...n, nomStatut: decision, nomMotif: decision === "refuse" ? motif : undefined, ...(indicatif ? { indicatif, indicatifADemander: false } : {}) },
+            ),
+          },
+    ),
+  });
 }
 
 /** Retrouve une demande par son numéro (suivi par le demandeur). */
