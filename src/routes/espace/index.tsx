@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { useMemo, type ReactNode } from "react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   AlertTriangle,
@@ -49,7 +49,13 @@ export const Route = createFileRoute("/espace/")({
 
 function Accueil() {
   const session = useSession();
-  if (!session) return null;
+  const navigate = useNavigate();
+  const sansTableau = !!session && !can(session.role, "dashboard");
+  useEffect(() => {
+    // Inspection et délégués syndicaux arrivent directement sur les alertes.
+    if (sansTableau) navigate({ to: "/espace/alertes" });
+  }, [sansTableau, navigate]);
+  if (!session || sansTableau) return null;
   return profil(session.role) === "medical" ? (
     <MedicalDashboard session={session} />
   ) : (

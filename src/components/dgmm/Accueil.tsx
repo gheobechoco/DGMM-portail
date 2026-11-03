@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Anchor, ArrowRight, Building2, FolderArchive, LayoutDashboard, Settings2, ShieldCheck, Stethoscope } from "lucide-react";
+import { Anchor, ArrowRight, Building2, FolderArchive, LayoutDashboard, Scale, Settings2, ShieldCheck, Siren, Stethoscope, Users } from "lucide-react";
 import type { Role } from "@/lib/dgmm/rules";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { appliquerPrefs } from "@/lib/dgmm/prefs";
@@ -61,6 +61,8 @@ export const FOND_ROLE: Record<Role, string> = {
   medecin: FONDS.gestion,
   gestionnaire_medical: FONDS.gestion,
   admin_systeme: FONDS.armateur,
+  inspecteur_travail: FONDS.armateur,
+  delegue_syndical: FONDS.marin,
 };
 
 type Choix = { id: "marin" | "armateur" | Role; titre: string; texte: string; icon: typeof Anchor; fond: string };
@@ -76,6 +78,10 @@ const PERSONNEL: Choix[] = [
   { id: "gestionnaire_medical", titre: "Gestionnaire médical", texte: "Préparation des visites médicales.", icon: ShieldCheck, fond: FOND_ROLE.gestionnaire_medical },
   { id: "admin_systeme", titre: "Administrateur système", texte: "Réglages, sauvegardes et état du portail.", icon: Settings2, fond: FOND_ROLE.admin_systeme },
 ];
+const CONTROLE: Choix[] = [
+  { id: "inspecteur_travail", titre: "Inspection du travail maritime", texte: "Contrats d'engagement et alertes des marins.", icon: Scale, fond: FOND_ROLE.inspecteur_travail },
+  { id: "delegue_syndical", titre: "Délégué syndical", texte: "Suivi des alertes adressées à votre syndicat.", icon: Users, fond: FOND_ROLE.delegue_syndical },
+];
 
 /** Choix du profil : le fond change selon la carte survolée ; chaque choix ouvre sa page de connexion. */
 export function ChoixProfil({ onRole, onChoix }: { onRole: (r: Role) => void; onChoix: (p: "marin" | "armateur") => void }) {
@@ -86,7 +92,7 @@ export function ChoixProfil({ onRole, onChoix }: { onRole: (r: Role) => void; on
     setChoisi(c);
     window.setTimeout(() => (c.id === "marin" || c.id === "armateur" ? onChoix(c.id) : onRole(c.id)), 420);
   };
-  const fonds = [...new Set([...EXTERNES, ...PERSONNEL].map((c) => c.fond))];
+  const fonds = [...new Set([...EXTERNES, ...PERSONNEL, ...CONTROLE].map((c) => c.fond))];
   const carte = (c: Choix, grande: boolean) => {
     const Icon = c.icon;
     return (
@@ -149,8 +155,15 @@ export function ChoixProfil({ onRole, onChoix }: { onRole: (r: Role) => void; on
             <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/60">Personnel de la <Sigle s="DGMM" /></h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{PERSONNEL.map((c) => carte(c, false))}</div>
           </section>
+          <section aria-label="Contrôle et représentation des marins">
+            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/60">Contrôle et représentation des marins</h2>
+            <div className="grid gap-3 sm:grid-cols-2">{CONTROLE.map((c) => carte(c, false))}</div>
+          </section>
         </div>
-        <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
+        <Link to="/signaler" className="mt-8 inline-flex items-center gap-2 rounded-full border border-destructive/60 bg-destructive/20 px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-destructive/35">
+          <Siren className="size-4" /> Signaler un danger ou un abus — anonymat possible
+        </Link>
+        <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
           <Link to="/verifier" className="inline-flex items-center gap-1 font-semibold text-primary-foreground/85 hover:text-gold">
             <ShieldCheck className="size-3.5" /> Vérifier un titre (<Sigle s="PSC" />)
           </Link>

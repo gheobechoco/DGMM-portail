@@ -4,7 +4,9 @@ import { useState, type FormEvent } from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  FileSignature,
   MapPinned,
+  Siren,
   Anchor,
   BellRing,
   BookOpenCheck,
@@ -235,19 +237,22 @@ function Tableau({ m }: { m: Marin }) {
         </div>
       </section>
 
-      <Link
-        to="/mon-espace/trajet"
-        className="carte-survol mb-6 flex items-center gap-4 rounded-xl border bg-card p-4 shadow-card"
-      >
-        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-secondary/15 text-secondary">
-          <MapPinned className="size-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold text-primary">Mon trajet en 3D</span>
-          <span className="block text-sm text-muted-foreground">De votre domicile à votre lieu de travail et à votre station maritime, avec les temps en voiture et à pied.</span>
-        </span>
-        <ArrowRight className="size-5 text-muted-foreground" />
-      </Link>
+      <div className="mb-6 grid gap-3 md:grid-cols-3">
+        {[
+          { to: "/mon-espace/contrat" as const, icon: FileSignature, titre: "Mon contrat et ma paie", texte: "Signer, vérifier les versements, demander le rapatriement.", ton: "bg-primary/10 text-primary" },
+          { to: "/mon-espace/trajet" as const, icon: MapPinned, titre: "Mon trajet en 3D", texte: "Domicile, lieu de travail et station, avec les temps de trajet.", ton: "bg-secondary/15 text-secondary" },
+          { to: "/signaler" as const, icon: Siren, titre: "Signaler un problème", texte: "Danger à bord ou abus : à la Direction générale, anonymement si besoin.", ton: "bg-destructive/12 text-destructive" },
+        ].map(({ to, icon: Icon, titre, texte, ton }) => (
+          <Link key={to} to={to} className="carte-survol flex items-start gap-3 rounded-xl border bg-card p-4 shadow-card">
+            <span className={`grid size-10 shrink-0 place-items-center rounded-lg ${ton}`}><Icon className="size-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-primary">{titre}</span>
+              <span className="block text-sm text-muted-foreground">{texte}</span>
+            </span>
+            <ArrowRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        ))}
+      </div>
 
       {jours !== null && jours <= 60 && (
         <div

@@ -801,9 +801,9 @@ function get(): State {
 const serverState = seed();
 
 /** Enregistre le nouvel état ; si `log` est fourni, ajoute une entrée chaînée au journal d'audit. */
-function set(next: State, log?: { acteur: string; action: string; cible: string }) {
+function set(next: State, log?: { acteur: string; action: string; cible: string; poste?: string | undefined }) {
   state = log
-    ? { ...next, audit: appendAudit(next.audit, log.acteur, log.action, log.cible) }
+    ? { ...next, audit: appendAudit(next.audit, log.acteur, log.action, log.cible, nowIso(), log.poste ?? poste()) }
     : next;
   if (typeof window !== "undefined") {
     try {
@@ -845,8 +845,9 @@ export function useAudit() {
 }
 
 /** Trace une consultation ou une action sans modification de données. */
-export function journaliser(acteur: string, action: string, cibleTxt: string) {
-  set(get(), { acteur, action, cible: cibleTxt });
+export function journaliser(acteur: string, action: string, cibleTxt: string, opts?: { masquerPoste?: boolean }) {
+  // Signalement anonyme : le poste (navigateur, système) n'est pas inscrit au journal.
+  set(get(), { acteur, action, cible: cibleTxt, poste: opts?.masquerPoste ? "masqué" : undefined });
 }
 
 export function nowIso() {

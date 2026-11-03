@@ -14,15 +14,21 @@ import { Route as CarteRouteImport } from './routes/carte'
 import { Route as EspaceRouteImport } from './routes/espace'
 import { Route as ReglementationRouteImport } from './routes/reglementation'
 import { Route as ArmateurIndexRouteImport } from './routes/armateur/index'
+import { Route as ArmateurContratsRouteImport } from './routes/armateur/contrats'
 import { Route as EspaceIndexRouteImport } from './routes/espace/index'
+import { Route as EspaceAlertesRouteImport } from './routes/espace/alertes'
 import { Route as EspaceAuditRouteImport } from './routes/espace/audit'
+import { Route as EspaceContratsRouteImport } from './routes/espace/contrats'
 import { Route as EspaceDemandesRouteImport } from './routes/espace/demandes'
 import { Route as EspaceEquipagesRouteImport } from './routes/espace/equipages'
 import { Route as EspaceSystemeRouteImport } from './routes/espace/systeme'
 import { Route as InscriptionArmateurRouteImport } from './routes/inscription.armateur'
 import { Route as InscriptionMarinRouteImport } from './routes/inscription.marin'
 import { Route as MonEspaceIndexRouteImport } from './routes/mon-espace/index'
+import { Route as MonEspaceContratRouteImport } from './routes/mon-espace/contrat'
 import { Route as MonEspaceTrajetRouteImport } from './routes/mon-espace/trajet'
+import { Route as SignalerIndexRouteImport } from './routes/signaler.index'
+import { Route as SignalerSuiviRouteImport } from './routes/signaler.suivi'
 import { Route as VerifierIndexRouteImport } from './routes/verifier.index'
 import { Route as VerifierNipRouteImport } from './routes/verifier.$nip'
 import { Route as EspaceLivretsIndexRouteImport } from './routes/espace/livrets/index'
@@ -63,14 +69,29 @@ const ArmateurIndexRoute = ArmateurIndexRouteImport.update({
   path: '/armateur/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArmateurContratsRoute = ArmateurContratsRouteImport.update({
+  id: '/armateur/contrats',
+  path: '/armateur/contrats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EspaceIndexRoute = EspaceIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => EspaceRoute,
 } as any)
+const EspaceAlertesRoute = EspaceAlertesRouteImport.update({
+  id: '/alertes',
+  path: '/alertes',
+  getParentRoute: () => EspaceRoute,
+} as any)
 const EspaceAuditRoute = EspaceAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceContratsRoute = EspaceContratsRouteImport.update({
+  id: '/contrats',
+  path: '/contrats',
   getParentRoute: () => EspaceRoute,
 } as any)
 const EspaceDemandesRoute = EspaceDemandesRouteImport.update({
@@ -103,9 +124,24 @@ const MonEspaceIndexRoute = MonEspaceIndexRouteImport.update({
   path: '/mon-espace/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MonEspaceContratRoute = MonEspaceContratRouteImport.update({
+  id: '/mon-espace/contrat',
+  path: '/mon-espace/contrat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonEspaceTrajetRoute = MonEspaceTrajetRouteImport.update({
   id: '/mon-espace/trajet',
   path: '/mon-espace/trajet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalerIndexRoute = SignalerIndexRouteImport.update({
+  id: '/signaler/',
+  path: '/signaler/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignalerSuiviRoute = SignalerSuiviRouteImport.update({
+  id: '/signaler/suivi',
+  path: '/signaler/suivi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifierIndexRoute = VerifierIndexRouteImport.update({
@@ -184,17 +220,23 @@ export interface FileRoutesByFullPath {
   '/carte': typeof CarteRoute
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
+  '/armateur/contrats': typeof ArmateurContratsRoute
+  '/espace/alertes': typeof EspaceAlertesRoute
   '/espace/audit': typeof EspaceAuditRoute
+  '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/mon-espace/contrat': typeof MonEspaceContratRoute
   '/mon-espace/trajet': typeof MonEspaceTrajetRoute
+  '/signaler/suivi': typeof SignalerSuiviRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
   '/mon-espace/': typeof MonEspaceIndexRoute
+  '/signaler/': typeof SignalerIndexRoute
   '/verifier/': typeof VerifierIndexRoute
   '/espace/livrets/$id': typeof EspaceLivretsIdRoute
   '/espace/marins/$id': typeof EspaceMarinsIdRoute
@@ -213,17 +255,23 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/carte': typeof CarteRoute
   '/reglementation': typeof ReglementationRoute
+  '/armateur/contrats': typeof ArmateurContratsRoute
+  '/espace/alertes': typeof EspaceAlertesRoute
   '/espace/audit': typeof EspaceAuditRoute
+  '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/mon-espace/contrat': typeof MonEspaceContratRoute
   '/mon-espace/trajet': typeof MonEspaceTrajetRoute
+  '/signaler/suivi': typeof SignalerSuiviRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur': typeof ArmateurIndexRoute
   '/espace': typeof EspaceIndexRoute
   '/mon-espace': typeof MonEspaceIndexRoute
+  '/signaler': typeof SignalerIndexRoute
   '/verifier': typeof VerifierIndexRoute
   '/espace/livrets/$id': typeof EspaceLivretsIdRoute
   '/espace/marins/$id': typeof EspaceMarinsIdRoute
@@ -244,17 +292,23 @@ export interface FileRoutesById {
   '/carte': typeof CarteRoute
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
+  '/armateur/contrats': typeof ArmateurContratsRoute
+  '/espace/alertes': typeof EspaceAlertesRoute
   '/espace/audit': typeof EspaceAuditRoute
+  '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/mon-espace/contrat': typeof MonEspaceContratRoute
   '/mon-espace/trajet': typeof MonEspaceTrajetRoute
+  '/signaler/suivi': typeof SignalerSuiviRoute
   '/verifier/$nip': typeof VerifierNipRoute
   '/armateur/': typeof ArmateurIndexRoute
   '/espace/': typeof EspaceIndexRoute
   '/mon-espace/': typeof MonEspaceIndexRoute
+  '/signaler/': typeof SignalerIndexRoute
   '/verifier/': typeof VerifierIndexRoute
   '/espace/livrets/$id': typeof EspaceLivretsIdRoute
   '/espace/marins/$id': typeof EspaceMarinsIdRoute
@@ -276,17 +330,23 @@ export interface FileRouteTypes {
     | '/carte'
     | '/espace'
     | '/reglementation'
+    | '/armateur/contrats'
+    | '/espace/alertes'
     | '/espace/audit'
+    | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/mon-espace/contrat'
     | '/mon-espace/trajet'
+    | '/signaler/suivi'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
     | '/mon-espace/'
+    | '/signaler/'
     | '/verifier/'
     | '/espace/livrets/$id'
     | '/espace/marins/$id'
@@ -305,17 +365,23 @@ export interface FileRouteTypes {
     | '/'
     | '/carte'
     | '/reglementation'
+    | '/armateur/contrats'
+    | '/espace/alertes'
     | '/espace/audit'
+    | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/mon-espace/contrat'
     | '/mon-espace/trajet'
+    | '/signaler/suivi'
     | '/verifier/$nip'
     | '/armateur'
     | '/espace'
     | '/mon-espace'
+    | '/signaler'
     | '/verifier'
     | '/espace/livrets/$id'
     | '/espace/marins/$id'
@@ -335,17 +401,23 @@ export interface FileRouteTypes {
     | '/carte'
     | '/espace'
     | '/reglementation'
+    | '/armateur/contrats'
+    | '/espace/alertes'
     | '/espace/audit'
+    | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/mon-espace/contrat'
     | '/mon-espace/trajet'
+    | '/signaler/suivi'
     | '/verifier/$nip'
     | '/armateur/'
     | '/espace/'
     | '/mon-espace/'
+    | '/signaler/'
     | '/verifier/'
     | '/espace/livrets/$id'
     | '/espace/marins/$id'
@@ -366,12 +438,16 @@ export interface RootRouteChildren {
   CarteRoute: typeof CarteRoute
   EspaceRoute: typeof EspaceRouteWithChildren
   ReglementationRoute: typeof ReglementationRoute
+  ArmateurContratsRoute: typeof ArmateurContratsRoute
   InscriptionArmateurRoute: typeof InscriptionArmateurRoute
   InscriptionMarinRoute: typeof InscriptionMarinRoute
+  MonEspaceContratRoute: typeof MonEspaceContratRoute
   MonEspaceTrajetRoute: typeof MonEspaceTrajetRoute
+  SignalerSuiviRoute: typeof SignalerSuiviRoute
   VerifierNipRoute: typeof VerifierNipRoute
   ArmateurIndexRoute: typeof ArmateurIndexRoute
   MonEspaceIndexRoute: typeof MonEspaceIndexRoute
+  SignalerIndexRoute: typeof SignalerIndexRoute
   VerifierIndexRoute: typeof VerifierIndexRoute
   MonEspaceCertificatIdRoute: typeof MonEspaceCertificatIdRoute
   VerifierCertificatCodeRoute: typeof VerifierCertificatCodeRoute
@@ -414,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArmateurIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/armateur/contrats': {
+      id: '/armateur/contrats'
+      path: '/armateur/contrats'
+      fullPath: '/armateur/contrats'
+      preLoaderRoute: typeof ArmateurContratsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/espace/': {
       id: '/espace/'
       path: '/'
@@ -421,11 +504,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceIndexRouteImport
       parentRoute: typeof EspaceRoute
     }
+    '/espace/alertes': {
+      id: '/espace/alertes'
+      path: '/alertes'
+      fullPath: '/espace/alertes'
+      preLoaderRoute: typeof EspaceAlertesRouteImport
+      parentRoute: typeof EspaceRoute
+    }
     '/espace/audit': {
       id: '/espace/audit'
       path: '/audit'
       fullPath: '/espace/audit'
       preLoaderRoute: typeof EspaceAuditRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/contrats': {
+      id: '/espace/contrats'
+      path: '/contrats'
+      fullPath: '/espace/contrats'
+      preLoaderRoute: typeof EspaceContratsRouteImport
       parentRoute: typeof EspaceRoute
     }
     '/espace/demandes': {
@@ -470,11 +567,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MonEspaceIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mon-espace/contrat': {
+      id: '/mon-espace/contrat'
+      path: '/mon-espace/contrat'
+      fullPath: '/mon-espace/contrat'
+      preLoaderRoute: typeof MonEspaceContratRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mon-espace/trajet': {
       id: '/mon-espace/trajet'
       path: '/mon-espace/trajet'
       fullPath: '/mon-espace/trajet'
       preLoaderRoute: typeof MonEspaceTrajetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signaler/': {
+      id: '/signaler/'
+      path: '/signaler'
+      fullPath: '/signaler/'
+      preLoaderRoute: typeof SignalerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signaler/suivi': {
+      id: '/signaler/suivi'
+      path: '/signaler/suivi'
+      fullPath: '/signaler/suivi'
+      preLoaderRoute: typeof SignalerSuiviRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verifier/': {
@@ -579,7 +697,9 @@ declare module '@tanstack/react-router' {
 }
 
 interface EspaceRouteChildren {
+  EspaceAlertesRoute: typeof EspaceAlertesRoute
   EspaceAuditRoute: typeof EspaceAuditRoute
+  EspaceContratsRoute: typeof EspaceContratsRoute
   EspaceDemandesRoute: typeof EspaceDemandesRoute
   EspaceEquipagesRoute: typeof EspaceEquipagesRoute
   EspaceSystemeRoute: typeof EspaceSystemeRoute
@@ -597,7 +717,9 @@ interface EspaceRouteChildren {
 }
 
 const EspaceRouteChildren: EspaceRouteChildren = {
+  EspaceAlertesRoute: EspaceAlertesRoute,
   EspaceAuditRoute: EspaceAuditRoute,
+  EspaceContratsRoute: EspaceContratsRoute,
   EspaceDemandesRoute: EspaceDemandesRoute,
   EspaceEquipagesRoute: EspaceEquipagesRoute,
   EspaceSystemeRoute: EspaceSystemeRoute,
@@ -622,12 +744,16 @@ const rootRouteChildren: RootRouteChildren = {
   CarteRoute: CarteRoute,
   EspaceRoute: EspaceRouteWithChildren,
   ReglementationRoute: ReglementationRoute,
+  ArmateurContratsRoute: ArmateurContratsRoute,
   InscriptionArmateurRoute: InscriptionArmateurRoute,
   InscriptionMarinRoute: InscriptionMarinRoute,
+  MonEspaceContratRoute: MonEspaceContratRoute,
   MonEspaceTrajetRoute: MonEspaceTrajetRoute,
+  SignalerSuiviRoute: SignalerSuiviRoute,
   VerifierNipRoute: VerifierNipRoute,
   ArmateurIndexRoute: ArmateurIndexRoute,
   MonEspaceIndexRoute: MonEspaceIndexRoute,
+  SignalerIndexRoute: SignalerIndexRoute,
   VerifierIndexRoute: VerifierIndexRoute,
   MonEspaceCertificatIdRoute: MonEspaceCertificatIdRoute,
   VerifierCertificatCodeRoute: VerifierCertificatCodeRoute,

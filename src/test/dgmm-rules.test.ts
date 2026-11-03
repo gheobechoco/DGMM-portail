@@ -203,3 +203,41 @@ describe("référentiel géographique", () => {
     expect(g.duree(95)).toBe("1 h 35");
   });
 });
+
+describe("contrats d'engagement maritime", () => {
+  it("suit l'ordre des signatures et contrôle la conformité", async () => {
+    const k = await import("@/lib/dgmm/contrats");
+    const c = {
+      id: 1, numero: "CEM-2026-0001", marinId: 99, nip: "GAB-2026-000099", marinNom: "TEST Marin", armateur: "SNAT Gabon", navire: "MV Ogooué",
+      fonction: "Matelot", navigation: "cabotage", dateDebut: "2026-11-10", dateFin: "2027-05-10", salaireBase: 120_000, primeRisque: 0,
+      indemniteNourriture: 0, indemniteLogement: 0, heuresHebdo: 80, congesJoursMois: 2, portRapatriement: "Owendo", rapatriementArmateur: true,
+      numeroCNSS: "", creeLe: "", signatures: { armateur: { par: "SNAT Gabon", le: "2026-11-01T10:00:00Z" } }, versements: [],
+    } as unknown as import("@/lib/dgmm/contrats").Contrat;
+    expect(k.statut(c)).toBe("attente_marin");
+    const echecs = k.controles(c, undefined, []).filter((x) => !x.ok).map((x) => x.libelle);
+    expect(echecs.some((l) => l.startsWith("Salaire"))).toBe(true);
+    expect(echecs.some((l) => l.includes("congés"))).toBe(true);
+    expect(echecs.some((l) => l.includes("72 h"))).toBe(true);
+    expect(echecs.some((l) => l.includes("sécurité sociale"))).toBe(true);
+    expect(k.statut({ ...c, signatures: { ...c.signatures, marin: { par: "x", le: "y" } } })).toBe("attente_dgmm");
+    expect(k.statut({ ...c, motifRefus: "salaire" })).toBe("refuse_marin");
+    expect(k.moisEntre("2026-01-01", "2026-12-31")).toBeGreaterThan(11);
+  });
+});
+
+describe("alertes des gens de mer", () => {
+  it("route vers la DG, l'inspection et le seul syndicat choisi", async () => {
+    const al = await import("@/lib/dgmm/alertes");
+    const { ACCOUNTS } = await import("@/lib/dgmm/auth");
+    const a = { syndicat: "SYNAMM", statut: "recue", echanges: [], creeLe: new Date(Date.now() - 30 * 3600000).toISOString() } as unknown as import("@/lib/dgmm/alertes").Alerte;
+    const compte = (u: string) => ACCOUNTS.find((x) => x.username === u)!;
+    expect(al.visiblePour(a, compte("marin"))).toBe(true);
+    expect(al.visiblePour(a, compte("inspection"))).toBe(true);
+    expect(al.visiblePour(a, compte("synamm"))).toBe(true);
+    expect(al.visiblePour(a, compte("omepr"))).toBe(false);
+    expect(al.visiblePour(a, compte("admin"))).toBe(false);
+    expect(al.destinataires(a)).toHaveLength(3);
+    expect(al.heuresSansReponse(a)).toBeGreaterThanOrEqual(29);
+    expect(al.heuresSansReponse({ ...a, echanges: [{ de: "dgmm", auteur: "x", texte: "y", le: "z" }] })).toBeNull();
+  });
+});

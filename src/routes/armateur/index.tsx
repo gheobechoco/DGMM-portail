@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { useMemo, useState, type FormEvent } from "react";
 import {
+  FileSignature,
   AlertTriangle,
   Building2,
   CheckCircle2,
@@ -240,6 +241,13 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         </p>
       </div>
 
+      <Link to="/armateur/contrats" className="carte-survol mb-6 flex items-center gap-4 rounded-xl border bg-card p-4 shadow-card">
+        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><FileSignature className="size-5" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold text-primary">Contrats d'engagement maritime</span>
+          <span className="block text-sm text-muted-foreground">Créer et signer les contrats de vos marins, déclarer les versements mensuels, organiser les rapatriements.</span>
+        </span>
+      </Link>
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Marins rattachés" value={effectif.length} icon={Users} />
         <StatCard label="Aptes aujourd'hui" value={conformes} icon={CheckCircle2} tone="success" />

@@ -5,7 +5,9 @@ export type Role =
   | "rh_marine"
   | "medecin"
   | "gestionnaire_medical"
-  | "admin_systeme";
+  | "admin_systeme"
+  | "inspecteur_travail"
+  | "delegue_syndical";
 
 export type Permission =
   | "dashboard"
@@ -20,7 +22,11 @@ export type Permission =
   | "audit"
   | "embarquements"
   | "roles.lecture"
-  | "systeme";
+  | "systeme"
+  | "contrats"
+  | "contrats.valider"
+  | "alertes"
+  | "alertes.traiter";
 
 /**
  * Matrice des droits (RBAC) :
@@ -44,6 +50,10 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "audit",
     "embarquements",
     "roles.lecture",
+    "contrats",
+    "contrats.valider",
+    "alertes",
+    "alertes.traiter",
   ],
   rh_marine: [
     "dashboard",
@@ -52,6 +62,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "marins.valider_admin",
     "embarquements",
     "roles.lecture",
+    "contrats",
+    "contrats.valider",
   ],
   medecin: [
     "dashboard",
@@ -70,6 +82,10 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   ],
   // Administrateur système : supervision et réglages, sans acte métier (ni visa, ni signature).
   admin_systeme: ["dashboard", "marins", "visites", "audit", "roles.lecture", "systeme"],
+  // Inspection du travail maritime : contrôle des contrats et traitement des alertes.
+  inspecteur_travail: ["marins", "roles.lecture", "contrats", "contrats.valider", "alertes", "alertes.traiter"],
+  // Délégué syndical : suit les alertes adressées à son syndicat et les contrats, sans pouvoir de décision.
+  delegue_syndical: ["alertes", "contrats"],
 };
 
 /** Profil de tableau de bord : pilotage administratif ou santé. */

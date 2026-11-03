@@ -1,12 +1,12 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight, Settings2 } from "lucide-react";
+import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight, Settings2, Scale, Users } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { Sigle } from "@/components/dgmm/Sigle";
 import { Chargement, ChoixProfil, FONDS, FOND_ROLE } from "@/components/dgmm/Accueil";
 import type { Role } from "@/lib/dgmm/rules";
 
-const ROLES: Role[] = ["gestionnaire_mm", "rh_marine", "medecin", "gestionnaire_medical", "admin_systeme"];
+const ROLES: Role[] = ["gestionnaire_mm", "rh_marine", "medecin", "gestionnaire_medical", "admin_systeme", "inspecteur_travail", "delegue_syndical"];
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ function Accueil() {
   );
 }
 
-const ROLE_ICONS = { gestionnaire_mm: LayoutDashboard, rh_marine: FolderArchive, medecin: Stethoscope, gestionnaire_medical: ShieldCheck, admin_systeme: Settings2 };
+const ROLE_ICONS = { gestionnaire_mm: LayoutDashboard, rh_marine: FolderArchive, medecin: Stethoscope, gestionnaire_medical: ShieldCheck, admin_systeme: Settings2, inspecteur_travail: Scale, delegue_syndical: Users };
 
 function LoginPage() {
   const navigate = useNavigate();
