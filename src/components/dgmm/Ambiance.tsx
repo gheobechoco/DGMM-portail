@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import type { Ambiance as Type, Habillage } from "@/lib/dgmm/saisons";
 import { estSombre, usePrefs } from "@/lib/dgmm/prefs";
 import { INTENSITE, useSysteme } from "@/lib/dgmm/systeme";
@@ -32,11 +33,33 @@ function zoneLaterale(): number {
  * Couche décorative : non cliquable, ignorée des lecteurs d'écran, coupée si
  * l'utilisateur réduit les animations ou la désactive dans les préférences.
  */
+const PAGES_SANS_AMBIANCE = ["/carte", "/mon-espace/trajet"];
+/** Durées du cycle d'ambiance (millisecondes). */
+const DUREE_VISIBLE = 25_000;
+const DUREE_PAUSE = 45_000;
+
 export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const prefs = usePrefs();
   const sys = useSysteme();
-  const actif = !!habillage && prefs.animationsSaison && sys.animations;
+  const chemin = useRouterState({ select: (s) => s.location.pathname });
+  // Pas d'ambiance sur les pages de carte : la carte doit rester parfaitement lisible.
+  const pageCarte = PAGES_SANS_AMBIANCE.some((p) => chemin.startsWith(p));
+  const actif = !!habillage && prefs.animationsSaison && sys.animations && !pageCarte;
+  // L'ambiance passe par intervalles : visible un moment, puis pause, puis reprise.
+  const [visible, setVisible] = useState(true);
+  const visibleRef = useRef(true);
+  useEffect(() => {
+    if (!actif) return;
+    let t = 0;
+    const cycle = (on: boolean) => {
+      visibleRef.current = on;
+      setVisible(on);
+      t = window.setTimeout(() => cycle(!on), on ? DUREE_VISIBLE : DUREE_PAUSE);
+    };
+    cycle(true);
+    return () => window.clearTimeout(t);
+  }, [actif]);
   const facteur = INTENSITE[sys.intensite];
   const sombre = estSombre(prefs);
 
@@ -181,7 +204,8 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
     const boucle = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now; tick += dt;
-      if (document.hidden) { raf = requestAnimationFrame(boucle); return; }
+      // Onglet caché, ou pause du cycle une fois le fondu terminé : on ne dessine rien.
+      if (document.hidden || (!visibleRef.current && cv.style.opacity === "0")) { raf = requestAnimationFrame(boucle); return; }
       ctx.clearRect(0, 0, W, H);
       if (type === "vagues") {
         const bandes = [[0.2, 22, 0.9], [0.14, 16, 1.4], [0.1, 10, 2.1]] as const;
@@ -230,5 +254,12 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
   }, [habillage, actif, sombre, facteur]);
 
   if (!actif) return null;
-  return <canvas ref={ref} aria-hidden className="no-print pointer-events-none fixed inset-0 z-[35]" />;
+  return (
+    <canvas
+      ref={ref}
+      aria-hidden
+      style={{ opacity: visible ? 1 : 0 }}
+      className="no-print pointer-events-none fixed inset-0 z-[35] transition-opacity duration-[1500ms] ease-in-out"
+    />
+  );
 }

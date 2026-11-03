@@ -99,17 +99,18 @@ export function StatutStepper({ m, examenRealise }: { m: Marin; examenRealise: b
             aria-current={st.s === "encours" ? "step" : undefined}
           >
             {i > 0 && (
-              <span
-                className={cn(
-                  "absolute right-1/2 top-3.5 h-0.5 w-full -translate-y-1/2",
-                  steps[i - 1]!.s === "fait" ? "bg-secondary" : "bg-border",
+              <span className="absolute right-1/2 top-3.5 h-0.5 w-full -translate-y-1/2 overflow-hidden bg-border" aria-hidden>
+                {/* La ligne se remplit d'une étape à l'autre, dans l'ordre du dossier. */}
+                {steps[i - 1]!.s === "fait" && (
+                  <span className="stepper-ligne block h-full bg-secondary" style={{ animationDelay: `${(i - 1) * 260}ms` }} />
                 )}
-                aria-hidden
-              />
+              </span>
             )}
             <span
+              style={{ animationDelay: `${i * 260}ms` }}
               className={cn(
-                "relative z-10 grid size-7 place-items-center rounded-full border-2 text-xs font-bold",
+                "stepper-pastille relative z-10 grid size-7 place-items-center rounded-full border-2 text-xs font-bold",
+                st.s === "encours" && "stepper-encours",
                 st.s === "fait" && "border-secondary bg-secondary text-secondary-foreground",
                 st.s === "encours" && "border-gold bg-gold/20 text-gold-foreground",
                 st.s === "bloque" &&

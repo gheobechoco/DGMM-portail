@@ -251,8 +251,10 @@ function Stepper({ step, onStep }: { step: 1 | 2; onStep: (s: 1 | 2) => void }) 
               )}
             >
               <span
+                key={`${s.n}-${done ? "fait" : active ? "actif" : "attente"}`}
                 className={cn(
-                  "grid size-9 shrink-0 place-items-center rounded-full font-display text-sm font-bold",
+                  "stepper-pastille grid size-9 shrink-0 place-items-center rounded-full font-display text-sm font-bold",
+                  active && "stepper-encours",
                   done
                     ? "bg-secondary text-secondary-foreground"
                     : active

@@ -3,7 +3,10 @@ import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Eye, EyeOff, Lock, User, AlertCircle, Loader2, ShieldCheck, Anchor, Stethoscope, FolderArchive, LayoutDashboard, Building2, ArrowRight, Settings2 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { Sigle } from "@/components/dgmm/Sigle";
-import { Chargement, ChoixProfil, FONDS } from "@/components/dgmm/Accueil";
+import { Chargement, ChoixProfil, FONDS, FOND_ROLE } from "@/components/dgmm/Accueil";
+import type { Role } from "@/lib/dgmm/rules";
+
+const ROLES: Role[] = ["gestionnaire_mm", "rh_marine", "medecin", "gestionnaire_medical", "admin_systeme"];
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
@@ -19,8 +22,9 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Accès sécurisé au portail de gestion des gens de mer de la Direction Générale de la Marine Marchande." },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { profil?: "gestion" | undefined } => ({
+  validateSearch: (s: Record<string, unknown>): { profil?: "gestion" | undefined; role?: Role | undefined } => ({
     profil: s["profil"] === "gestion" ? "gestion" : undefined,
+    role: ROLES.includes(s["role"] as Role) ? (s["role"] as Role) : undefined,
   }),
   component: Accueil,
 });
@@ -47,7 +51,7 @@ function Accueil() {
   return (
     <>
       <ChoixProfil
-        onGestion={() => navigate({ to: "/", search: { profil: "gestion" } })}
+        onRole={(role) => navigate({ to: "/", search: { profil: "gestion", role } })}
         onChoix={(p) => navigate({ to: p === "marin" ? "/mon-espace" : "/armateur" })}
       />
       {etape === "chargement" && (
@@ -66,7 +70,9 @@ const ROLE_ICONS = { gestionnaire_mm: LayoutDashboard, rh_marine: FolderArchive,
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const { role } = Route.useSearch();
+  const compteRole = role ? ACCOUNTS.find((a) => a.role === role) : undefined;
+  const [username, setUsername] = useState(compteRole?.username ?? "");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [caps, setCaps] = useState(false);
@@ -101,7 +107,7 @@ function LoginPage() {
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Panneau institutionnel */}
       <aside className="relative isolate hidden overflow-hidden bg-navy-gradient text-primary-foreground lg:flex lg:flex-col">
-        <div aria-hidden className="profil-fond profil-fond-actif absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${FONDS.gestion})` }} />
+        <div aria-hidden className="profil-fond profil-fond-actif absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${role ? FOND_ROLE[role] : FONDS.gestion})` }} />
         <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0a192f]/90 via-[#0a192f]/75 to-[#0a192f]/55" />
         <SceauFiligrane className="absolute -bottom-32 -right-32 w-[34rem]" opacite={0.07} />
         <Tricolor />
@@ -141,6 +147,11 @@ function LoginPage() {
             <div className="mb-8 hidden lg:block">
               <Link to="/" className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary">← Changer de profil</Link>
               <h2 className="font-display text-3xl font-bold text-primary">Connexion</h2>
+              {compteRole && (
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold text-primary">
+                  Profil choisi : {compteRole.roleLabel}
+                </p>
+              )}
               <p className="mt-1 text-sm text-muted-foreground">Accédez à votre espace professionnel sécurisé.</p>
             </div>
 
@@ -151,7 +162,7 @@ function LoginPage() {
                   <User className="size-4 text-muted-foreground" />
                   <input
                     id="username"
-                    autoFocus
+                    autoFocus={!compteRole}
                     autoComplete="username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -168,6 +179,7 @@ function LoginPage() {
                   <Lock className="size-4 text-muted-foreground" />
                   <input
                     id="password"
+                    autoFocus={!!compteRole}
                     type={show ? "text" : "password"}
                     autoComplete="current-password"
                     value={password}
@@ -219,7 +231,8 @@ function LoginPage() {
                         setPassword(a.password);
                         setError(null);
                       }}
-                      className="flex items-center gap-2 rounded-lg border bg-card p-2.5 text-left transition hover:border-gold hover:shadow-card"
+                      aria-pressed={username === a.username}
+                      className={`flex items-center gap-2 rounded-lg border bg-card p-2.5 text-left transition hover:border-gold hover:shadow-card ${username === a.username ? "border-gold ring-2 ring-gold/30" : ""}`}
                     >
                       <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary-soft text-primary">
                         <Icon className="size-4" />

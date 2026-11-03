@@ -782,3 +782,18 @@ input[type="radio"]:checked {
 .carte-marqueur:hover .carte-marqueur-pin, .carte-marqueur:focus-visible .carte-marqueur-pin { box-shadow: 0 0 0 4px color-mix(in oklab, var(--c) 45%, transparent), 0 6px 14px rgb(0 0 0 / 0.35); }
 @keyframes marqueur-tombe { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .carte-marqueur-corps { animation: none; } }
+
+/* Barre de progression du dossier : lignes qui se remplissent, pastilles qui apparaissent,
+   étape en cours qui « respire » en or. */
+.stepper-ligne { transform-origin: left; animation: stepper-ligne 0.5s ease-out both; }
+@keyframes stepper-ligne { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.stepper-pastille { animation: stepper-pastille 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes stepper-pastille { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.stepper-encours { animation: stepper-pastille 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both, stepper-respire 2s ease-in-out 1.4s infinite; }
+@keyframes stepper-respire {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--gold) 55%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in oklab, var(--gold) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stepper-ligne, .stepper-pastille, .stepper-encours { animation: none; }
+}
