@@ -32,6 +32,51 @@ export interface Carte3DRef {
 }
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+const OFM = "https://tiles.openfreemap.org";
+
+/**
+ * Vue satellite : imagerie aérienne (maisons, toits, mer, mangroves réellement visibles),
+ * avec par-dessus les bâtiments OpenStreetMap en relief, les grands axes et les noms de lieux.
+ */
+const STYLE_SATELLITE: StyleSpecification = {
+  version: 8,
+  glyphs: `${OFM}/fonts/{fontstack}/{range}.pbf`,
+  sources: {
+    imagerie: {
+      type: "raster",
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: "Imagerie © Esri, Maxar, Earthstar Geographics",
+    },
+    osm: { type: "vector", url: `${OFM}/planet` },
+  },
+  layers: [
+    { id: "fond", type: "background", paint: { "background-color": "#0b2a45" } },
+    { id: "imagerie", type: "raster", source: "imagerie" },
+    {
+      id: "routes", type: "line", source: "osm", "source-layer": "transportation", minzoom: 11,
+      filter: ["match", ["get", "class"], ["motorway", "trunk", "primary", "secondary", "tertiary"], true, false],
+      paint: { "line-color": "#ffffff", "line-opacity": 0.45, "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 17, 3] },
+    },
+    {
+      id: "batiments-3d", type: "fill-extrusion", source: "osm", "source-layer": "building", minzoom: 14,
+      paint: {
+        "fill-extrusion-color": "#f3ead8",
+        "fill-extrusion-opacity": 0.6,
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+      },
+    },
+    {
+      id: "noms", type: "symbol", source: "osm", "source-layer": "place",
+      layout: { "text-field": ["coalesce", ["get", "name:fr"], ["get", "name"]], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 8, 11, 15, 15] },
+      paint: { "text-color": "#ffffff", "text-halo-color": "rgba(0,0,0,0.75)", "text-halo-width": 1.4 },
+    },
+  ],
+};
+
+export type FondCarte = "plan" | "satellite";
 const STYLE_SECOURS: StyleSpecification = {
   version: 8,
   sources: {},
@@ -101,9 +146,13 @@ export const Carte3D = forwardRef<
   const carte = useRef<CarteML | null>(null);
   const marqueurs = useRef<Marker[]>([]);
   const lib = useRef<typeof import("maplibre-gl") | null>(null);
+  const secoursActif = useRef(false);
   const anim = useRef(0);
   const [pret, setPret] = useState(false);
   const [secours, setSecours] = useState(false);
+  const [fond, setFond] = useState<FondCarte>("plan");
+  /** Vrai dès qu'un fond réel a fini de charger son style (les tuiles peuvent encore arriver). */
+  const fondCharge = useRef(false);
   const etat = useRef({ points, traces, recit, onCarteClic, onPointClic });
   etat.current = { points, traces, recit, onCarteClic, onPointClic };
 
@@ -219,6 +268,10 @@ export const Carte3D = forwardRef<
       carte.current = m;
       m.addControl(new L.NavigationControl({ visualizePitch: true }), "top-right");
       const preparer = () => {
+        if (!secoursActif.current) {
+          fondCharge.current = true;
+          window.clearTimeout(minuteur);
+        }
         if (!m.getSource("traces")) {
           m.addSource("traces", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
           m.addLayer({ id: "traces-halo", type: "line", source: "traces", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 9, "line-opacity": 0.85 } });
@@ -229,12 +282,19 @@ export const Carte3D = forwardRef<
       };
       m.on("style.load", preparer);
       // Fond de carte injoignable (hors ligne, réseau filtré) : on garde les tracés sur un fond uni.
-      minuteur = window.setTimeout(() => {
-        if (!m.isStyleLoaded()) {
-          setSecours(true);
-          m.setStyle(STYLE_SECOURS);
-        }
-      }, 7000);
+      // Attention : isStyleLoaded() reste faux tant qu'une tuile se charge (donc pendant tout
+      // survol animé) ; on se fie uniquement à l'événement « style.load » du fond réel.
+      const basculerSecours = () => {
+        if (fondCharge.current || secoursActif.current) return;
+        secoursActif.current = true;
+        setSecours(true);
+        m.setStyle(STYLE_SECOURS);
+      };
+      minuteur = window.setTimeout(basculerSecours, 15000);
+      m.on("error", (e: { error?: { status?: number; message?: string } }) => {
+        // Le fichier de style lui-même est inaccessible : inutile d'attendre.
+        if (!fondCharge.current && /styles\/liberty|Failed to fetch|NetworkError/i.test(e.error?.message ?? "")) basculerSecours();
+      });
       m.on("click", (e) => etat.current.onCarteClic?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }));
     });
     return () => {
@@ -262,6 +322,16 @@ export const Carte3D = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points, traces, pret]);
 
+  // Changement de fond (plan ↔ satellite). Les marqueurs DOM restent ; les tracés sont
+  // recréés par « style.load ».
+  const premierFond = useRef(true);
+  useEffect(() => {
+    const m = carte.current;
+    if (premierFond.current) { premierFond.current = false; return; }
+    if (!m || secoursActif.current) return;
+    m.setStyle(fond === "satellite" ? STYLE_SATELLITE : STYLE_URL);
+  }, [fond]);
+
   // Premier affichage : récit animé, ou vue d'ensemble.
   const lance = useRef(false);
   useEffect(() => {
@@ -278,6 +348,22 @@ export const Carte3D = forwardRef<
       <div ref={boite} className="h-full w-full" />
       {!pret && (
         <div className="absolute inset-0 grid place-items-center bg-muted text-sm text-muted-foreground">Chargement de la carte…</div>
+      )}
+      {pret && !secours && (
+        <div role="radiogroup" aria-label="Fond de carte" className="absolute left-3 top-3 flex overflow-hidden rounded-md border bg-card/95 text-xs font-semibold shadow-card">
+          {(["plan", "satellite"] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="radio"
+              aria-checked={fond === f}
+              onClick={() => setFond(f)}
+              className={fond === f ? "bg-primary px-3 py-1.5 text-primary-foreground" : "px-3 py-1.5 text-foreground hover:bg-muted"}
+            >
+              {f === "plan" ? "Plan 3D" : "Satellite"}
+            </button>
+          ))}
+        </div>
       )}
       {secours && (
         <div className="pointer-events-none absolute left-3 top-3 max-w-xs rounded-md bg-card/95 px-3 py-2 text-xs shadow-card">
