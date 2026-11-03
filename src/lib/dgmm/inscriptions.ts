@@ -25,6 +25,13 @@ export interface PreInscription {
   station: string;
   entreprise: string;
   rdv: string;
+  lieuNaissance?: string;
+  numeroPiece?: string;
+  adresse?: string;
+  urgenceNom?: string;
+  urgenceTel?: string;
+  experience?: string;
+  pieces?: string[];
   marinId?: number | undefined;
   motif?: string | undefined;
   traitePar?: string | undefined;
@@ -48,6 +55,11 @@ export interface DemandeArmateur {
   navires: Navire[];
   identifiant: string;
   motDePasse: string;
+  adresseSiege?: string;
+  dpaNom?: string;
+  dpaTel?: string;
+  flotteDetails?: { imo: string; indicatif: string; mmsi: string; portAttache: string }[];
+  pieces?: string[];
   motif?: string | undefined;
   traitePar?: string | undefined;
 }
