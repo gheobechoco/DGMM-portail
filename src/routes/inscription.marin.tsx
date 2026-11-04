@@ -5,6 +5,9 @@ import { EcranConnexion } from "@/components/dgmm/Accueil";
 import { Field, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import { Sigle } from "@/components/dgmm/Sigle";
 import { Button } from "@/components/ui/button";
+import { QRCodeSVG } from "qrcode.react";
+import { Printer } from "lucide-react";
+import { PieceJointe } from "@/components/dgmm/FormExtras";
 import { PROFESSIONS } from "@/components/dgmm/MarinForm";
 import { STATIONS } from "@/lib/dgmm/maritime";
 import { ENTREPRISES_CHOIX, NATIONALITES } from "@/lib/dgmm/store";
@@ -34,17 +37,19 @@ type Form = Omit<PreInscription, "id" | "numero" | "creeLe" | "statut">;
 const VIDE: Form = {
   nom: "", prenom: "", sexe: "", dateNaissance: "", nationalite: "Gabonaise", tel: "", email: "",
   profession: "", station: "", entreprise: "", rdv: "",
+  lieuNaissance: "", numeroPiece: "", adresse: "", urgenceNom: "", urgenceTel: "", experience: "Débutant",
 };
 
 function PreInscriptionMarin() {
   const [f, setF] = useState<Form>(VIDE);
   const [ok, setOk] = useState(false);
+  const [docs, setDocs] = useState({ piece: "", photo: "", diplome: "" });
   const [tente, setTente] = useState(false);
   const [fait, setFait] = useState<PreInscription | null>(null);
   const up = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => ({ ...s, [k]: v }));
 
   const age = f.dateNaissance ? Math.floor((Date.now() - new Date(f.dateNaissance).getTime()) / (365.25 * 86400000)) : null;
-  const erreurs: Partial<Record<keyof Form | "ok", string>> = {};
+  const erreurs: Partial<Record<keyof Form | "ok" | "docs", string>> = {};
   if (!f.nom.trim()) erreurs.nom = "Indiquez votre nom.";
   if (!f.prenom.trim()) erreurs.prenom = "Indiquez votre prénom.";
   if (!f.sexe) erreurs.sexe = "Choisissez une option.";
@@ -52,16 +57,23 @@ function PreInscriptionMarin() {
   else if (age !== null && age < 16) erreurs.dateNaissance = "Il faut avoir au moins 16 ans pour s'inscrire.";
   if (!/^[0-9 +]{8,}$/.test(f.tel.trim())) erreurs.tel = "Numéro de téléphone incomplet (8 chiffres au moins).";
   if (f.email && !/^\S+@\S+\.\S+$/.test(f.email)) erreurs.email = "Adresse e-mail invalide.";
+  if (!f.lieuNaissance?.trim()) erreurs.lieuNaissance = "Indiquez votre lieu de naissance.";
+  if (!f.numeroPiece?.trim()) erreurs.numeroPiece = "Indiquez le numéro de votre CNI ou passeport.";
+  if (!f.adresse?.trim()) erreurs.adresse = "Indiquez votre adresse.";
+  if (!f.urgenceNom?.trim()) erreurs.urgenceNom = "Indiquez une personne à prévenir.";
+  if (!/^[0-9 +]{8,}$/.test((f.urgenceTel ?? "").trim())) erreurs.urgenceTel = "Numéro incomplet.";
+  else if (f.urgenceTel?.trim() === f.tel.trim()) erreurs.urgenceTel = "Donnez le numéro d'une autre personne.";
+  if (!docs.piece || !docs.photo) erreurs.docs = "Joignez la copie de votre pièce d'identité et votre photo.";
   if (!f.profession) erreurs.profession = "Choisissez un métier.";
   if (!f.station) erreurs.station = "Choisissez où vous présenter.";
   if (!ok) erreurs.ok = "Cochez la case pour confirmer.";
-  const err = (k: keyof Form | "ok") => (tente ? erreurs[k] : undefined);
+  const err = (k: keyof Form | "ok" | "docs") => (tente ? erreurs[k] : undefined);
 
   const envoyer = (e: FormEvent) => {
     e.preventDefault();
     setTente(true);
     if (Object.keys(erreurs).length) return;
-    setFait(deposerPreInscription({ ...f, nom: f.nom.trim().toUpperCase(), prenom: f.prenom.trim() }));
+    setFait(deposerPreInscription({ ...f, pieces: Object.values(docs).filter(Boolean), nom: f.nom.trim().toUpperCase(), prenom: f.prenom.trim() }));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -84,7 +96,18 @@ function PreInscriptionMarin() {
             </dl>
             <p className="mt-4 text-sm text-muted-foreground">La station vous contactera au {fait.tel} pour confirmer la date. Votre dossier sera créé par l'agent, à partir de cette demande.</p>
           </Panel>
-          <Panel title="Pièces à apporter">
+          <Panel title="Récépissé à présenter au guichet">
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <div className="rounded-lg bg-card p-2 ring-1 ring-border"><QRCodeSVG value={`DGMM-PRE:${fait.numero}`} size={120} /></div>
+              <div className="text-sm">
+                <div className="font-semibold">{fait.nom} {fait.prenom}</div>
+                <div className="text-muted-foreground">{fait.profession} · né(e) le {new Date(fait.dateNaissance).toLocaleDateString("fr-FR")}</div>
+                <div className="mt-1 text-xs text-muted-foreground">Statut : pré-inscription en ligne. L'agent scanne ce code puis vérifie vos originaux, prend vos empreintes et votre photo.</div>
+                <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => window.print()}><Printer /> Imprimer le récépissé</Button>
+              </div>
+            </div>
+          </Panel>
+          <Panel title="Pièces à apporter (originaux)">
             <ul className="space-y-2 text-sm">{PIECES.map((p) => <li key={p} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-secondary" />{p}</li>)}</ul>
           </Panel>
           <div className="text-center"><Link to="/" className="text-sm font-semibold text-primary hover:underline">Retour à l'accueil</Link></div>
@@ -123,6 +146,8 @@ function PreInscriptionMarin() {
                 <select id="sexe" className={selectClass} value={f.sexe} onChange={(e) => up("sexe", e.target.value)}><option value="">Choisir…</option><option value="F">Féminin</option><option value="M">Masculin</option></select>
               </Field>
               <Field label="Date de naissance" htmlFor="dateNaissance" required error={err("dateNaissance")}><input id="dateNaissance" type="date" className={inputClass} value={f.dateNaissance} onChange={(e) => up("dateNaissance", e.target.value)} /></Field>
+              <Field label="Lieu de naissance" htmlFor="lieuNaissance" required error={err("lieuNaissance")}><input id="lieuNaissance" className={inputClass} value={f.lieuNaissance} onChange={(e) => up("lieuNaissance", e.target.value)} /></Field>
+              <Field label="N° CNI ou passeport" htmlFor="numeroPiece" required error={err("numeroPiece")}><input id="numeroPiece" className={inputClass} value={f.numeroPiece} onChange={(e) => up("numeroPiece", e.target.value.toUpperCase())} /></Field>
               <Field label="Nationalité" htmlFor="nationalite" required>
                 <select id="nationalite" className={selectClass} value={f.nationalite} onChange={(e) => up("nationalite", e.target.value)}>{NATIONALITES.map((n) => <option key={n}>{n}</option>)}</select>
               </Field>
@@ -132,12 +157,18 @@ function PreInscriptionMarin() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Téléphone" htmlFor="tel" required error={err("tel")} hint="La station vous appellera pour confirmer."><input id="tel" type="tel" className={inputClass} value={f.tel} onChange={(e) => up("tel", e.target.value)} placeholder="077 45 20 17" autoComplete="tel" /></Field>
               <Field label="E-mail" htmlFor="email" error={err("email")}><input id="email" type="email" className={inputClass} value={f.email} onChange={(e) => up("email", e.target.value)} autoComplete="email" /></Field>
+              <Field label="Adresse (quartier, ville)" htmlFor="adresse" required error={err("adresse")} className="sm:col-span-2"><input id="adresse" className={inputClass} value={f.adresse} onChange={(e) => up("adresse", e.target.value)} autoComplete="street-address" /></Field>
+              <Field label="Personne à prévenir en cas d'urgence" htmlFor="urgenceNom" required error={err("urgenceNom")}><input id="urgenceNom" className={inputClass} value={f.urgenceNom} onChange={(e) => up("urgenceNom", e.target.value)} /></Field>
+              <Field label="Téléphone de cette personne" htmlFor="urgenceTel" required error={err("urgenceTel")}><input id="urgenceTel" type="tel" className={inputClass} value={f.urgenceTel} onChange={(e) => up("urgenceTel", e.target.value)} /></Field>
             </div>
           </Panel>
           <Panel title="Projet maritime et rendez-vous">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Métier visé" htmlFor="profession" required error={err("profession")}>
                 <select id="profession" className={selectClass} value={f.profession} onChange={(e) => up("profession", e.target.value)}><option value="">Choisir…</option>{PROFESSIONS.map((p) => <option key={p}>{p}</option>)}</select>
+              </Field>
+              <Field label="Expérience en mer" htmlFor="experience">
+                <select id="experience" className={selectClass} value={f.experience} onChange={(e) => up("experience", e.target.value)}>{["Débutant", "Moins d'1 an", "1 à 5 ans", "Plus de 5 ans"].map((x) => <option key={x}>{x}</option>)}</select>
               </Field>
               <Field label="Compagnie qui vous embauche" htmlFor="entreprise" hint="Facultatif">
                 <select id="entreprise" className={selectClass} value={f.entreprise} onChange={(e) => up("entreprise", e.target.value)}><option value="">Aucune pour l'instant</option>{ENTREPRISES_CHOIX.map((p) => <option key={p}>{p}</option>)}</select>
@@ -147,6 +178,14 @@ function PreInscriptionMarin() {
               </Field>
               <Field label="Date de rendez-vous souhaitée" htmlFor="rdv" hint="Indicative : la station confirme."><input id="rdv" type="date" className={inputClass} value={f.rdv} min={new Date().toISOString().slice(0, 10)} onChange={(e) => up("rdv", e.target.value)} /></Field>
             </div>
+          </Panel>
+          <Panel title="Documents à téléverser" description="Copies pour préparer votre dossier ; l'agent contrôle les originaux.">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <PieceJointe id="doc-piece" label="CNI ou passeport" required fichier={docs.piece} onChange={(v) => setDocs((d) => ({ ...d, piece: v }))} />
+              <PieceJointe id="doc-photo" label="Photo d'identité" required accept="image/*" fichier={docs.photo} onChange={(v) => setDocs((d) => ({ ...d, photo: v }))} />
+              <PieceJointe id="doc-diplome" label="Diplôme ou certificat STCW" fichier={docs.diplome} onChange={(v) => setDocs((d) => ({ ...d, diplome: v }))} />
+            </div>
+            {err("docs") && <p className="mt-3 text-xs text-destructive">{err("docs")}</p>}
           </Panel>
           <div className="space-y-3">
             <label className="flex items-start gap-2 text-sm">
