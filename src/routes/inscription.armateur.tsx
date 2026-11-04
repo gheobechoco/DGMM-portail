@@ -5,7 +5,7 @@ import { EcranConnexion } from "@/components/dgmm/Accueil";
 import { Field, Panel, inputClass, selectClass } from "@/components/dgmm/Page";
 import { Sigle } from "@/components/dgmm/Sigle";
 import { Button } from "@/components/ui/button";
-import { JaugeMdp, PasswordInput, PieceJointe } from "@/components/dgmm/FormExtras";
+import { BandeauBrouillon, JaugeMdp, PasswordInput, PieceJointe, SuiviSaisie, useBrouillon } from "@/components/dgmm/FormExtras";
 import { TYPES_FLOTTE, type TypeFlotte } from "@/lib/dgmm/maritime";
 import { comptesArmateurs } from "@/lib/dgmm/auth";
 import { deposerDemandeArmateur, getInscriptions, type DemandeArmateur } from "@/lib/dgmm/inscriptions";
@@ -32,6 +32,9 @@ function imoValide(imo: string) {
   return d.slice(0, 6).reduce((t, x, i) => t + x * (7 - i), 0) % 10 === d[6];
 }
 
+const EXCLURE_ARM = ["motDePasse", "confirmation"];
+const LIB_ARM: Record<string, string> = { raisonSociale: "Raison sociale", rccm: "RCCM", ville: "Ville", segment: "Activité", adresseSiege: "Adresse du siège", dpaNom: "DPA", dpaTel: "Téléphone DPA", pieces: "Pièces justificatives", contactNom: "Responsable", tel: "Téléphone", email: "E-mail", navires: "Flotte", identifiant: "Identifiant", motDePasse: "Mot de passe", confirmation: "Confirmation", ok: "Attestation" };
+
 function InscriptionArmateur() {
   const [f, setF] = useState({
     raisonSociale: "", rccm: "", nif: "", ville: "", pays: "Gabon", segment: "" as TypeFlotte | "",
@@ -42,6 +45,8 @@ function InscriptionArmateur() {
   const [ok, setOk] = useState(false);
   const [tente, setTente] = useState(false);
   const [fait, setFait] = useState<DemandeArmateur | null>(null);
+  const brouillon = useBrouillon("dgmm-brouillon-armateur", f, setF, EXCLURE_ARM);
+  const brouillonNav = useBrouillon("dgmm-brouillon-armateur-flotte", navires, setNavires);
   const up = (k: keyof typeof f, v: string) => setF((s) => ({ ...s, [k]: v }));
 
   const pris = (id: string) =>
@@ -77,6 +82,7 @@ function InscriptionArmateur() {
     ev.preventDefault();
     setTente(true);
     if (Object.keys(e).length) return;
+    brouillon.effacer(); brouillonNav.effacer();
     const segment = f.segment as TypeFlotte;
     setFait(
       deposerDemandeArmateur({
@@ -125,7 +131,9 @@ function InscriptionArmateur() {
           Le compte permet de déclarer vos rôles d'équipage et de vérifier l'aptitude médicale (<Sigle s="STCW" />) de vos marins. Il est activé après contrôle par la <Sigle s="DGMM" />.
         </p>
       </div>
+      <BandeauBrouillon visible={brouillon.restaure} onEffacer={() => { brouillon.effacer(); brouillonNav.effacer(); window.location.reload(); }} />
       <form onSubmit={envoyer} noValidate className="space-y-6">
+        <SuiviSaisie total={16} erreurs={e} montrer={tente} libelles={LIB_ARM} />
         <Panel title={<span className="inline-flex items-center gap-2"><Building2 className="size-4 text-secondary" /> Entreprise</span>}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Raison sociale" htmlFor="raisonSociale" required error={err("raisonSociale")} className="sm:col-span-2"><input id="raisonSociale" className={inputClass} value={f.raisonSociale} onChange={(x) => up("raisonSociale", x.target.value)} autoComplete="organization" /></Field>
@@ -158,6 +166,7 @@ function InscriptionArmateur() {
           </div>
         </Panel>
 
+        <div id="navires" tabIndex={-1} />
         <Panel title={<span className="inline-flex items-center gap-2"><Ship className="size-4 text-secondary" /> Flotte</span>} description="Navires que vous armez sous pavillon gabonais.">
           <div className="space-y-3">
             {navires.map((n, i) => (
@@ -176,6 +185,7 @@ function InscriptionArmateur() {
           </div>
         </Panel>
 
+        <div id="pieces" tabIndex={-1} />
         <Panel title="Pièces justificatives" description="Copies numériques ; les originaux sont contrôlés au guichet.">
           <div className="grid gap-4 sm:grid-cols-2">
             {PIECES_ARM.map((p) => <PieceJointe key={p.k} id={`piece-${p.k}`} label={p.l} required={p.req} fichier={pieces[p.k] ?? ""} onChange={(v) => setPieces((s) => ({ ...s, [p.k]: v }))} />)}

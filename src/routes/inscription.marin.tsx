@@ -7,7 +7,7 @@ import { Sigle } from "@/components/dgmm/Sigle";
 import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
 import { Printer } from "lucide-react";
-import { PieceJointe } from "@/components/dgmm/FormExtras";
+import { BandeauBrouillon, PieceJointe, SuiviSaisie, useBrouillon } from "@/components/dgmm/FormExtras";
 import { PROFESSIONS } from "@/components/dgmm/MarinForm";
 import { STATIONS } from "@/lib/dgmm/maritime";
 import { ENTREPRISES_CHOIX, NATIONALITES } from "@/lib/dgmm/store";
@@ -40,12 +40,15 @@ const VIDE: Form = {
   lieuNaissance: "", numeroPiece: "", adresse: "", urgenceNom: "", urgenceTel: "", experience: "Débutant",
 };
 
+const LIB_MARIN: Record<string, string> = { nom: "Nom", prenom: "Prénom", sexe: "Sexe", dateNaissance: "Date de naissance", lieuNaissance: "Lieu de naissance", numeroPiece: "N° de pièce", tel: "Téléphone", email: "E-mail", adresse: "Adresse", urgenceNom: "Personne à prévenir", urgenceTel: "Téléphone d'urgence", profession: "Métier", station: "Station", docs: "Documents", ok: "Attestation" };
+
 function PreInscriptionMarin() {
   const [f, setF] = useState<Form>(VIDE);
   const [ok, setOk] = useState(false);
   const [docs, setDocs] = useState({ piece: "", photo: "", diplome: "" });
   const [tente, setTente] = useState(false);
   const [fait, setFait] = useState<PreInscription | null>(null);
+  const brouillon = useBrouillon("dgmm-brouillon-marin", f, setF);
   const up = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => ({ ...s, [k]: v }));
 
   const age = f.dateNaissance ? Math.floor((Date.now() - new Date(f.dateNaissance).getTime()) / (365.25 * 86400000)) : null;
@@ -73,6 +76,7 @@ function PreInscriptionMarin() {
     e.preventDefault();
     setTente(true);
     if (Object.keys(erreurs).length) return;
+    brouillon.effacer();
     setFait(deposerPreInscription({ ...f, pieces: Object.values(docs).filter(Boolean), nom: f.nom.trim().toUpperCase(), prenom: f.prenom.trim() }));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -136,18 +140,20 @@ function PreInscriptionMarin() {
         ))}
       </ol>
 
+      <BandeauBrouillon visible={brouillon.restaure} onEffacer={() => { brouillon.effacer(); setF(VIDE); }} />
       <form onSubmit={envoyer} noValidate className="grid gap-6">
+        <SuiviSaisie total={14} erreurs={erreurs} montrer={tente} libelles={LIB_MARIN} />
         <div className="space-y-6">
           <Panel title="Identité">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Nom" htmlFor="nom" required error={err("nom")}><input id="nom" className={inputClass} value={f.nom} onChange={(e) => up("nom", e.target.value)} autoComplete="family-name" /></Field>
-              <Field label="Prénom(s)" htmlFor="prenom" required error={err("prenom")}><input id="prenom" className={inputClass} value={f.prenom} onChange={(e) => up("prenom", e.target.value)} autoComplete="given-name" /></Field>
+              <Field label="Nom" htmlFor="nom" required error={err("nom")}><input id="nom" placeholder="Ex. : MOUSSAVOU" className={inputClass} value={f.nom} onChange={(e) => up("nom", e.target.value)} autoComplete="family-name" /></Field>
+              <Field label="Prénom(s)" htmlFor="prenom" required error={err("prenom")}><input id="prenom" placeholder="Ex. : Jean-Pierre" className={inputClass} value={f.prenom} onChange={(e) => up("prenom", e.target.value)} autoComplete="given-name" /></Field>
               <Field label="Sexe" htmlFor="sexe" required error={err("sexe")}>
                 <select id="sexe" className={selectClass} value={f.sexe} onChange={(e) => up("sexe", e.target.value)}><option value="">Choisir…</option><option value="F">Féminin</option><option value="M">Masculin</option></select>
               </Field>
-              <Field label="Date de naissance" htmlFor="dateNaissance" required error={err("dateNaissance")}><input id="dateNaissance" type="date" className={inputClass} value={f.dateNaissance} onChange={(e) => up("dateNaissance", e.target.value)} /></Field>
-              <Field label="Lieu de naissance" htmlFor="lieuNaissance" required error={err("lieuNaissance")}><input id="lieuNaissance" className={inputClass} value={f.lieuNaissance} onChange={(e) => up("lieuNaissance", e.target.value)} /></Field>
-              <Field label="N° CNI ou passeport" htmlFor="numeroPiece" required error={err("numeroPiece")}><input id="numeroPiece" className={inputClass} value={f.numeroPiece} onChange={(e) => up("numeroPiece", e.target.value.toUpperCase())} /></Field>
+              <Field label="Date de naissance" htmlFor="dateNaissance" required error={err("dateNaissance")} hint={age !== null && age >= 0 ? `${age} ans` : "16 ans minimum."}><input id="dateNaissance" type="date" max={new Date().toISOString().slice(0, 10)} className={inputClass} value={f.dateNaissance} onChange={(e) => up("dateNaissance", e.target.value)} /></Field>
+              <Field label="Lieu de naissance" htmlFor="lieuNaissance" required error={err("lieuNaissance")}><input id="lieuNaissance" placeholder="Ex. : Port-Gentil" className={inputClass} value={f.lieuNaissance} onChange={(e) => up("lieuNaissance", e.target.value)} /></Field>
+              <Field label="N° CNI ou passeport" htmlFor="numeroPiece" required error={err("numeroPiece")}><input id="numeroPiece" placeholder="Tel qu'écrit sur la carte" className={inputClass} value={f.numeroPiece} onChange={(e) => up("numeroPiece", e.target.value.toUpperCase())} /></Field>
               <Field label="Nationalité" htmlFor="nationalite" required>
                 <select id="nationalite" className={selectClass} value={f.nationalite} onChange={(e) => up("nationalite", e.target.value)}>{NATIONALITES.map((n) => <option key={n}>{n}</option>)}</select>
               </Field>
@@ -156,10 +162,10 @@ function PreInscriptionMarin() {
           <Panel title="Contact">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Téléphone" htmlFor="tel" required error={err("tel")} hint="La station vous appellera pour confirmer."><input id="tel" type="tel" className={inputClass} value={f.tel} onChange={(e) => up("tel", e.target.value)} placeholder="077 45 20 17" autoComplete="tel" /></Field>
-              <Field label="E-mail" htmlFor="email" error={err("email")}><input id="email" type="email" className={inputClass} value={f.email} onChange={(e) => up("email", e.target.value)} autoComplete="email" /></Field>
-              <Field label="Adresse (quartier, ville)" htmlFor="adresse" required error={err("adresse")} className="sm:col-span-2"><input id="adresse" className={inputClass} value={f.adresse} onChange={(e) => up("adresse", e.target.value)} autoComplete="street-address" /></Field>
-              <Field label="Personne à prévenir en cas d'urgence" htmlFor="urgenceNom" required error={err("urgenceNom")}><input id="urgenceNom" className={inputClass} value={f.urgenceNom} onChange={(e) => up("urgenceNom", e.target.value)} /></Field>
-              <Field label="Téléphone de cette personne" htmlFor="urgenceTel" required error={err("urgenceTel")}><input id="urgenceTel" type="tel" className={inputClass} value={f.urgenceTel} onChange={(e) => up("urgenceTel", e.target.value)} /></Field>
+              <Field label="E-mail" htmlFor="email" error={err("email")} hint="Facultatif — pour recevoir le récépissé."><input id="email" type="email" placeholder="nom@exemple.ga" className={inputClass} value={f.email} onChange={(e) => up("email", e.target.value)} autoComplete="email" /></Field>
+              <Field label="Adresse (quartier, ville)" htmlFor="adresse" required error={err("adresse")} className="sm:col-span-2"><input id="adresse" placeholder="Ex. : Quartier Louis, Libreville" className={inputClass} value={f.adresse} onChange={(e) => up("adresse", e.target.value)} autoComplete="street-address" /></Field>
+              <Field label="Personne à prévenir en cas d'urgence" htmlFor="urgenceNom" required error={err("urgenceNom")}><input id="urgenceNom" placeholder="Nom et lien (ex. : sœur)" className={inputClass} value={f.urgenceNom} onChange={(e) => up("urgenceNom", e.target.value)} /></Field>
+              <Field label="Téléphone de cette personne" htmlFor="urgenceTel" required error={err("urgenceTel")}><input id="urgenceTel" type="tel" placeholder="066 00 00 00" className={inputClass} value={f.urgenceTel} onChange={(e) => up("urgenceTel", e.target.value)} /></Field>
             </div>
           </Panel>
           <Panel title="Projet maritime et rendez-vous">
@@ -179,6 +185,7 @@ function PreInscriptionMarin() {
               <Field label="Date de rendez-vous souhaitée" htmlFor="rdv" hint="Indicative : la station confirme."><input id="rdv" type="date" className={inputClass} value={f.rdv} min={new Date().toISOString().slice(0, 10)} onChange={(e) => up("rdv", e.target.value)} /></Field>
             </div>
           </Panel>
+          <div id="docs" tabIndex={-1} />
           <Panel title="Documents à téléverser" description="Copies pour préparer votre dossier ; l'agent contrôle les originaux.">
             <div className="grid gap-4 sm:grid-cols-3">
               <PieceJointe id="doc-piece" label="CNI ou passeport" required fichier={docs.piece} onChange={(v) => setDocs((d) => ({ ...d, piece: v }))} />

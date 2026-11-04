@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Eye, EyeOff, FileCheck2, Paperclip, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Eye, EyeOff, FileCheck2, Paperclip, Save, X } from "lucide-react";
 import { inputClass } from "@/components/dgmm/Page";
 
 export function PasswordInput({ id, value, onChange, autoComplete = "new-password" }: { id: string; value: string; onChange: (v: string) => void; autoComplete?: string }) {
@@ -63,6 +63,69 @@ export function PieceJointe({ id, label, required, fichier, onChange, error, acc
         </label>
       )}
       {(msg || error) && <p className="mt-1 text-xs text-destructive">{msg || error}</p>}
+    </div>
+  );
+}
+
+/** Sauvegarde automatique du brouillon dans le navigateur (jamais les mots de passe ni les fichiers). */
+export function useBrouillon<T extends object>(cle: string, valeur: T, restaurer: (v: T) => void, exclure: string[] = []) {
+  const [pret, setPret] = useState(false);
+  const [restaure, setRestaure] = useState(false);
+  useEffect(() => {
+    try {
+      const brut = localStorage.getItem(cle);
+      if (brut) { restaurer({ ...valeur, ...JSON.parse(brut) }); setRestaure(true); }
+    } catch { /* brouillon illisible */ }
+    setPret(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!pret) return;
+    const copie: Record<string, unknown> = { ...(valeur as Record<string, unknown>) };
+    exclure.forEach((k) => delete copie[k]);
+    localStorage.setItem(cle, JSON.stringify(copie));
+  }, [cle, valeur, pret, exclure]);
+  return { restaure, effacer: () => { localStorage.removeItem(cle); setRestaure(false); } };
+}
+
+export function BandeauBrouillon({ visible, onEffacer }: { visible: boolean; onEffacer: () => void }) {
+  if (!visible) return null;
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm">
+      <Save className="size-4 text-primary" /> Votre saisie précédente a été reprise (les pièces jointes et mots de passe sont à refaire).
+      <button type="button" onClick={onEffacer} className="ml-auto font-semibold text-primary hover:underline">Recommencer à zéro</button>
+    </div>
+  );
+}
+
+/** Progression + liste des points à corriger, cliquables pour aller au champ. */
+export function SuiviSaisie({ total, erreurs, montrer, libelles }: {
+  total: number; erreurs: Record<string, string | undefined>; montrer: boolean; libelles: Record<string, string>;
+}) {
+  const restants = Object.keys(erreurs).filter((k) => erreurs[k]);
+  const pct = Math.round(((total - restants.length) / total) * 100);
+  return (
+    <div className="sticky top-2 z-10 rounded-xl border bg-card/95 p-4 shadow-sm backdrop-blur">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-semibold text-primary">Formulaire complété à {Math.max(0, pct)} %</span>
+        <span className="text-xs text-muted-foreground">{restants.length ? `${restants.length} élément(s) restant(s)` : "Prêt à envoyer"}</span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full transition-all duration-500 ${restants.length ? "bg-gold" : "bg-success"}`} style={{ width: `${Math.max(0, pct)}%` }} />
+      </div>
+      {montrer && restants.length > 0 && (
+        <div role="alert" className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-destructive"><AlertTriangle className="size-4" /> À corriger avant l'envoi :</p>
+          <ul className="mt-1 space-y-0.5 text-sm">
+            {restants.map((k) => (
+              <li key={k}><button type="button" className="text-left text-destructive underline-offset-2 hover:underline" onClick={() => {
+                const el = document.getElementById(k) ?? document.querySelector<HTMLElement>(`[data-champ="${k}"]`);
+                el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.focus?.();
+              }}>{libelles[k] ?? k} — {erreurs[k]}</button></li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
