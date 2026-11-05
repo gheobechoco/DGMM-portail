@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
-import type { Ambiance as Type, Habillage } from "@/lib/dgmm/saisons";
+import { useEffect, useRef, useState } from "react";
+import { useHabillage, type Ambiance as Type, type Habillage } from "@/lib/dgmm/saisons";
 import { estSombre, usePrefs } from "@/lib/dgmm/prefs";
 import { INTENSITE, useSysteme } from "@/lib/dgmm/systeme";
+import { DELAI_APPARITION_MS, FONDU_APPARITION_MS, OPACITE_MAX } from "@/lib/dgmm/ambiance";
 
 interface P {
   x: number;
@@ -40,9 +41,20 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
   const facteur = INTENSITE[sys.intensite];
   const sombre = estSombre(prefs);
 
+  // La page se lit d'abord : l'animation ne s'installe qu'après un délai, en fondu.
+  const [revele, setRevele] = useState(false);
+  useEffect(() => {
+    if (!actif) {
+      setRevele(false);
+      return;
+    }
+    const t = window.setTimeout(() => setRevele(true), DELAI_APPARITION_MS);
+    return () => window.clearTimeout(t);
+  }, [actif]);
+
   useEffect(() => {
     const cv = ref.current;
-    if (!cv || !habillage || !actif) return;
+    if (!cv || !habillage || !actif || !revele) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = cv.getContext("2d");
     if (!ctx) return;
@@ -227,8 +239,27 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
       else if (!avant) for (let i = 0; i < Math.round(34 * densite); i++) ps.push(nait(false, true));
     }, 400);
     return () => { cancelAnimationFrame(raf); window.clearInterval(zone); window.removeEventListener("resize", resize); };
-  }, [habillage, actif, sombre, facteur]);
+  }, [habillage, actif, revele, sombre, facteur]);
 
   if (!actif) return null;
-  return <canvas ref={ref} aria-hidden className="no-print pointer-events-none fixed inset-0 z-[35]" />;
+  return (
+    <canvas
+      ref={ref}
+      aria-hidden
+      className="no-print pointer-events-none ambiance-couche fixed inset-0 -z-10"
+      style={{
+        opacity: revele ? OPACITE_MAX : 0,
+        transition: `opacity ${FONDU_APPARITION_MS}ms ease-out`,
+      }}
+    />
+  );
+}
+
+/**
+ * Couche d'ambiance à placer dans le conteneur de page (celui qui porte le fond) :
+ * elle se peint derrière les textes et ne s'installe qu'après le délai réglé.
+ */
+export function AmbianceLayer() {
+  const habillage = useHabillage();
+  return <AmbianceSaison habillage={habillage} />;
 }

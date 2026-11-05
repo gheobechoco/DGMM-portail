@@ -7,6 +7,7 @@ import { Sigle } from "@/components/dgmm/Sigle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { cn } from "@/lib/utils";
+import { AmbianceLayer } from "@/components/dgmm/Ambiance";
 
 export type Profil = "marin" | "armateur" | "gestion";
 
@@ -78,6 +79,7 @@ export function ChoixProfil({ onGestion, onChoix }: { onGestion: () => void; onC
         />
       ))}
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-b from-[#0a192f]/80 via-[#0a192f]/60 to-[#0a192f]/90" />
+      <AmbianceLayer />
       <Tricolor />
       <header className="flex items-center gap-3 px-5 py-4 sm:px-10">
         <DgmmLogo className="size-12 drop-shadow-lg" />
@@ -158,7 +160,8 @@ export function EcranConnexion({
 }) {
   useEffect(() => appliquerPrefs(), []);
   return (
-    <div className={cn("grid min-h-screen", large ? "lg:grid-cols-[0.85fr_1.15fr]" : "lg:grid-cols-[1.1fr_1fr]")}>
+    <div className={cn("grid min-h-screen isolate", large ? "lg:grid-cols-[0.85fr_1.15fr]" : "lg:grid-cols-[1.1fr_1fr]")}>
+      <AmbianceLayer />
       <aside className="relative isolate hidden bg-navy-gradient text-primary-foreground lg:block">
         <div className="sticky top-0 flex h-screen flex-col justify-between overflow-hidden p-12">
           <div aria-hidden className="profil-fond profil-fond-actif absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${FONDS[profil]})` }} />

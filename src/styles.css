@@ -782,3 +782,8 @@ input[type="radio"]:checked {
 .carte-marqueur:hover .carte-marqueur-pin, .carte-marqueur:focus-visible .carte-marqueur-pin { box-shadow: 0 0 0 4px color-mix(in oklab, var(--c) 45%, transparent), 0 6px 14px rgb(0 0 0 / 0.35); }
 @keyframes marqueur-tombe { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .carte-marqueur-corps { animation: none; } }
+
+/* ---------- Couche d'animation d'habillage ---------- */
+/* Peinte derrière les textes de la page ; elle monte en opacité seulement après le délai réglé. */
+.ambiance-couche { will-change: opacity; }
+@media (prefers-reduced-motion: reduce) { .ambiance-couche { transition: none !important; } }

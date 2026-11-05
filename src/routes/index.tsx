@@ -6,6 +6,7 @@ import { Sigle } from "@/components/dgmm/Sigle";
 import { Chargement, ChoixProfil, FONDS } from "@/components/dgmm/Accueil";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
+import { AmbianceLayer } from "@/components/dgmm/Ambiance";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ACCOUNTS, getSession, login } from "@/lib/dgmm/auth";
@@ -98,7 +99,8 @@ function LoginPage() {
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => setCaps(e.getModifierState?.("CapsLock") ?? false);
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
+    <div className="grid min-h-screen isolate lg:grid-cols-[1.1fr_1fr]">
+      <AmbianceLayer />
       {/* Panneau institutionnel */}
       <aside className="relative isolate hidden overflow-hidden bg-navy-gradient text-primary-foreground lg:flex lg:flex-col">
         <div aria-hidden className="profil-fond profil-fond-actif absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${FONDS.gestion})` }} />
