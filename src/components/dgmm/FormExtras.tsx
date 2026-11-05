@@ -74,13 +74,14 @@ export function useBrouillon<T extends object>(cle: string, valeur: T, restaurer
   useEffect(() => {
     try {
       const brut = localStorage.getItem(cle);
-      if (brut) { restaurer({ ...valeur, ...JSON.parse(brut) }); setRestaure(true); }
-    } catch { /* brouillon illisible */ }
+      if (brut) { const v = JSON.parse(brut); if (Array.isArray(valeur) !== Array.isArray(v)) throw new Error("format"); restaurer(Array.isArray(v) ? (v as T) : { ...valeur, ...v }); setRestaure(true); }
+    } catch { localStorage.removeItem(cle); }
     setPret(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     if (!pret) return;
+    if (Array.isArray(valeur)) { localStorage.setItem(cle, JSON.stringify(valeur)); return; }
     const copie: Record<string, unknown> = { ...(valeur as Record<string, unknown>) };
     exclure.forEach((k) => delete copie[k]);
     localStorage.setItem(cle, JSON.stringify(copie));
