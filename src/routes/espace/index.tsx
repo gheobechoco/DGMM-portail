@@ -303,6 +303,7 @@ function PilotageDashboard({ session }: { session: Account }) {
         (m) => m.validationAdmin === "validee" && m.validationMedicale === "validee",
       ).length,
       attenteAdmin: marins.filter((m) => m.validationAdmin === "en_attente").length,
+      transmisDirection: marins.filter((m) => m.validationAdmin === "transmis_direction").length,
       livrets: marins.filter((m) => m.livret).length,
       livretsPrets: marins.filter((m) => !m.livret && eligibleLivret(m, visites, now)).length,
       souffrance,
@@ -324,7 +325,12 @@ function PilotageDashboard({ session }: { session: Account }) {
         eyebrow={rh ? "Tableau de bord · Agent des Gens de Mer" : "Tableau de bord · Direction des Gens de Mer"}
         nom={greeting(session.nom)}
         message={
-          d.souffrance.length > 0 ? (
+          can(session.role, "marins.viser") && d.transmisDirection > 0 ? (
+            <>
+              <strong className="text-gold">{d.transmisDirection} dossier(s)</strong> attendent
+              votre visa régalien.
+            </>
+          ) : d.souffrance.length > 0 ? (
             <>
               <strong className="text-gold">{d.souffrance.length} dossier(s)</strong> attendent
               depuis plus de 7 jours.
@@ -342,7 +348,13 @@ function PilotageDashboard({ session }: { session: Account }) {
           )
         }
         priorite={
-          d.souffrance.length > 0 ? (
+          can(session.role, "marins.viser") && d.transmisDirection > 0 ? (
+            <Button asChild variant="outline" className={ctaClair}>
+              <Link to="/espace/marins" search={{ admin: "transmis_direction" }}>
+                Examiner les dossiers transmis <ArrowRight />
+              </Link>
+            </Button>
+          ) : d.souffrance.length > 0 ? (
             <Button asChild variant="outline" className={ctaClair}>
               <Link to="/espace/marins" search={{ admin: "en_attente" }}>
                 Traiter les dossiers <ArrowRight />
@@ -357,7 +369,7 @@ function PilotageDashboard({ session }: { session: Account }) {
           ) : null
         }
         action={
-          can(session.role, "marins.creer") && (
+          can(session.role, "marins.enroler") && (
             <Button asChild variant="gold" data-tour="action">
               <Link to="/espace/marins/nouveau">
                 <UserPlus /> Enrôler un marin
@@ -382,6 +394,14 @@ function PilotageDashboard({ session }: { session: Account }) {
             value={d.attenteAdmin}
             icon={ShieldAlert}
             tone="warning"
+          />
+        ) : can(session.role, "marins.viser") ? (
+          <StatCard
+            label="Transmis à la Direction"
+            value={d.transmisDirection}
+            icon={ShieldAlert}
+            tone="warning"
+            hint="en attente de visa"
           />
         ) : (
           <StatCard label="Livrets maritimes émis" value={d.livrets} icon={BookOpenCheck} />

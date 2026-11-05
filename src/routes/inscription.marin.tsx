@@ -48,6 +48,7 @@ function PreInscriptionMarin() {
   const [docs, setDocs] = useState({ piece: "", photo: "", diplome: "" });
   const [tente, setTente] = useState(false);
   const [fait, setFait] = useState<PreInscription | null>(null);
+  const [erreurStockage, setErreurStockage] = useState("");
   const brouillon = useBrouillon("dgmm-brouillon-marin", f, setF);
   const up = <K extends keyof Form>(k: K, v: Form[K]) => setF((s) => ({ ...s, [k]: v }));
 
@@ -76,8 +77,29 @@ function PreInscriptionMarin() {
     e.preventDefault();
     setTente(true);
     if (Object.keys(erreurs).length) return;
-    brouillon.effacer();
-    setFait(deposerPreInscription({ ...f, pieces: Object.values(docs).filter(Boolean), nom: f.nom.trim().toUpperCase(), prenom: f.prenom.trim() }));
+    try {
+      const demande = deposerPreInscription({
+        ...f,
+        pieces: Object.values(docs)
+          .filter(Boolean)
+          .map((piece) => piece.split("::", 1)[0]!),
+        documents: {
+          piece: docs.piece || undefined,
+          photo: docs.photo || undefined,
+          stcw: docs.diplome || undefined,
+        },
+        nom: f.nom.trim().toUpperCase(),
+        prenom: f.prenom.trim(),
+      });
+      brouillon.effacer();
+      setErreurStockage("");
+      setFait(demande);
+    } catch (error) {
+      setErreurStockage(
+        error instanceof Error ? error.message : "Impossible d'enregistrer la demande.",
+      );
+      return;
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -108,6 +130,11 @@ function PreInscriptionMarin() {
                 <div className="text-muted-foreground">{fait.profession} · né(e) le {new Date(fait.dateNaissance).toLocaleDateString("fr-FR")}</div>
                 <div className="mt-1 text-xs text-muted-foreground">Statut : pré-inscription en ligne. L'agent scanne ce code puis vérifie vos originaux, prend vos empreintes et votre photo.</div>
                 <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => window.print()}><Printer /> Imprimer le récépissé</Button>
+                <Button asChild type="button" variant="link" size="sm" className="mt-3">
+                  <Link to="/suivi-demande" search={{ numero: fait.numero }}>
+                    Suivre l'avancement de ma demande
+                  </Link>
+                </Button>
               </div>
             </div>
           </Panel>
@@ -188,9 +215,9 @@ function PreInscriptionMarin() {
           <div id="docs" tabIndex={-1} />
           <Panel title="Documents à téléverser" description="Copies pour préparer votre dossier ; l'agent contrôle les originaux.">
             <div className="grid gap-4 sm:grid-cols-3">
-              <PieceJointe id="doc-piece" label="CNI ou passeport" required fichier={docs.piece} onChange={(v) => setDocs((d) => ({ ...d, piece: v }))} />
-              <PieceJointe id="doc-photo" label="Photo d'identité" required accept="image/*" fichier={docs.photo} onChange={(v) => setDocs((d) => ({ ...d, photo: v }))} />
-              <PieceJointe id="doc-diplome" label="Diplôme ou certificat STCW" fichier={docs.diplome} onChange={(v) => setDocs((d) => ({ ...d, diplome: v }))} />
+              <PieceJointe id="doc-piece" label="CNI ou passeport" required conserverContenu fichier={docs.piece} onChange={(v) => setDocs((d) => ({ ...d, piece: v }))} />
+              <PieceJointe id="doc-photo" label="Photo d'identité" required conserverContenu accept="image/*" fichier={docs.photo} onChange={(v) => setDocs((d) => ({ ...d, photo: v }))} />
+              <PieceJointe id="doc-diplome" label="Diplôme ou certificat STCW" conserverContenu fichier={docs.diplome} onChange={(v) => setDocs((d) => ({ ...d, diplome: v }))} />
             </div>
             {err("docs") && <p className="mt-3 text-xs text-destructive">{err("docs")}</p>}
           </Panel>
@@ -201,6 +228,7 @@ function PreInscriptionMarin() {
             </label>
             {err("ok") && <p className="text-xs text-destructive">{err("ok")}</p>}
             {tente && Object.keys(erreurs).length > 0 && <p className="text-sm text-destructive">{Object.keys(erreurs).length} point(s) à corriger avant l'envoi.</p>}
+            {erreurStockage && <p role="alert" className="text-sm text-destructive">{erreurStockage}</p>}
             <Button type="submit" variant="gold" size="lg"><CalendarCheck2 /> Envoyer ma pré-inscription</Button>
           </div>
         </div>

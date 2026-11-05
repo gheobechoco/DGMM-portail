@@ -39,8 +39,8 @@ export function JaugeMdp({ value }: { value: string }) {
 const MAX = 5 * 1024 * 1024;
 
 /** Sélecteur de justificatif (démo : seul le nom du fichier est conservé). */
-export function PieceJointe({ id, label, required, fichier, onChange, error, accept = "image/*,application/pdf" }: {
-  id: string; label: string; required?: boolean; fichier: string; onChange: (nom: string) => void; error?: string | undefined; accept?: string;
+export function PieceJointe({ id, label, required, fichier, onChange, error, accept = "image/*,application/pdf", conserverContenu = false }: {
+  id: string; label: string; required?: boolean; fichier: string; onChange: (nom: string) => void; error?: string | undefined; accept?: string; conserverContenu?: boolean;
 }) {
   const [msg, setMsg] = useState("");
   return (
@@ -48,17 +48,30 @@ export function PieceJointe({ id, label, required, fichier, onChange, error, acc
       <div className="mb-1 text-sm font-medium">{label}{required && <span className="text-destructive"> *</span>}</div>
       {fichier ? (
         <div className="flex items-center gap-2 rounded-md border border-success/40 bg-success/8 px-3 py-2 text-sm">
-          <FileCheck2 className="size-4 text-success" /><span className="flex-1 truncate">{fichier}</span>
+          <FileCheck2 className="size-4 text-success" /><span className="flex-1 truncate">{fichier.split("::", 1)[0]}</span>
           <button type="button" aria-label={`Retirer ${label}`} onClick={() => onChange("")} className="text-muted-foreground hover:text-destructive"><X className="size-4" /></button>
         </div>
       ) : (
         <label htmlFor={id} className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground hover:border-primary hover:text-primary">
-          <Paperclip className="size-4" /> Joindre (PDF ou photo, 5 Mo max)
+          <Paperclip className="size-4" /> Joindre (PDF ou photo,{" "}
+          {conserverContenu ? "700 Ko" : "5 Mo"} max)
           <input id={id} type="file" accept={accept} className="sr-only" onChange={(e) => {
             const f = e.target.files?.[0];
             if (!f) return;
-            if (f.size > MAX) { setMsg("Fichier trop lourd (5 Mo max)."); return; }
-            setMsg(""); onChange(f.name);
+            const limite = conserverContenu ? 700_000 : MAX;
+            if (f.size > limite) { setMsg(`Fichier trop lourd (${conserverContenu ? "700 Ko" : "5 Mo"} max).`); return; }
+            if (!conserverContenu) { setMsg(""); onChange(f.name); return; }
+            const lecteur = new FileReader();
+            lecteur.onload = () => {
+              if (typeof lecteur.result !== "string") {
+                setMsg("Impossible de lire ce fichier.");
+                return;
+              }
+              setMsg("");
+              onChange(`${f.name}::${lecteur.result}`);
+            };
+            lecteur.onerror = () => setMsg("Impossible de lire ce fichier.");
+            lecteur.readAsDataURL(f);
           }} />
         </label>
       )}

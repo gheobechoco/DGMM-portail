@@ -97,7 +97,9 @@ function Verifier() {
               ? "bg-destructive/10 text-destructive"
               : ok
                 ? "bg-success/12 text-success"
-                : "bg-warning/12 text-warning",
+                : st === "expire" || st === "aucun"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-warning/12 text-warning",
           )}
         >
           <Icon className="size-8 shrink-0" />

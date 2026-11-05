@@ -14,6 +14,7 @@ import {
   Pencil,
   Printer,
   ShieldCheck,
+  Send,
   Stethoscope,
   UserPlus,
   UserX,
@@ -57,6 +58,8 @@ import {
   parseDoc,
   marinCertStatus,
   setValidationAdmin,
+  transmettreDossierDirection,
+  verifierOriginalPiece,
   useMarins,
   useVisites,
   type DocKey,
@@ -98,7 +101,7 @@ function Fiche({ session }: { session: Account }) {
   const cert = lastCertificate(visites, m.id);
   const st = marinCertStatus(visites, m.id);
   const a = age(m);
-  const ecriture = can(session.role, "marins.creer");
+  const ecriture = can(session.role, "marins.enroler");
   const draft = mv.find((v) => !v.signee);
 
   return (
@@ -204,9 +207,13 @@ function Fiche({ session }: { session: Account }) {
         </div>
       </section>
 
-      {can(session.role, "marins.valider_admin") && m.validationAdmin === "en_attente" && (
-        <ValidationPanel m={m} visites={visites} auteur={session.nom} />
+      {can(session.role, "marins.transmettre") && m.validationAdmin === "en_attente" && (
+        <TransmissionPanel m={m} auteur={session.nom} />
       )}
+      {can(session.role, "marins.viser") &&
+        m.validationAdmin === "transmis_direction" && (
+          <ValidationPanel m={m} visites={visites} auteur={session.nom} />
+        )}
 
       <Tabs defaultValue="dossier" className="mt-6">
         <TabsList className="h-auto flex-wrap justify-start">
@@ -318,7 +325,11 @@ function Fiche({ session }: { session: Account }) {
 
         <TabsContent value="documents" className="mt-4">
           <Panel title="Pièces justificatives">
-            <DocsList m={m} />
+            <DocsList
+              m={m}
+              canVerifyOriginal={can(session.role, "marins.enroler")}
+              auteur={session.nom}
+            />
           </Panel>
         </TabsContent>
 
@@ -331,7 +342,11 @@ function Fiche({ session }: { session: Account }) {
         </TabsContent>
 
         <TabsContent value="livret" className="mt-4">
-          <LivretPanel m={m} canIssue={can(session.role, "marins.livret")} auteur={session.nom} />
+          <LivretPanel
+            m={m}
+            canIssue={can(session.role, "livrets.delivrer")}
+            auteur={session.nom}
+          />
         </TabsContent>
 
         <TabsContent value="historique" className="mt-4">
@@ -364,7 +379,15 @@ function StatusCell({
   );
 }
 
-function DocsList({ m }: { m: Marin }) {
+function DocsList({
+  m,
+  canVerifyOriginal,
+  auteur,
+}: {
+  m: Marin;
+  canVerifyOriginal: boolean;
+  auteur: string;
+}) {
   const [voir, setVoir] = useState<DocKey | null>(null);
   return (
     <>
@@ -373,6 +396,8 @@ function DocsList({ m }: { m: Marin }) {
           const f = m.documents[k];
           const d = parseDoc(f);
           const photo = k === "photo" && d?.image;
+          const online = m.piecesEnLigne?.includes(k);
+          const verification = m.verificationPieces?.[k];
           return (
             <li key={k}>
               <button
@@ -401,6 +426,41 @@ function DocsList({ m }: { m: Marin }) {
                 </div>
                 {f && <Eye className="size-4 text-muted-foreground" aria-label="Aperçu" />}
               </button>
+              {online && (
+                <div className="mt-2 rounded-md bg-primary-soft/50 px-3 py-2 text-xs">
+                  <p className="text-muted-foreground">
+                    📄 Téléversé en ligne par le marin — Original physique vérifié au guichet
+                  </p>
+                  {canVerifyOriginal ? (
+                    <label className="mt-2 flex items-center gap-2 font-medium text-primary">
+                      <input
+                        type="checkbox"
+                        checked={verification?.conforme ?? false}
+                        onChange={(e) => {
+                          verifierOriginalPiece(m.id, k, e.target.checked, auteur);
+                          toast.success(
+                            e.target.checked
+                              ? `${DOC_LABELS[k]} vérifié conforme à l'original`
+                              : `Vérification de ${DOC_LABELS[k]} retirée`,
+                          );
+                        }}
+                      />
+                      Conforme à l'original papier
+                    </label>
+                  ) : (
+                    <span
+                      className={cn(
+                        "mt-1 block font-semibold",
+                        verification?.conforme ? "text-success" : "text-warning",
+                      )}
+                    >
+                      {verification?.conforme
+                        ? `Original vérifié par ${verification.verifiePar} le ${formatDate(verification.verifieLe)}`
+                        : "Original physique à vérifier au guichet"}
+                    </span>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}
@@ -412,6 +472,46 @@ function DocsList({ m }: { m: Marin }) {
         onOpenChange={(o) => !o && setVoir(null)}
       />
     </>
+  );
+}
+
+function TransmissionPanel({ m, auteur }: { m: Marin; auteur: string }) {
+  const piecesEnLigne = m.piecesEnLigne ?? [];
+  const nonVerifiees = piecesEnLigne.filter(
+    (piece) => !m.verificationPieces?.[piece]?.conforme,
+  );
+  return (
+    <section className="mt-4 rounded-xl border border-primary/30 bg-primary-soft/40 p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <Send className="mt-0.5 size-5 shrink-0 text-primary" />
+        <div className="flex-1">
+          <h2 className="font-display font-semibold text-primary">
+            Instruction du dossier en station
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Vérifiez les originaux papier des pièces téléversées depuis l'onglet « Pièces », puis
+            transmettez le dossier au Directeur des Gens de Mer pour visa régalien.
+          </p>
+          {nonVerifiees.length > 0 && (
+            <p className="mt-2 text-xs font-medium text-warning">
+              Vérification requise : {nonVerifiees.map((piece) => DOC_LABELS[piece]).join(", ")}.
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Button
+          variant="gold"
+          disabled={nonVerifiees.length > 0}
+          onClick={() => {
+            if (transmettreDossierDirection(m.id, auteur))
+              toast.success("Dossier transmis à la Direction pour visa régalien");
+          }}
+        >
+          <Send /> Transmettre à la Direction pour visa régalien
+        </Button>
+      </div>
+    </section>
   );
 }
 
@@ -446,7 +546,10 @@ function ValidationPanel({
   ];
   const miss = manquants(m).filter((x) => !["Photo d'identité", "Pièce d'identité"].includes(x));
   const bloquant = motifVisa(m, visites);
-  const required = !bloquant;
+  const originauxNonVerifies = (m.piecesEnLigne ?? []).filter(
+    (piece) => !m.verificationPieces?.[piece]?.conforme,
+  );
+  const required = !bloquant && originauxNonVerifies.length === 0;
   return (
     <section className="mt-4 rounded-xl border border-warning/40 bg-warning/8 p-4 sm:p-5">
       <div className="flex items-start gap-3">
@@ -515,6 +618,12 @@ function ValidationPanel({
           {bloquant && (
             <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-xs font-medium text-destructive">
               Visa impossible : {bloquant}
+            </p>
+          )}
+          {originauxNonVerifies.length > 0 && (
+            <p className="mt-3 rounded-md border border-warning/30 bg-warning/8 px-3 py-2 text-xs font-medium text-warning">
+              Visa en attente : l'agent doit d'abord confirmer les originaux des pièces
+              téléversées.
             </p>
           )}
           {miss.length > 0 && (

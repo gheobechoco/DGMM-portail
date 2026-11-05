@@ -20,7 +20,7 @@ import { ClipboardList } from "lucide-react";
 export const Route = createFileRoute("/espace/livrets/")({
   head: () => ({ meta: [{ title: "Livrets maritimes — GDM | DGMM" }] }),
   component: () => (
-    <RequirePerm perm="marins.livret">{(s) => <Livrets auteur={s.nom} />}</RequirePerm>
+    <RequirePerm perm="livrets.delivrer">{(s) => <Livrets auteur={s.nom} />}</RequirePerm>
   ),
 });
 

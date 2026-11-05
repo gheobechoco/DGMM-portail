@@ -486,9 +486,10 @@ function Habillages({ session }: { session: Account }) {
 const PERMS: [Permission, string][] = [
   ["dashboard", "Tableau de bord"],
   ["marins", "Consulter les gens de mer"],
-  ["marins.creer", "Enrôler, modifier un dossier"],
-  ["marins.valider_admin", "Apposer le visa administratif"],
-  ["marins.livret", "Délivrer le fascicule"],
+  ["marins.enroler", "Enrôler et instruire un dossier"],
+  ["marins.transmettre", "Transmettre un dossier à la Direction"],
+  ["marins.viser", "Apposer le visa régalien DGMM"],
+  ["livrets.delivrer", "Délivrer le livret maritime"],
   ["visites", "Consulter les visites"],
   ["visites.saisir", "Saisir une visite"],
   ["visites.signer", "Signer un certificat"],

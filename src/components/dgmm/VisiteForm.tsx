@@ -72,6 +72,8 @@ const RESTRICTIONS = [
   "Pas de travail en hauteur",
   "Pas de service en salle des machines",
 ];
+const RESTRICTION_ISHIHARA =
+  "Test d'Ishihara défaillant : restriction machine et radio, exclusion du pont et du service de veille";
 
 const VERDICTS: { v: Exclude<Verdict, "">; label: string; hint: string; on: string }[] = [
   {
@@ -356,16 +358,31 @@ export function VisiteForm({
   const st = <K extends keyof Stcw>(k: K, val: Stcw[K]) =>
     setV((s) => ({ ...s, stcw: { ...s.stcw, [k]: val } }));
   const answer = (k: keyof Stcw, o: OuiNon) =>
-    setV((s) => ({
-      ...s,
-      stcw: {
-        ...s.stcw,
-        [k]: o,
-        ...(k === "couleurs" && o === "oui" && !s.stcw.dateTestCouleurs
-          ? { dateTestCouleurs: new Date().toISOString().slice(0, 10) }
-          : {}),
-      },
-    }));
+    setV((s) => {
+      const stcw: Stcw = { ...s.stcw, [k]: o };
+      if (k === "couleurs") {
+        const details = s.stcw.details
+          .replace(`${RESTRICTION_ISHIHARA}.`, "")
+          .replace(RESTRICTION_ISHIHARA, "")
+          .replace(/\.\s*\./g, ".")
+          .trim();
+        if (o === "non") {
+          stcw.verdict =
+            s.stcw.verdict === "inapte" || s.stcw.verdict === "inapte_temporaire"
+              ? s.stcw.verdict
+              : "apte_restrictions";
+          stcw.details = details
+            ? `${details.replace(/\.$/, "")}. ${RESTRICTION_ISHIHARA}.`
+            : `${RESTRICTION_ISHIHARA}.`;
+        } else {
+          stcw.details = details;
+          if (s.stcw.verdict === "apte_restrictions" && !details) stcw.verdict = "apte";
+        }
+        if (!s.stcw.dateTestCouleurs)
+          stcw.dateTestCouleurs = new Date().toISOString().slice(0, 10);
+      }
+      return { ...s, stcw };
+    });
 
   const questions = (list: Q[]) => (
     <ul className="divide-y">
@@ -675,6 +692,11 @@ export function VisiteForm({
             Décision d'aptitude & signature <Aide terme="aptitude" />
           </span>
         }
+        description={
+          canSign
+            ? "Le verdict, les restrictions et la signature officielle sont réservés au médecin agréé."
+            : "Brouillon médical : seul le médecin du travail peut statuer sur l'aptitude, les restrictions et signer le certificat."
+        }
       >
         <div
           className="grid grid-cols-2 gap-2 lg:grid-cols-4"
@@ -687,6 +709,7 @@ export function VisiteForm({
               type="button"
               role="radio"
               aria-checked={v.stcw.verdict === o.v}
+              disabled={!canSign}
               onClick={() => st("verdict", o.v)}
               className={cn(
                 "rounded-lg border-2 px-3 py-2.5 text-left transition-colors",
@@ -694,6 +717,7 @@ export function VisiteForm({
                   ? o.on
                   : "border-border text-muted-foreground hover:border-input",
                 tried && !v.stcw.verdict && "border-destructive/50",
+                !canSign && "cursor-not-allowed opacity-60",
               )}
             >
               <span className="block font-display text-sm font-bold">{o.label}</span>
@@ -711,8 +735,9 @@ export function VisiteForm({
               <textarea
                 id="details"
                 value={v.stcw.details}
+                disabled={!canSign}
                 onChange={(e) => st("details", e.target.value)}
-                className={textareaClass}
+                className={cn(textareaClass, !canSign && "cursor-not-allowed opacity-70")}
               />
             </Field>
             {v.stcw.verdict === "apte_restrictions" && (
@@ -721,8 +746,9 @@ export function VisiteForm({
                   <button
                     key={r}
                     type="button"
+                    disabled={!canSign}
                     onClick={() => addRestriction(r)}
-                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:border-gold hover:text-primary"
+                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:border-gold hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Plus className="size-3" /> {r}
                   </button>
@@ -737,6 +763,7 @@ export function VisiteForm({
                   id="dateDelivrance"
                   type="date"
                   value={v.stcw.dateDelivrance}
+                  disabled={!canSign}
                   onChange={(e) =>
                     setV((s) => ({
                       ...s,
@@ -749,7 +776,7 @@ export function VisiteForm({
                       },
                     }))
                   }
-                  className={inputClass}
+                  className={cn(inputClass, !canSign && "cursor-not-allowed opacity-70")}
                 />
               </Field>
               <Field
@@ -761,8 +788,9 @@ export function VisiteForm({
                   id="validJusquau"
                   type="date"
                   value={v.stcw.validJusquau}
+                  disabled={!canSign}
                   onChange={(e) => st("validJusquau", e.target.value)}
-                  className={inputClass}
+                  className={cn(inputClass, !canSign && "cursor-not-allowed opacity-70")}
                 />
               </Field>
             </>

@@ -45,6 +45,7 @@ function InscriptionArmateur() {
   const [ok, setOk] = useState(false);
   const [tente, setTente] = useState(false);
   const [fait, setFait] = useState<DemandeArmateur | null>(null);
+  const [erreurStockage, setErreurStockage] = useState("");
   const brouillon = useBrouillon("dgmm-brouillon-armateur", f, setF, EXCLURE_ARM);
   if (typeof window !== "undefined") localStorage.removeItem("dgmm-brouillon-armateur-flotte");
   const brouillonNav = useBrouillon("dgmm-brouillon-armateur-flotte-v2", navires, setNavires);
@@ -83,10 +84,9 @@ function InscriptionArmateur() {
     ev.preventDefault();
     setTente(true);
     if (Object.keys(e).length) return;
-    brouillon.effacer(); brouillonNav.effacer();
     const segment = f.segment as TypeFlotte;
-    setFait(
-      deposerDemandeArmateur({
+    try {
+      const demande = deposerDemandeArmateur({
         raisonSociale: f.raisonSociale.trim(), rccm: f.rccm.trim(), nif: f.nif.trim(), ville: f.ville, pays: f.pays.trim() || "Gabon",
         segment, contactNom: f.contactNom.trim(), contactFonction: f.contactFonction.trim(), tel: f.tel.trim(), email: f.email.trim(),
         navires: naviresOk.map((n) => ({ nom: n.nom.trim(), imo: n.imo.trim(), type: segment, jauge: Number(n.jauge) || 0, pavillon: "Gabon" })),
@@ -94,8 +94,17 @@ function InscriptionArmateur() {
         adresseSiege: f.adresseSiege.trim(), dpaNom: f.dpaNom.trim(), dpaTel: f.dpaTel.trim(),
         flotteDetails: naviresOk.map((n) => ({ imo: n.imo.trim(), indicatif: n.indicatif.trim().toUpperCase(), mmsi: n.mmsi.trim(), portAttache: n.port.trim() })),
         pieces: Object.values(pieces).filter(Boolean),
-      }),
-    );
+      });
+      brouillon.effacer();
+      brouillonNav.effacer();
+      setErreurStockage("");
+      setFait(demande);
+    } catch (error) {
+      setErreurStockage(
+        error instanceof Error ? error.message : "Impossible d'enregistrer la demande.",
+      );
+      return;
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -209,6 +218,7 @@ function InscriptionArmateur() {
           </label>
           {err("ok") && <p className="text-xs text-destructive">{err("ok")}</p>}
           {tente && Object.keys(e).length > 0 && <p className="text-sm text-destructive">{Object.keys(e).length} point(s) à corriger avant l'envoi.</p>}
+          {erreurStockage && <p role="alert" className="text-sm text-destructive">{erreurStockage}</p>}
           <div className="flex flex-wrap items-center gap-4">
             <Button type="submit" variant="gold" size="lg">Envoyer la demande</Button>
             <span className="text-xs text-muted-foreground">Déjà un compte ? <Link to="/armateur" className="font-semibold text-primary hover:underline">Espace Armateurs</Link></span>

@@ -3,7 +3,7 @@ import { ageFrom, canIssueLivret, certificateStatus, DAY, type CertStatus } from
 import { ACCOUNTS } from "./auth";
 import { TOUS_NAVIRES, type TypeFlotte } from "./maritime";
 
-export type Etat = "en_attente" | "validee" | "rejetee";
+export type Etat = "en_attente" | "transmis_direction" | "validee" | "rejetee";
 export type OuiNon = "oui" | "non" | "";
 
 export interface Marin {
@@ -41,6 +41,10 @@ export interface Marin {
   embarquements?: Embarquement[] | undefined;
   alertes?: { sms: boolean; email: boolean } | undefined;
   documents: Partial<Record<DocKey, string>>;
+  piecesEnLigne?: DocKey[] | undefined;
+  verificationPieces?: Partial<
+    Record<DocKey, { conforme: boolean; verifiePar: string; verifieLe: string }>
+  >;
   validationAdmin: Etat;
   validationMedicale: Etat;
   login: string;
@@ -399,7 +403,7 @@ function seed(): State {
         signeParticulier: "Néant",
       },
     ],
-    ["HAPPI", "Éric", "M", 22, "Matelot", "validee", "validee", 160],
+    ["HAPPI", "Éric", "M", 22, "Matelot", "validee", "validee", 160, { nip: "GAB-2026-001202" }],
     [
       "ATENDE",
       "Mélissa",
@@ -802,16 +806,20 @@ const serverState = seed();
 
 /** Enregistre le nouvel état ; si `log` est fourni, ajoute une entrée chaînée au journal d'audit. */
 function set(next: State, log?: { acteur: string; action: string; cible: string }) {
-  state = log
+  const updated = log
     ? { ...next, audit: appendAudit(next.audit, log.acteur, log.action, log.cible) }
     : next;
   if (typeof window !== "undefined") {
     try {
-      window.localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {
-      console.warn("Stockage local plein : les dernières modifications ne seront pas conservées.");
+      window.localStorage.setItem(KEY, JSON.stringify(updated));
+    } catch (error) {
+      throw new Error(
+        "Impossible d'enregistrer les modifications : le stockage local est plein ou indisponible.",
+        { cause: error },
+      );
     }
   }
+  state = updated;
   listeners.forEach((l) => l());
 }
 
@@ -983,7 +991,13 @@ export function saveVisite(
 export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM", motif = "") {
   const s = get();
   const cibleMarin = s.marins.find((m) => m.id === id);
-  if (etat === "validee" && cibleMarin && motifVisa(cibleMarin, s.visites)) return;
+  if (
+    !cibleMarin ||
+    cibleMarin.validationAdmin !== "transmis_direction" ||
+    (etat !== "validee" && etat !== "rejetee") ||
+    (etat === "validee" && motifVisa(cibleMarin, s.visites))
+  )
+    return;
   const action =
     etat === "validee"
       ? "Validation administrative accordée"
@@ -1003,6 +1017,70 @@ export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM"
       cible: cible(s.marins.find((m) => m.id === id)),
     },
   );
+}
+
+export function transmettreDossierDirection(id: number, auteur: string) {
+  const s = get();
+  const marin = s.marins.find((m) => m.id === id);
+  const originauxNonVerifies = (marin?.piecesEnLigne ?? []).some(
+    (piece) => !marin?.verificationPieces?.[piece]?.conforme,
+  );
+  if (!marin || marin.validationAdmin !== "en_attente" || originauxNonVerifies) return false;
+  const action = "Dossier transmis à la Direction pour visa régalien";
+  set(
+    {
+      ...s,
+      marins: s.marins.map((m) =>
+        m.id === id
+          ? withEvent(
+              { ...m, validationAdmin: "transmis_direction", modifieLe: nowIso() },
+              action,
+              auteur,
+              "admin",
+            )
+          : m,
+      ),
+    },
+    { acteur: auteur, action, cible: cible(marin) },
+  );
+  return true;
+}
+
+export function verifierOriginalPiece(
+  id: number,
+  piece: DocKey,
+  conforme: boolean,
+  auteur: string,
+) {
+  const s = get();
+  const marin = s.marins.find((m) => m.id === id);
+  if (!marin || !marin.documents[piece]) return false;
+  const date = nowIso();
+  const action = `Original physique ${conforme ? "vérifié conforme" : "non conforme"} — ${DOC_LABELS[piece]}`;
+  set(
+    {
+      ...s,
+      marins: s.marins.map((m) =>
+        m.id === id
+          ? withEvent(
+              {
+                ...m,
+                verificationPieces: {
+                  ...m.verificationPieces,
+                  [piece]: { conforme, verifiePar: auteur, verifieLe: date },
+                },
+                modifieLe: date,
+              },
+              action,
+              auteur,
+              "admin",
+            )
+          : m,
+      ),
+    },
+    { acteur: auteur, action, cible: cible(marin) },
+  );
+  return true;
 }
 
 /** Révoque un certificat signé (il n'est plus valable, la vérification QR l'indique). */
@@ -1192,7 +1270,11 @@ export function setAlertes(marinId: number, alertes: { sms: boolean; email: bool
 }
 
 export function resetDemo(auteur = "Administrateur système") {
-  set(seed(), { acteur: auteur, action: "Réinitialisation des données de démonstration", cible: "Système" });
+  set(seed(), {
+    acteur: auteur,
+    action: "Réinitialisation des données de démonstration",
+    cible: "Système",
+  });
 }
 
 /** Clé de stockage des données (version du schéma). */
@@ -1216,8 +1298,17 @@ export function importerDonnees(json: string, auteur: string): string | null {
   if (!Array.isArray(d.marins) || !Array.isArray(d.visites) || !Array.isArray(d.audit))
     return "Sauvegarde incomplète : marins, visites ou journal d'audit manquants.";
   set(
-    { marins: d.marins, visites: d.visites, roles: Array.isArray(d.roles) ? d.roles : [], audit: d.audit },
-    { acteur: auteur, action: `Restauration d'une sauvegarde (${d.marins.length} marins)`, cible: "Système" },
+    {
+      marins: d.marins,
+      visites: d.visites,
+      roles: Array.isArray(d.roles) ? d.roles : [],
+      audit: d.audit,
+    },
+    {
+      acteur: auteur,
+      action: `Restauration d'une sauvegarde (${d.marins.length} marins)`,
+      cible: "Système",
+    },
   );
   return null;
 }
@@ -1282,6 +1373,11 @@ export function motifVisa(m: Marin, visites: Visite[], now = new Date()): string
     return "Certificat d'aptitude du Médecin des Gens de Mer requis (visite médicale préalable).";
   const manque = PIECES_VISA.filter((k) => !m.documents[k]).map((k) => DOC_LABELS[k]);
   if (manque.length) return `Pièces manquantes : ${manque.join(", ")}.`;
+  const originauxNonVerifies = (m.piecesEnLigne ?? []).filter(
+    (piece) => !m.verificationPieces?.[piece]?.conforme,
+  );
+  if (originauxNonVerifies.length)
+    return `Originaux papier à vérifier : ${originauxNonVerifies.map((piece) => DOC_LABELS[piece]).join(", ")}.`;
   return null;
 }
 

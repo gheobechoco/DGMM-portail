@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Navire, TypeFlotte } from "@/lib/dgmm/maritime";
+import type { DocKey } from "@/lib/dgmm/store";
 
 /**
  * Demandes déposées depuis les pages publiques :
@@ -32,6 +33,7 @@ export interface PreInscription {
   urgenceTel?: string;
   experience?: string;
   pieces?: string[];
+  documents?: Partial<Record<DocKey, string>>;
   marinId?: number | undefined;
   motif?: string | undefined;
   traitePar?: string | undefined;
@@ -86,12 +88,15 @@ function lire(): Etat {
   return cache;
 }
 function ecrire(e: Etat) {
-  cache = e;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(e));
-  } catch {
-    /* stockage plein ou indisponible */
+  } catch (error) {
+    throw new Error(
+      "Impossible d'enregistrer la demande : le stockage local est plein ou indisponible. Réduisez la taille des pièces jointes et réessayez.",
+      { cause: error },
+    );
   }
+  cache = e;
   listeners.forEach((l) => l());
 }
 if (typeof window !== "undefined") {

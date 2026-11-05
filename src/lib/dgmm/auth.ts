@@ -17,7 +17,7 @@ export const ACCOUNTS: Account[] = [
     username: "marin",
     password: "azerty",
     nom: "ABIAGHE PEMBA Norha",
-    role: "gestionnaire_mm",
+    role: "directeur_gm",
     roleLabel: "Directeur des Gens de Mer",
   },
   {

@@ -53,9 +53,9 @@ export const NAV: NavItem[] = [
     exact: true,
   },
   { to: "/espace/marins", label: "Gens de mer", icon: Users, perm: "marins" },
-  { to: "/espace/demandes", label: "Pré-inscriptions", icon: Inbox, perm: "marins.creer" },
+  { to: "/espace/demandes", label: "Pré-inscriptions", icon: Inbox, perm: "marins.enroler" },
   { to: "/espace/visites", label: "Visites médicales", icon: Stethoscope, perm: "visites" },
-  { to: "/espace/livrets", label: "Fascicules / livrets", icon: BookOpenCheck, perm: "marins.livret" },
+  { to: "/espace/livrets", label: "Fascicules / livrets", icon: BookOpenCheck, perm: "livrets.delivrer" },
   { to: "/espace/equipages", label: "Rôles d'équipage", icon: Ship, perm: "roles.lecture" },
   { to: "/espace/audit", label: "Journal d'audit", icon: ShieldCheck, perm: "audit" },
   { to: "/reglementation", label: "Réglementation", icon: Scale, perm: "marins" },
@@ -191,7 +191,7 @@ function tourSteps(session: Account): TourStep[] {
       cible: "action",
       titre: medical
         ? "Nouvelle visite STCW"
-        : can(session.role, "marins.creer")
+        : can(session.role, "marins.enroler")
           ? "Enrôler un marin"
           : "Action principale",
       texte: medical
@@ -355,7 +355,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
       )
         return;
       const k = e.key.toLowerCase();
-      if (k === "n" && can(session.role, "marins.creer")) {
+      if (k === "n" && can(session.role, "marins.enroler")) {
         e.preventDefault();
         navigate({ to: "/espace/marins/nouveau" });
       } else if (k === "v" && can(session.role, "visites.saisir")) {

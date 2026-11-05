@@ -86,7 +86,10 @@ function ConnexionMarin() {
   const [nip, setNip] = useState("");
   const [mdp, setMdp] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const demo = marins.filter((m) => m.livret).slice(0, 2);
+  const demo = ["HAPPI", "ATENDE"].flatMap((nom) => {
+    const marin = marins.find((m) => m.nom === nom && m.livret);
+    return marin ? [marin] : [];
+  });
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const m = marins.find((x) => x.nip.toUpperCase() === nip.trim().toUpperCase() && x.mdp === mdp);
@@ -98,7 +101,11 @@ function ConnexionMarin() {
     journaliser(`Marin ${m.nip}`, "Connexion à l'espace marin", `${m.nom} ${m.prenom} (${m.nip})`);
   };
   return (
-    <EcranConnexion profil="marin" titre="Espace Marin" accroche="Votre dossier, votre certificat d'aptitude, votre fascicule et vos jours en mer, au même endroit.">
+    <EcranConnexion
+      profil="marin"
+      titre="Espace Marin"
+      accroche="Votre dossier, votre certificat d'aptitude, votre fascicule et vos jours en mer, au même endroit."
+    >
       <div>
         <div>
           <div className="mb-5 flex items-center gap-3">
@@ -184,7 +191,11 @@ function ConnexionMarin() {
           </Link>
           <span className="mx-2">·</span>
           Agent de la DGMM ?{" "}
-          <Link to="/" search={{ profil: "gestion" }} className="font-semibold text-primary hover:underline">
+          <Link
+            to="/"
+            search={{ profil: "gestion" }}
+            className="font-semibold text-primary hover:underline"
+          >
             Espace professionnel
           </Link>
         </p>
@@ -244,7 +255,10 @@ function Tableau({ m }: { m: Marin }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block font-semibold text-primary">Mon trajet en 3D</span>
-          <span className="block text-sm text-muted-foreground">De votre domicile à votre lieu de travail et à votre station maritime, avec les temps en voiture et à pied.</span>
+          <span className="block text-sm text-muted-foreground">
+            De votre domicile à votre lieu de travail et à votre station maritime, avec les temps en
+            voiture et à pied.
+          </span>
         </span>
         <ArrowRight className="size-5 text-muted-foreground" />
       </Link>
@@ -353,7 +367,10 @@ function Tableau({ m }: { m: Marin }) {
           description="Rappels avant l'échéance de votre certificat."
         >
           <div className="space-y-4">
-            <label className="choix flex cursor-pointer items-center justify-between gap-3" data-actif={alertes.sms}>
+            <label
+              className="choix flex cursor-pointer items-center justify-between gap-3"
+              data-actif={alertes.sms}
+            >
               <span className="flex items-center gap-2 text-sm">
                 <MessageSquare className="choix-icone size-4 text-muted-foreground" />
                 <span>
@@ -372,7 +389,10 @@ function Tableau({ m }: { m: Marin }) {
                 }}
               />
             </label>
-            <label className="choix flex cursor-pointer items-center justify-between gap-3" data-actif={alertes.email}>
+            <label
+              className="choix flex cursor-pointer items-center justify-between gap-3"
+              data-actif={alertes.email}
+            >
               <span className="flex items-center gap-2 text-sm">
                 <Mail className="choix-icone size-4 text-muted-foreground" />
                 <span>
