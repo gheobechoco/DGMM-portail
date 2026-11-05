@@ -74,7 +74,7 @@ export function useBrouillon<T extends object>(cle: string, valeur: T, restaurer
   useEffect(() => {
     try {
       const brut = localStorage.getItem(cle);
-      if (brut) { restaurer({ ...valeur, ...JSON.parse(brut) }); setRestaure(true); }
+      if (brut) { const v = JSON.parse(brut); restaurer(Array.isArray(v) ? (v as T) : { ...valeur, ...v }); setRestaure(true); }
     } catch { /* brouillon illisible */ }
     setPret(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
