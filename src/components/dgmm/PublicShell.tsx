@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { LogOut } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
+import { AmbianceLayer } from "@/components/dgmm/Ambiance";
 
 /** Cadre des espaces externes (marins, armateurs). */
 export function PublicShell({
@@ -34,6 +35,7 @@ export function PublicShell({
         className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[34rem]"
         opacite={0.05}
       />
+      <AmbianceLayer />
       <Tricolor className="no-print" />
       <header className="no-print bg-sidebar text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">

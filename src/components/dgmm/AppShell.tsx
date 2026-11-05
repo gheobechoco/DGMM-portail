@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
+import { AmbianceLayer } from "@/components/dgmm/Ambiance";
 import { useHabillage } from "@/lib/dgmm/saisons";
 import { useSysteme } from "@/lib/dgmm/systeme";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";

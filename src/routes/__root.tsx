@@ -13,8 +13,6 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportDgmmError } from "../lib/dgmm-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
-import { AmbianceSaison } from "@/components/dgmm/Ambiance";
-import { useHabillage } from "@/lib/dgmm/saisons";
 import { appliquerPrefs, estSombre, usePrefs } from "@/lib/dgmm/prefs";
 
 function NotFoundComponent() {
@@ -108,12 +106,10 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const prefs = usePrefs();
-  const habillage = useHabillage();
   useEffect(() => appliquerPrefs(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <AmbianceSaison habillage={habillage} />
       <Toaster richColors position="top-right" theme={estSombre(prefs) ? "dark" : "light"} />
     </QueryClientProvider>
   );
