@@ -385,6 +385,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
         className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[32rem]"
         opacite={0.045}
       />
+      <AmbianceLayer />
       <aside data-ambiance-zone className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block">
         <Tricolor />
         <SidebarContent session={session} />
