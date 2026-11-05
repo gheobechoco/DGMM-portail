@@ -46,7 +46,8 @@ function InscriptionArmateur() {
   const [tente, setTente] = useState(false);
   const [fait, setFait] = useState<DemandeArmateur | null>(null);
   const brouillon = useBrouillon("dgmm-brouillon-armateur", f, setF, EXCLURE_ARM);
-  const brouillonNav = useBrouillon("dgmm-brouillon-armateur-flotte", navires, setNavires);
+  if (typeof window !== "undefined") localStorage.removeItem("dgmm-brouillon-armateur-flotte");
+  const brouillonNav = useBrouillon("dgmm-brouillon-armateur-flotte-v2", navires, setNavires);
   const up = (k: keyof typeof f, v: string) => setF((s) => ({ ...s, [k]: v }));
 
   const pris = (id: string) =>
