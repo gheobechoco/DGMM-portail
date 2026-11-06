@@ -117,6 +117,13 @@ export const ARMATEURS: Armateur[] = [
         jauge: 1780,
         pavillon: "Gabon",
       },
+      {
+        nom: "Perenco Ozouri",
+        imo: "9654345",
+        type: "Offshore pétrolier",
+        jauge: 980,
+        pavillon: "Gabon",
+      },
     ],
   },
   {

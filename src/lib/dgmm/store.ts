@@ -770,7 +770,7 @@ function seed(): State {
       const membresNav = equipe.filter((_, i) => i % navs.length === idx);
       if (nomArm === "Perenco Marine" && idx === 0 && !membresNav.some((m) => m.id === 3)) {
         const m3 = marins.find((m) => m.id === 3);
-        if (m3) membresNav.push(m3);
+        if (m3 && !rolesDemo.includes(m3.entreprise)) membresNav.push(m3);
       }
       if (!membresNav.length) return;
       const roleId = roles.length + 1;
