@@ -12,7 +12,7 @@ export const Route = createFileRoute("/suivi-demande")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     ...validateLang(s),
-    numero: typeof s.numero === "string" ? s.numero : undefined,
+    numero: typeof s["numero"] === "string" ? s["numero"] : undefined,
   }),
   head: () => ({ meta: [{ title: "Suivre ma demande — DGMM" }] }),
   component: SuiviDemande,

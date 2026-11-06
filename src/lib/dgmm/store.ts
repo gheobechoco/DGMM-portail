@@ -204,7 +204,7 @@ interface State {
   audit: AuditEntry[];
 }
 
-const KEY = "dgmm-gdm-v6";
+const KEY = "dgmm-gdm-v7";
 
 /** Empreinte 64 bits (deux FNV-1a) — démonstration ; en production : SHA-256 côté serveur. */
 export function empreinte(src: string): string {
@@ -757,22 +757,75 @@ function seed(): State {
     }
     m.embarquements = list;
   }
-  // Rôle d'équipage déclaré par Perenco Marine.
-  const perenco = marins.filter((m) => m.entreprise === "Perenco Marine");
-  const roles: RoleEquipage[] = [
-    {
-      id: 1,
-      armateur: "Perenco Marine",
-      navire: "Perenco Mandji",
-      appareillage: iso(new Date(Date.now() + 6 * DAY)),
-      membres: [
-        ...perenco.map((m) => ({ marinId: m.id, fonction: m.profession })),
-        { marinId: 3, fonction: "Officier de quart pont" },
-      ],
-      creeLe: daysAgo(4),
-      modifieLe: daysAgo(2),
-    },
-  ];
+  // Rôles d'équipage de démonstration : un rôle par navire des armateurs disposant d'un compte,
+  // avec un embarquement ouvert (équipage actuellement en mer) rattaché à chaque rôle.
+  const roles: RoleEquipage[] = [];
+  const rolesDemo = ["Perenco Marine", "Bourbon Offshore", "SNAT Gabon"];
+  for (const nomArm of rolesDemo) {
+    const navs = TOUS_NAVIRES.filter((n) => n.armateur === nomArm);
+    const equipe = marins.filter(
+      (m) => m.entreprise === nomArm && m.validationAdmin === "validee",
+    );
+    // Démo : compléter l'effectif (2 marins par navire) avec des marins validés sans armateur de démo.
+    const libres = marins.filter(
+      (m) => m.validationAdmin === "validee" && !rolesDemo.includes(m.entreprise) && m.id !== 3,
+    );
+    while (equipe.length < navs.length * 2 && libres.length) {
+      const m = libres.shift()!;
+      m.entreprise = nomArm;
+      equipe.push(m);
+    }
+    navs.forEach((nav, idx) => {
+      const membresNav = equipe.filter((_, i) => i % navs.length === idx);
+      if (nomArm === "Perenco Marine" && idx === 0 && !membresNav.some((m) => m.id === 3)) {
+        const m3 = marins.find((m) => m.id === 3);
+        if (m3 && !rolesDemo.includes(m3.entreprise)) membresNav.push(m3);
+      }
+      if (!membresNav.length) return;
+      const roleId = roles.length + 1;
+      const depart = 8 + idx * 11 + rolesDemo.indexOf(nomArm) * 5;
+      roles.push({
+        id: roleId,
+        armateur: nomArm,
+        navire: nav.nom,
+        navireImo: nav.imo,
+        typeNavire: nav.type,
+        jauge: nav.jauge,
+        appareillage: iso(new Date(Date.now() - depart * DAY)),
+        membres: membresNav.map((m) => ({
+          marinId: m.id,
+          fonction: m.id === 3 && nomArm === "Perenco Marine" ? "Officier de quart pont" : m.profession,
+        })),
+        creeLe: daysAgo(depart + 2),
+        modifieLe: daysAgo(depart),
+      });
+      for (const m of membresNav) {
+        const debutIso = iso(new Date(Date.now() - depart * DAY));
+        const veille = iso(new Date(Date.now() - (depart + 1) * DAY));
+        const hist = (m.embarquements ?? []).map((e) =>
+          !e.debarquement || e.debarquement > debutIso
+            ? { ...e, debarquement: e.embarquement < veille ? veille : e.embarquement }
+            : e,
+        );
+        hist.push({
+          id: embId++,
+          roleId,
+          statut: "valide_dgmm",
+          navire: nav.nom,
+          imo: nav.imo,
+          typeNavire: nav.type,
+          jauge: nav.jauge,
+          armateur: nomArm,
+          fonction: m.id === 3 && nomArm === "Perenco Marine" ? "Officier de quart pont" : m.profession,
+          embarquement: debutIso,
+          debarquement: "",
+          saisiPar: `Armateur ${nomArm}`,
+          saisiLe: daysAgo(depart),
+        });
+        m.embarquements = hist;
+      }
+    });
+  }
   // Journal d'audit initial reconstitué à partir des historiques.
   const evts = marins
     .flatMap((m) =>
