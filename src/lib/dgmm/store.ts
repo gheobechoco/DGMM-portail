@@ -766,6 +766,15 @@ function seed(): State {
     const equipe = marins.filter(
       (m) => m.entreprise === nomArm && m.validationAdmin === "validee",
     );
+    // Démo : compléter l'effectif (2 marins par navire) avec des marins validés sans armateur de démo.
+    const libres = marins.filter(
+      (m) => m.validationAdmin === "validee" && !rolesDemo.includes(m.entreprise) && m.id !== 3,
+    );
+    while (equipe.length < navs.length * 2 && libres.length) {
+      const m = libres.shift()!;
+      m.entreprise = nomArm;
+      equipe.push(m);
+    }
     navs.forEach((nav, idx) => {
       const membresNav = equipe.filter((_, i) => i % navs.length === idx);
       if (nomArm === "Perenco Marine" && idx === 0 && !membresNav.some((m) => m.id === 3)) {
