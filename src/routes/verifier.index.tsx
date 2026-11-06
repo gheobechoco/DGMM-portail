@@ -4,6 +4,7 @@ import { Camera, CameraOff, Search, ShieldCheck } from "lucide-react";
 import { VerifyShell, validateLang, type Lang } from "@/components/dgmm/VerifyShell";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { Aide } from "@/components/dgmm/Aide";
+import { BarometreControle } from "@/components/dgmm/Statistiques";
 import { Button } from "@/components/ui/button";
 import { codeValidation, useMarins, useVisites } from "@/lib/dgmm/store";
 
@@ -203,8 +204,17 @@ function VerifierAccueil() {
                 setScan(false);
                 const id = decodeURIComponent(m[2]!);
                 if (m[1])
-                  navigate({ to: "/verifier/certificat/$code", params: { code: id }, search });
-                else navigate({ to: "/verifier/$nip", params: { nip: id }, search });
+                  navigate({
+                    to: "/verifier/certificat/$code",
+                    params: { code: id },
+                    search: { ...search, source: "qr" },
+                  });
+                else
+                  navigate({
+                    to: "/verifier/$nip",
+                    params: { nip: id },
+                    search: { ...search, source: "qr" },
+                  });
                 return;
               }
               setMsg(t.inconnu);
@@ -340,6 +350,9 @@ function VerifierAccueil() {
             {t.psc}
             {lang === "fr" && <Aide terme="abuja" />}
           </p>
+        </div>
+        <div className="mt-4">
+          <BarometreControle />
         </div>
       </div>
     </VerifyShell>

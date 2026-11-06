@@ -58,6 +58,8 @@ describe("matrice des droits", () => {
     expect(can("directeur_gm", "audit")).toBe(true);
     expect(can("rh_marine", "marins.enroler")).toBe(true);
     expect(can("rh_marine", "marins.transmettre")).toBe(true);
+    expect(can("rh_marine", "embarquements.valider")).toBe(true);
+    expect(can("medecin", "embarquements.valider")).toBe(false);
     expect(can("rh_marine", "marins.viser")).toBe(false);
     expect(can("rh_marine", "livrets.delivrer")).toBe(false);
     expect(can("medecin", "visites.signer")).toBe(true);
@@ -203,13 +205,34 @@ describe("administrateur système", () => {
   });
   it("l'habillage suit les réglages de l'administrateur", async () => {
     const { habillageActif } = await import("@/lib/dgmm/saisons");
-    const base = { habillageMode: "calendrier", habillageForce: "noel", evenementsInactifs: [], animations: true, intensite: "normale", maintenance: { actif: false, message: "" } } as const;
+    const base = {
+      habillageMode: "calendrier",
+      habillageForce: "noel",
+      evenementsInactifs: [],
+      animations: true,
+      intensite: "normale",
+      maintenance: { actif: false, message: "" },
+    } as const;
     const nov = new Date("2026-11-02T12:00:00");
-    expect(habillageActif({ ...base, evenementsInactifs: [] }, nov, null)?.id).toBe("novembre-bleu");
-    expect(habillageActif({ ...base, evenementsInactifs: ["novembre-bleu"] }, nov, null)).toBeNull();
-    expect(habillageActif({ ...base, evenementsInactifs: [], habillageMode: "force" }, nov, null)?.id).toBe("noel");
-    expect(habillageActif({ ...base, evenementsInactifs: [], habillageMode: "desactive" }, nov, null)).toBeNull();
-    expect(habillageActif({ ...base, evenementsInactifs: [], habillageMode: "desactive" }, nov, "travail")?.id).toBe("travail");
+    expect(habillageActif({ ...base, evenementsInactifs: [] }, nov, null)?.id).toBe(
+      "novembre-bleu",
+    );
+    expect(
+      habillageActif({ ...base, evenementsInactifs: ["novembre-bleu"] }, nov, null),
+    ).toBeNull();
+    expect(
+      habillageActif({ ...base, evenementsInactifs: [], habillageMode: "force" }, nov, null)?.id,
+    ).toBe("noel");
+    expect(
+      habillageActif({ ...base, evenementsInactifs: [], habillageMode: "desactive" }, nov, null),
+    ).toBeNull();
+    expect(
+      habillageActif(
+        { ...base, evenementsInactifs: [], habillageMode: "desactive" },
+        nov,
+        "travail",
+      )?.id,
+    ).toBe("travail");
   });
 });
 
@@ -218,9 +241,11 @@ describe("référentiel géographique", () => {
     const g = await import("@/lib/dgmm/geo");
     const { STATIONS } = await import("@/lib/dgmm/maritime");
     const codes = new Set(STATIONS.map((s) => s.code));
-    for (const e of g.ENTREPRISES_MARITIMES) for (const c of e.stations) expect(codes.has(c)).toBe(true);
+    for (const e of g.ENTREPRISES_MARITIMES)
+      for (const c of e.stations) expect(codes.has(c)).toBe(true);
     for (const s of STATIONS) expect(g.POSITION_STATION[s.code]).toBeDefined();
-    const owendo = g.POSITION_STATION["ST-OWE"]!, pog = g.POSITION_STATION["ST-POG"]!;
+    const owendo = g.POSITION_STATION["ST-OWE"]!,
+      pog = g.POSITION_STATION["ST-POG"]!;
     expect(g.distanceKm(owendo, pog)).toBeGreaterThan(130);
     expect(g.distanceKm(owendo, pog)).toBeLessThan(160);
     const v = g.estimer(owendo, g.lieuEntreprise("CMA CGM Gabon")!, "voiture");

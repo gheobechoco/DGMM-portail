@@ -16,6 +16,7 @@ import {
   useVisites,
 } from "@/lib/dgmm/store";
 import { CalendarClock, FileClock, ShieldCheck } from "lucide-react";
+import { SectionStatistiques, TableauClinique } from "@/components/dgmm/Statistiques";
 
 type Etat = "tous" | "brouillon" | "signee";
 interface Search {
@@ -90,23 +91,32 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
         }
       />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <StatCard
-          label="Marins à examiner"
-          value={enAttente}
-          icon={Stethoscope}
-          tone="warning"
-          hint="enrôlés, aptitude en attente"
-        />
-        <StatCard label="Brouillons à signer" value={brouillons} icon={FileClock} tone="gold" />
-        <StatCard
-          label="Certificats bientôt expirés"
-          value={aRenouveler}
-          icon={CalendarClock}
-          tone="danger"
-          hint="sous 30 jours"
-        />
-      </div>
+      <SectionStatistiques
+        titre="Statistiques médicales"
+        description="Indicateurs de file active, de renouvellement et d’aptitude clinique STCW."
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatCard
+            label="Marins à examiner"
+            value={enAttente}
+            icon={Stethoscope}
+            tone="warning"
+            hint="enrôlés, aptitude en attente"
+          />
+          <StatCard label="Brouillons à signer" value={brouillons} icon={FileClock} tone="gold" />
+          <StatCard
+            label="Certificats bientôt expirés"
+            value={aRenouveler}
+            icon={CalendarClock}
+            tone="danger"
+            hint="sous 30 jours"
+          />
+        </div>
+
+        <div>
+          <TableauClinique />
+        </div>
+      </SectionStatistiques>
 
       <Panel bodyClassName="p-0">
         <div className="grid gap-3 border-b p-4 sm:grid-cols-[1fr_220px]">

@@ -1,11 +1,7 @@
 // Règles métier pures (testées dans src/test/dgmm-rules.test.ts).
 
 export type Role =
-  | "directeur_gm"
-  | "rh_marine"
-  | "medecin"
-  | "gestionnaire_medical"
-  | "admin_systeme";
+  "directeur_gm" | "rh_marine" | "medecin" | "gestionnaire_medical" | "admin_systeme";
 
 export type Permission =
   | "dashboard"
@@ -20,6 +16,7 @@ export type Permission =
   | "certificats.imprimer"
   | "audit"
   | "embarquements"
+  | "embarquements.valider"
   | "roles.lecture"
   | "systeme";
 
@@ -41,6 +38,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "visites",
     "audit",
     "embarquements",
+    "embarquements.valider",
     "roles.lecture",
   ],
   rh_marine: [
@@ -49,6 +47,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "marins.enroler",
     "marins.transmettre",
     "embarquements",
+    "embarquements.valider",
     "roles.lecture",
   ],
   medecin: [

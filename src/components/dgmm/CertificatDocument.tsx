@@ -83,7 +83,7 @@ export function visaDgmm(m: Marin | undefined) {
 export function CertificatDocument({ v, m }: { v: Visite; m: Marin | undefined }) {
   const etat = etatCertificat(v);
   const code = m ? codeValidation(v, m.nip) : "";
-  const verifyPath = `/verifier/certificat/${encodeURIComponent(code)}`;
+  const verifyPath = `/verifier/certificat/${encodeURIComponent(code)}?source=qr`;
   const verifyUrl =
     typeof window !== "undefined" ? `${window.location.origin}${verifyPath}` : verifyPath;
   const bmi = imc(v.examens.taille, v.examens.poids);

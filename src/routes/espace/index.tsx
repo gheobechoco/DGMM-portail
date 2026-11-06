@@ -42,6 +42,11 @@ import { CircularGauge } from "@/components/dgmm/Anim";
 import { cn } from "@/lib/utils";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
+import {
+  SectionStatistiques,
+  TableauClinique,
+  TableauRgalien,
+} from "@/components/dgmm/Statistiques";
 
 export const Route = createFileRoute("/espace/")({
   component: Accueil,
@@ -322,7 +327,11 @@ function PilotageDashboard({ session }: { session: Account }) {
   return (
     <>
       <Bienvenue
-        eyebrow={rh ? "Tableau de bord · Agent des Gens de Mer" : "Tableau de bord · Direction des Gens de Mer"}
+        eyebrow={
+          rh
+            ? "Tableau de bord · Agent des Gens de Mer"
+            : "Tableau de bord · Direction des Gens de Mer"
+        }
         nom={greeting(session.nom)}
         message={
           can(session.role, "marins.viser") && d.transmisDirection > 0 ? (
@@ -379,175 +388,182 @@ function PilotageDashboard({ session }: { session: Account }) {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard label="Gens de mer enregistrés" value={d.total} icon={Users} />
-        <StatCard
-          label="Dossiers validés"
-          value={d.valides}
-          icon={CheckCircle2}
-          tone="success"
-          hint="administratif + médical"
-        />
-        {rh ? (
-          <StatCard
-            label="À valider (administratif)"
-            value={d.attenteAdmin}
-            icon={ShieldAlert}
-            tone="warning"
-          />
-        ) : can(session.role, "marins.viser") ? (
-          <StatCard
-            label="Transmis à la Direction"
-            value={d.transmisDirection}
-            icon={ShieldAlert}
-            tone="warning"
-            hint="en attente de visa"
-          />
-        ) : (
-          <StatCard label="Livrets maritimes émis" value={d.livrets} icon={BookOpenCheck} />
-        )}
-        <StatCard
-          label="Certificats < 30 jours"
-          value={d.bientot}
-          icon={CalendarClock}
-          tone="gold"
-          hint="arrivent à expiration"
-        />
-        <StatCard
-          label="En souffrance > 7 jours"
-          value={d.souffrance.length}
-          icon={Clock}
-          tone="danger"
-          hint="inscriptions en attente"
-        />
-      </div>
-
-      <Panel
-        title="Conformité STCW des gens de mer"
-        description="Émeraude : conforme · Ambre : à renouveler sous 60 jours · Rubis : expiré, inapte ou sans certificat · Ardoise : visite en cours"
-        className="mt-6"
+      <SectionStatistiques
+        titre="Statistiques et pilotage DGMM"
+        description="Indicateurs consolidés des dossiers, de la conformité et de l’activité maritime."
       >
-        <div className="flex flex-col items-center gap-6 sm:flex-row">
-          <CircularGauge
-            value={
-              marins.length
-                ? (marins.filter(
-                    (m) =>
-                      niveauConformite(m, visites) !== "non_conforme" &&
-                      niveauConformite(m, visites) !== "brouillon",
-                  ).length /
-                    marins.length) *
-                  100
-                : 0
-            }
-            label="Aptitude globale des gens de mer"
-            size={112}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <StatCard label="Gens de mer enregistrés" value={d.total} icon={Users} />
+          <StatCard
+            label="Dossiers validés"
+            value={d.valides}
+            icon={CheckCircle2}
+            tone="success"
+            hint="administratif + médical"
           />
-          <div className="w-full flex-1">
-            <ConformityGauge
-              sujet="des gens de mer"
-              niveaux={marins.map((m) => niveauConformite(m, visites))}
+          {rh ? (
+            <StatCard
+              label="À valider (administratif)"
+              value={d.attenteAdmin}
+              icon={ShieldAlert}
+              tone="warning"
             />
-          </div>
-        </div>
-      </Panel>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <Panel
-          title="Dossiers en souffrance"
-          description="Inscriptions en attente depuis plus de 7 jours"
-          className="lg:col-span-2"
-          bodyClassName="p-0"
-          actions={
-            <Link to="/espace/marins" search={{ admin: "en_attente" }} className={seeAll}>
-              Tout voir <ArrowRight className="size-3" />
-            </Link>
-          }
-        >
-          {d.souffrance.length === 0 ? (
-            <EmptyState icon={Clock} title="Aucun dossier en retard">
-              Toutes les inscriptions sont traitées dans les délais.
-            </EmptyState>
+          ) : can(session.role, "marins.viser") ? (
+            <StatCard
+              label="Transmis à la Direction"
+              value={d.transmisDirection}
+              icon={ShieldAlert}
+              tone="warning"
+              hint="en attente de visa"
+            />
           ) : (
-            <ul className="stagger divide-y">
-              {d.souffrance.slice(0, 6).map((m) => (
-                <li key={m.id}>
-                  <Link
-                    to="/espace/marins/$id"
-                    params={{ id: String(m.id) }}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/50"
-                  >
-                    <AlertTriangle className="size-4 shrink-0 text-warning" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-primary">
-                        {fullName(m)}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {m.profession} · NIP {m.nip}
-                      </div>
-                    </div>
-                    <div className="hidden gap-1.5 sm:flex">
-                      {m.validationAdmin === "en_attente" && (
-                        <StatusPill status="en_attente" label="Administratif" />
-                      )}
-                      {m.validationMedicale === "en_attente" && (
-                        <StatusPill status="en_attente" label="Médical" />
-                      )}
-                    </div>
-                    <span className="w-14 text-right text-xs font-semibold tabular-nums text-warning">
-                      {Math.floor((Date.now() - new Date(m.creeLe).getTime()) / DAY)} j
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <StatCard label="Livrets maritimes émis" value={d.livrets} icon={BookOpenCheck} />
           )}
-        </Panel>
-        <Panel title="Répartition par tranche d'âge" description="Gens de mer enregistrés">
-          <HBars data={d.ages} unit="marins" color="var(--chart-1)" label="Répartition par âge" />
-        </Panel>
-      </div>
+          <StatCard
+            label="Certificats < 30 jours"
+            value={d.bientot}
+            icon={CalendarClock}
+            tone="gold"
+            hint="arrivent à expiration"
+          />
+          <StatCard
+            label="En souffrance > 7 jours"
+            value={d.souffrance.length}
+            icon={Clock}
+            tone="danger"
+            hint="inscriptions en attente"
+          />
+        </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        {session.role !== "admin_systeme" && <TableauRgalien mode={rh ? "agent" : "directeur"} />}
+
         <Panel
-          title="Répartition par station maritime"
-          description="Station d'attache des gens de mer"
+          title="Conformité STCW des gens de mer"
+          description="Émeraude : conforme · Ambre : à renouveler sous 60 jours · Rubis : expiré, inapte ou sans certificat · Ardoise : visite en cours"
+          className="mt-6"
         >
-          <HBars
-            data={d.stations}
-            unit="marins"
-            color="var(--chart-1)"
-            label="Répartition par station"
-          />
+          <div className="flex flex-col items-center gap-6 sm:flex-row">
+            <CircularGauge
+              value={
+                marins.length
+                  ? (marins.filter(
+                      (m) =>
+                        niveauConformite(m, visites) !== "non_conforme" &&
+                        niveauConformite(m, visites) !== "brouillon",
+                    ).length /
+                      marins.length) *
+                    100
+                  : 0
+              }
+              label="Aptitude globale des gens de mer"
+              size={112}
+            />
+            <div className="w-full flex-1">
+              <ConformityGauge
+                sujet="des gens de mer"
+                niveaux={marins.map((m) => niveauConformite(m, visites))}
+              />
+            </div>
+          </div>
         </Panel>
-        <Panel title="Répartition par profession">
-          <HBars
-            data={d.professions}
-            unit="marins"
-            color="var(--chart-1)"
-            label="Répartition par profession"
-          />
-        </Panel>
-        <Panel title="Répartition par compagnie maritime">
-          <HBars
-            data={d.compagnies}
-            unit="marins"
-            color="var(--chart-2)"
-            label="Répartition par compagnie"
-          />
-        </Panel>
-      </div>
 
-      <Panel
-        title="Alertes : certificats d'aptitude"
-        description="Expirés ou expirant dans les 30 prochains jours"
-        className="mt-6"
-        bodyClassName="p-0"
-      >
-        <RenewTable rows={d.renew} />
-      </Panel>
+        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+          <Panel
+            title="Dossiers en souffrance"
+            description="Inscriptions en attente depuis plus de 7 jours"
+            className="lg:col-span-2"
+            bodyClassName="p-0"
+            actions={
+              <Link to="/espace/marins" search={{ admin: "en_attente" }} className={seeAll}>
+                Tout voir <ArrowRight className="size-3" />
+              </Link>
+            }
+          >
+            {d.souffrance.length === 0 ? (
+              <EmptyState icon={Clock} title="Aucun dossier en retard">
+                Toutes les inscriptions sont traitées dans les délais.
+              </EmptyState>
+            ) : (
+              <ul className="stagger divide-y">
+                {d.souffrance.slice(0, 6).map((m) => (
+                  <li key={m.id}>
+                    <Link
+                      to="/espace/marins/$id"
+                      params={{ id: String(m.id) }}
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-muted/50"
+                    >
+                      <AlertTriangle className="size-4 shrink-0 text-warning" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold text-primary">
+                          {fullName(m)}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {m.profession} · NIP {m.nip}
+                        </div>
+                      </div>
+                      <div className="hidden gap-1.5 sm:flex">
+                        {m.validationAdmin === "en_attente" && (
+                          <StatusPill status="en_attente" label="Administratif" />
+                        )}
+                        {m.validationMedicale === "en_attente" && (
+                          <StatusPill status="en_attente" label="Médical" />
+                        )}
+                      </div>
+                      <span className="w-14 text-right text-xs font-semibold tabular-nums text-warning">
+                        {Math.floor((Date.now() - new Date(m.creeLe).getTime()) / DAY)} j
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+          <Panel title="Répartition par tranche d'âge" description="Gens de mer enregistrés">
+            <HBars data={d.ages} unit="marins" color="var(--chart-1)" label="Répartition par âge" />
+          </Panel>
+        </div>
 
-      {!rh && <PilotageNational marins={marins} />}
+        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+          <Panel
+            title="Répartition par station maritime"
+            description="Station d'attache des gens de mer"
+          >
+            <HBars
+              data={d.stations}
+              unit="marins"
+              color="var(--chart-1)"
+              label="Répartition par station"
+            />
+          </Panel>
+          <Panel title="Répartition par profession">
+            <HBars
+              data={d.professions}
+              unit="marins"
+              color="var(--chart-1)"
+              label="Répartition par profession"
+            />
+          </Panel>
+          <Panel title="Répartition par compagnie maritime">
+            <HBars
+              data={d.compagnies}
+              unit="marins"
+              color="var(--chart-2)"
+              label="Répartition par compagnie"
+            />
+          </Panel>
+        </div>
+
+        <Panel
+          title="Alertes : certificats d'aptitude"
+          description="Expirés ou expirant dans les 30 prochains jours"
+          className="mt-6"
+          bodyClassName="p-0"
+        >
+          <RenewTable rows={d.renew} />
+        </Panel>
+
+        {!rh && <PilotageNational marins={marins} />}
+      </SectionStatistiques>
     </>
   );
 }
@@ -630,6 +646,10 @@ function PilotageNational({ marins }: { marins: Marin[] }) {
           icon={Ship}
           hint={`${ARMATEURS.length} armateurs · ${d.jauge.toLocaleString("fr-FR")} GT`}
         />
+      </div>
+
+      <div className="mt-6">
+        <TableauClinique />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -823,9 +843,9 @@ function MedicalDashboard({ session }: { session: Account }) {
       <div className="mb-6 rounded-lg border border-l-4 border-l-secondary bg-card p-4 text-sm">
         {can(session.role, "visites.signer") ? (
           <>
-            <strong className="text-primary">Votre mission : la décision médicale.</strong>{" "}
-            Vous examinez le marin, rendez le verdict d'aptitude STCW (dont le test d'Ishihara) et
-            signez le certificat. Vous seul pouvez signer.
+            <strong className="text-primary">Votre mission : la décision médicale.</strong> Vous
+            examinez le marin, rendez le verdict d'aptitude STCW (dont le test d'Ishihara) et signez
+            le certificat. Vous seul pouvez signer.
           </>
         ) : (
           <>
@@ -836,42 +856,81 @@ function MedicalDashboard({ session }: { session: Account }) {
         )}
       </div>
 
+      <SectionStatistiques
+        titre="Statistiques médicales"
+        description="Activité des visites, échéances et synthèse agrégée de l’aptitude STCW."
+      >
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard
+            label="Visites du jour"
+            value={d.duJour.length}
+            icon={Stethoscope}
+            hint={`${d.brouillons.length} brouillon(s) à signer`}
+          />
+          <StatCard
+            label="File active"
+            value={d.fileActive.length}
+            icon={Users}
+            tone="warning"
+            hint="marins convoqués à examiner"
+          />
+          <StatCard
+            label="Certificats à renouveler"
+            value={d.renew.length - d.expires}
+            icon={CalendarClock}
+            tone="gold"
+            hint="sous 30 jours"
+          />
+          <StatCard
+            label="Urgences : certificats expirés"
+            value={d.expires}
+            icon={HeartPulse}
+            tone="danger"
+            hint="marins non aptes à embarquer"
+          />
+        </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          label="Visites du jour"
-          value={d.duJour.length}
-          icon={Stethoscope}
-          hint={`${d.brouillons.length} brouillon(s) à signer`}
-        />
-        <StatCard
-          label="File active"
-          value={d.fileActive.length}
-          icon={Users}
-          tone="warning"
-          hint="marins convoqués à examiner"
-        />
-        <StatCard
-          label="Certificats à renouveler"
-          value={d.renew.length - d.expires}
-          icon={CalendarClock}
-          tone="gold"
-          hint="sous 30 jours"
-        />
-        <StatCard
-          label="Urgences : certificats expirés"
-          value={d.expires}
-          icon={HeartPulse}
-          tone="danger"
-          hint="marins non aptes à embarquer"
-        />
-      </div>
+        <div className="mt-6">
+          <TableauClinique />
+        </div>
+        <Panel
+          title="Statistiques d'aptitude"
+          description="Dernière décision signée de chaque marin"
+        >
+          <div
+            className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-muted"
+            aria-hidden
+          >
+            {(Object.keys(VERDICT_STYLE) as Exclude<Verdict, "">[]).map((k) =>
+              d.counts[k] ? (
+                <div
+                  key={k}
+                  className={VERDICT_STYLE[k].bar}
+                  style={{ width: `${(d.counts[k] / totalVerdicts) * 100}%` }}
+                />
+              ) : null,
+            )}
+          </div>
+          <ul className="mt-4 space-y-2.5">
+            {(Object.keys(VERDICT_STYLE) as Exclude<Verdict, "">[]).map((k) => (
+              <li key={k} className="flex items-center justify-between gap-2 text-sm">
+                <StatusPill status={VERDICT_STYLE[k].pill} label={VERDICT_LABELS[k]} />
+                <span className="tabular-nums">
+                  <span className="font-semibold text-primary">{d.counts[k]}</span>
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    ({Math.round((d.counts[k] / totalVerdicts) * 100)} %)
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </SectionStatistiques>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      <div className="mt-6">
         <Panel
           title="File active"
           description="Marins enrôlés convoqués pour la visite d'aptitude STCW"
-          className="lg:col-span-2"
           bodyClassName="p-0"
           actions={
             <Link to="/espace/marins" search={{ medical: "en_attente" }} className={seeAll}>
@@ -928,39 +987,6 @@ function MedicalDashboard({ session }: { session: Account }) {
               })}
             </ul>
           )}
-        </Panel>
-
-        <Panel
-          title="Statistiques d'aptitude"
-          description="Dernière décision signée de chaque marin"
-        >
-          <div
-            className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-muted"
-            aria-hidden
-          >
-            {(Object.keys(VERDICT_STYLE) as Exclude<Verdict, "">[]).map((k) =>
-              d.counts[k] ? (
-                <div
-                  key={k}
-                  className={VERDICT_STYLE[k].bar}
-                  style={{ width: `${(d.counts[k] / totalVerdicts) * 100}%` }}
-                />
-              ) : null,
-            )}
-          </div>
-          <ul className="mt-4 space-y-2.5">
-            {(Object.keys(VERDICT_STYLE) as Exclude<Verdict, "">[]).map((k) => (
-              <li key={k} className="flex items-center justify-between gap-2 text-sm">
-                <StatusPill status={VERDICT_STYLE[k].pill} label={VERDICT_LABELS[k]} />
-                <span className="tabular-nums">
-                  <span className="font-semibold text-primary">{d.counts[k]}</span>
-                  <span className="ml-1 text-xs text-muted-foreground">
-                    ({Math.round((d.counts[k] / totalVerdicts) * 100)} %)
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
         </Panel>
       </div>
 

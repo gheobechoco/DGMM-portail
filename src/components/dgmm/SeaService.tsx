@@ -14,13 +14,7 @@ import {
 import { StatusPill } from "@/components/dgmm/Brand";
 import { Aide } from "@/components/dgmm/Aide";
 import { FONCTIONS_BORD, TOUS_NAVIRES, TYPES_FLOTTE } from "@/lib/dgmm/maritime";
-import {
-  ajouterEmbarquement,
-  cloturerEmbarquement,
-  formatDate,
-  joursEmbarquement,
-  type Marin,
-} from "@/lib/dgmm/store";
+import { ajouterEmbarquement, formatDate, joursEmbarquement, type Marin } from "@/lib/dgmm/store";
 
 /** Relevé des services en mer (sea service) : base des brevets STCW supérieurs. */
 export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean; auteur: string }) {
@@ -29,15 +23,21 @@ export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean;
     [m.embarquements],
   );
   const [open, setOpen] = useState(false);
-  const [cloture, setCloture] = useState<{ id: number; date: string } | null>(null);
-  const total = list.reduce((s, e) => s + joursEmbarquement(e), 0);
-  const enCours = list.find((e) => !e.debarquement);
+  const total = list.reduce(
+    (s, e) => s + (e.statut === "valide_dgmm" ? joursEmbarquement(e) : 0),
+    0,
+  );
+  const joursEnAttente = list.reduce(
+    (s, e) => s + (e.statut === "en_attente_validation" ? joursEmbarquement(e) : 0),
+    0,
+  );
+  const enCours = list.find((e) => !e.debarquement || e.statut !== "valide_dgmm");
   const jaugeMax = Math.max(0, ...list.map((e) => e.jauge));
   const mois = Math.floor(total / 30.4);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard
           label="Temps de navigation"
           value={`${total} j`}
@@ -46,6 +46,13 @@ export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean;
         />
         <StatCard label="Embarquements" value={list.length} icon={Ship} />
         <StatCard
+          label="En attente de visa DGMM"
+          value={`${joursEnAttente} j`}
+          icon={Anchor}
+          tone="warning"
+          hint="durée informative, non créditée"
+        />
+        <StatCard
           label="Plus forte jauge"
           value={jaugeMax ? `${jaugeMax.toLocaleString("fr-FR")} GT` : "—"}
           icon={Ship}
@@ -53,9 +60,25 @@ export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean;
         />
         <StatCard
           label="Situation actuelle"
-          value={enCours ? "À bord" : "À terre"}
+          value={
+            enCours?.statut === "en_attente_validation"
+              ? "Débarquement en attente"
+              : enCours?.statut === "rejete"
+                ? "À bord · rejet DGMM"
+                : enCours
+                  ? "À bord"
+                  : "À terre / disponible"
+          }
           icon={Anchor}
-          tone={enCours ? "success" : "primary"}
+          tone={
+            enCours?.statut === "rejete"
+              ? "danger"
+              : enCours?.statut === "en_attente_validation"
+                ? "warning"
+                : enCours
+                  ? "success"
+                  : "primary"
+          }
           hint={
             enCours ? `${enCours.navire} depuis le ${formatDate(enCours.embarquement)}` : undefined
           }
@@ -68,7 +91,7 @@ export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean;
             Relevé des services en mer <Aide terme="seaService" />
           </span>
         }
-        description="Embarquements et débarquements inscrits au livret — pris en compte pour les brevets STCW supérieurs."
+        description="Seuls les embarquements visés par la DGMM sont crédités au temps officiel de mer. Les lignes en attente sont informatives."
         bodyClassName="p-0"
         actions={
           canEdit && (
@@ -119,22 +142,25 @@ export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean;
                     <td className="px-3 py-2.5 tabular-nums">
                       {e.debarquement ? (
                         formatDate(e.debarquement)
-                      ) : canEdit ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            setCloture({ id: e.id, date: new Date().toISOString().slice(0, 10) })
-                          }
-                        >
-                          Débarquer
-                        </Button>
                       ) : (
                         <StatusPill status="valide" label="À bord" />
+                      )}
+                      {e.statut === "en_attente_validation" && (
+                        <span className="mt-1 block text-xs font-semibold text-warning">
+                          🟡 En attente de visa DGMM
+                        </span>
+                      )}
+                      {e.statut === "rejete" && (
+                        <span className="mt-1 block text-xs font-semibold text-destructive">
+                          🔴 Rejeté : {e.motifRejet ?? "motif à vérifier"}
+                        </span>
                       )}
                     </td>
                     <td className="px-5 py-2.5 text-right font-semibold tabular-nums">
                       {joursEmbarquement(e)} j
+                      {e.statut === "en_attente_validation" && (
+                        <span className="block text-xs font-normal text-warning">informatif</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -158,47 +184,6 @@ export function SeaService({ m, canEdit, auteur }: { m: Marin; canEdit: boolean;
       </Panel>
 
       <EmbarquementDialog open={open} onOpenChange={setOpen} m={m} auteur={auteur} />
-
-      <Dialog open={!!cloture} onOpenChange={(o) => !o && setCloture(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogTitle>Enregistrer le débarquement</DialogTitle>
-          <DialogDescription>
-            La durée sera ajoutée au temps de navigation du marin.
-          </DialogDescription>
-          {cloture && (
-            <>
-              <Field label="Date de débarquement" htmlFor="deb">
-                <input
-                  id="deb"
-                  type="date"
-                  value={cloture.date}
-                  onChange={(e) => setCloture({ ...cloture, date: e.target.value })}
-                  className={inputClass}
-                />
-              </Field>
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setCloture(null)}>
-                  Annuler
-                </Button>
-                <Button
-                  variant="gold"
-                  disabled={
-                    !cloture.date ||
-                    cloture.date < (list.find((e) => e.id === cloture.id)?.embarquement ?? "")
-                  }
-                  onClick={() => {
-                    cloturerEmbarquement(m.id, cloture.id, cloture.date, auteur);
-                    setCloture(null);
-                    toast.success("Débarquement enregistré");
-                  }}
-                >
-                  Enregistrer
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

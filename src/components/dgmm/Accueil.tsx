@@ -8,6 +8,7 @@ import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { AmbianceLayer } from "@/components/dgmm/Ambiance";
+import { BarometreBleu } from "@/components/dgmm/Statistiques";
 
 export type Profil = "marin" | "armateur" | "gestion" | "medical";
 
@@ -143,7 +144,13 @@ export function ChoixProfil({
       <AmbianceLayer />
       <Tricolor />
       <header className="flex items-center gap-3 px-5 py-4 sm:px-10">
-        <DgmmLogo className="size-12 drop-shadow-lg" />
+        <Link
+          to="/"
+          className="cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          aria-label="Retour à l'accueil DGMM"
+        >
+          <DgmmLogo className="size-12 drop-shadow-lg" />
+        </Link>
         <div className="leading-tight">
           <div className="font-display text-sm font-bold">
             <Sigle s="DGMM" /> · Système <Sigle s="GDM" />
@@ -220,6 +227,9 @@ export function ChoixProfil({
             Accéder au contrôle <ArrowRight className="size-4" />
           </span>
         </Link>
+        <div className="mt-5">
+          <BarometreBleu />
+        </div>
         <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
           <Link
             to="/reglementation"
@@ -238,6 +248,7 @@ export function ChoixProfil({
           </Link>
           <Link
             to="/suivi-demande"
+            search={{ numero: undefined }}
             className="font-semibold text-primary-foreground/85 hover:text-gold"
           >
             Suivre ma demande
@@ -300,7 +311,13 @@ export function EcranConnexion({
             <RepubliqueBlock light />
           </div>
           <div className="max-w-lg">
-            <DgmmLogo className="mb-8 size-40 drop-shadow-xl" />
+            <Link
+              to="/"
+              className="mb-8 inline-block cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              aria-label="Retour à l'accueil DGMM"
+            >
+              <DgmmLogo className="size-40 drop-shadow-xl" />
+            </Link>
             <div className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
               {titre}
             </div>
@@ -325,7 +342,13 @@ export function EcranConnexion({
         <div className="flex flex-1 justify-center px-5 py-10 sm:px-10 lg:items-center">
           <div className={cn("w-full", large ? "max-w-2xl" : "max-w-md")}>
             <div className="mb-6 flex flex-col items-center text-center lg:hidden">
-              <DgmmLogo className="size-24" />
+              <Link
+                to="/"
+                className="cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Retour à l'accueil DGMM"
+              >
+                <DgmmLogo className="size-24" />
+              </Link>
               <div className="mt-3 font-display text-lg font-bold text-primary">
                 Direction Générale de la Marine Marchande
               </div>

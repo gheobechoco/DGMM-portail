@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { PageHeader, Panel, StatCard, textareaClass } from "@/components/dgmm/Page";
+import { SectionStatistiques } from "@/components/dgmm/Statistiques";
 import { DgmmLogo } from "@/components/dgmm/Logo";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -35,12 +36,7 @@ import { traiterDemandeArmateur, useInscriptions } from "@/lib/dgmm/inscriptions
 import { can, isOverdueRegistration, type Permission, type Role } from "@/lib/dgmm/rules";
 import { ARMATEURS, AVURNAV, STATIONS, TEXTES, TOUS_NAVIRES } from "@/lib/dgmm/maritime";
 import { estSombre, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
-import {
-  HABILLAGES,
-  habillageActif,
-  prochaineDate,
-  type HabillageId,
-} from "@/lib/dgmm/saisons";
+import { HABILLAGES, habillageActif, prochaineDate, type HabillageId } from "@/lib/dgmm/saisons";
 import { reinitialiserSysteme, setSysteme, useSysteme, type Systeme } from "@/lib/dgmm/systeme";
 import {
   CLE_DONNEES,
@@ -78,13 +74,28 @@ function Pastille({ etat, label }: { etat: Etat; label?: string | undefined }) {
   const s = ETAT_STYLE[etat];
   const Icon = s.icon;
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold", s.cls)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
+        s.cls,
+      )}
+    >
       <Icon className="size-3.5" /> {label ?? s.txt}
     </span>
   );
 }
 
-function Ligne({ titre, detail, etat, action }: { titre: ReactNode; detail?: ReactNode; etat: Etat; action?: ReactNode }) {
+function Ligne({
+  titre,
+  detail,
+  etat,
+  action,
+}: {
+  titre: ReactNode;
+  detail?: ReactNode;
+  etat: Etat;
+  action?: ReactNode;
+}) {
   return (
     <li className="flex flex-wrap items-center gap-3 px-5 py-3">
       <div className="min-w-0 flex-1">
@@ -149,24 +160,47 @@ function Console({ session }: { session: Account }) {
             <DgmmLogo className="size-10" />
             <div className="text-xs leading-tight">
               <div className="font-semibold text-primary">Sceau affiché aujourd'hui</div>
-              <div className="text-muted-foreground">{actif ? actif.evenement : "Sceau officiel, sans habillage"}</div>
+              <div className="text-muted-foreground">
+                {actif ? actif.evenement : "Sceau officiel, sans habillage"}
+              </div>
             </div>
           </div>
         }
       />
       <Tabs defaultValue="etat">
         <TabsList className="mb-5 flex h-auto flex-wrap justify-start">
-          <TabsTrigger value="etat"><Activity className="mr-1.5 size-4" /> État du système</TabsTrigger>
-          <TabsTrigger value="habillages"><Sparkles className="mr-1.5 size-4" /> Habillages et animations</TabsTrigger>
-          <TabsTrigger value="comptes"><Users className="mr-1.5 size-4" /> Comptes et droits</TabsTrigger>
-          <TabsTrigger value="demandes"><Building2 className="mr-1.5 size-4" /> Demandes armateurs{nbDemandes ? ` (${nbDemandes})` : ""}</TabsTrigger>
-          <TabsTrigger value="maintenance"><Wrench className="mr-1.5 size-4" /> Maintenance et données</TabsTrigger>
+          <TabsTrigger value="etat">
+            <Activity className="mr-1.5 size-4" /> État du système
+          </TabsTrigger>
+          <TabsTrigger value="habillages">
+            <Sparkles className="mr-1.5 size-4" /> Habillages et animations
+          </TabsTrigger>
+          <TabsTrigger value="comptes">
+            <Users className="mr-1.5 size-4" /> Comptes et droits
+          </TabsTrigger>
+          <TabsTrigger value="demandes">
+            <Building2 className="mr-1.5 size-4" /> Demandes armateurs
+            {nbDemandes ? ` (${nbDemandes})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="maintenance">
+            <Wrench className="mr-1.5 size-4" /> Maintenance et données
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="etat"><EtatSysteme /></TabsContent>
-        <TabsContent value="habillages"><Habillages session={session} /></TabsContent>
-        <TabsContent value="comptes"><Comptes /></TabsContent>
-        <TabsContent value="demandes"><DemandesArmateurs session={session} /></TabsContent>
-        <TabsContent value="maintenance"><Maintenance session={session} /></TabsContent>
+        <TabsContent value="etat">
+          <EtatSysteme />
+        </TabsContent>
+        <TabsContent value="habillages">
+          <Habillages session={session} />
+        </TabsContent>
+        <TabsContent value="comptes">
+          <Comptes />
+        </TabsContent>
+        <TabsContent value="demandes">
+          <DemandesArmateurs session={session} />
+        </TabsContent>
+        <TabsContent value="maintenance">
+          <Maintenance session={session} />
+        </TabsContent>
       </Tabs>
     </>
   );
@@ -181,7 +215,10 @@ function EtatSysteme() {
   const audit = useAudit();
   const sys = useSysteme();
   const prefs = usePrefs();
-  const [stockage, setStockage] = useState<{ cles: [string, number][]; total: number }>({ cles: [], total: 0 });
+  const [stockage, setStockage] = useState<{ cles: [string, number][]; total: number }>({
+    cles: [],
+    total: 0,
+  });
   const [sessions, setSessions] = useState<[string, string, string | null][]>([]);
   const [env, setEnv] = useState<[string, string][]>([]);
   const [tick, setTick] = useState(0);
@@ -202,22 +239,54 @@ function EtatSysteme() {
     }
     cles.sort((a, b) => b[1] - a[1]);
     setStockage({ cles, total });
-    const lire = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
+    const lire = (k: string) => {
+      try {
+        return localStorage.getItem(k);
+      } catch {
+        return null;
+      }
+    };
     setSessions([
       ["dgmm-session", "Espace professionnel (DGMM)", lire("dgmm-session")],
       ["dgmm-marin-session", "Espace Marin", lire("dgmm-marin-session")],
       ["dgmm-armateur-session", "Espace Armateurs", lire("dgmm-armateur-session")],
     ]);
     const ua = navigator.userAgent;
-    const nav = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "Autre";
-    const os = /Windows/.test(ua) ? "Windows" : /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Mac OS/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "Autre";
+    const nav = /Edg\//.test(ua)
+      ? "Edge"
+      : /Chrome\//.test(ua)
+        ? "Chrome"
+        : /Firefox\//.test(ua)
+          ? "Firefox"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : "Autre";
+    const os = /Windows/.test(ua)
+      ? "Windows"
+      : /Android/.test(ua)
+        ? "Android"
+        : /iPhone|iPad/.test(ua)
+          ? "iOS"
+          : /Mac OS/.test(ua)
+            ? "macOS"
+            : /Linux/.test(ua)
+              ? "Linux"
+              : "Autre";
     setEnv([
       ["Navigateur", `${nav} · ${os}`],
       ["Langue", navigator.language],
       ["Fuseau horaire", Intl.DateTimeFormat().resolvedOptions().timeZone],
-      ["Écran", `${window.screen.width} × ${window.screen.height} px · fenêtre ${window.innerWidth} × ${window.innerHeight}`],
+      [
+        "Écran",
+        `${window.screen.width} × ${window.screen.height} px · fenêtre ${window.innerWidth} × ${window.innerHeight}`,
+      ],
       ["Connexion réseau", navigator.onLine ? "En ligne" : "Hors ligne"],
-      ["Mouvement réduit demandé", window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "Oui (animations coupées)" : "Non"],
+      [
+        "Mouvement réduit demandé",
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+          ? "Oui (animations coupées)"
+          : "Non",
+      ],
     ]);
   }, [tick]);
 
@@ -231,7 +300,10 @@ function EtatSysteme() {
       {
         titre: "Visa accordé sans certificat médical valide",
         detail: "Le circuit DGMM exige la visite médicale avant le visa.",
-        n: marins.filter((m) => m.validationAdmin === "validee" && !["valide", "expire_bientot"].includes(st(m.id))).length,
+        n: marins.filter(
+          (m) =>
+            m.validationAdmin === "validee" && !["valide", "expire_bientot"].includes(st(m.id)),
+        ).length,
         lien: { cert: "expire" as const },
       },
       {
@@ -249,7 +321,12 @@ function EtatSysteme() {
       {
         titre: "Inscriptions en attente depuis plus de 7 jours",
         detail: "Visa ou visite médicale non réalisés.",
-        n: marins.filter((m) => (m.validationAdmin === "en_attente" || m.validationMedicale === "en_attente") && m.validationAdmin !== "rejetee" && isOverdueRegistration(m.creeLe, now)).length,
+        n: marins.filter(
+          (m) =>
+            (m.validationAdmin === "en_attente" || m.validationMedicale === "en_attente") &&
+            m.validationAdmin !== "rejetee" &&
+            isOverdueRegistration(m.creeLe, now),
+        ).length,
         lien: { admin: "en_attente" as const },
       },
       {
@@ -274,34 +351,137 @@ function EtatSysteme() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Gens de mer" value={marins.length} icon={Users} hint={`${marins.filter((m) => m.livret).length} fascicules délivrés`} />
-        <StatCard label="Visites médicales" value={visites.length} icon={FileClock} hint={`${signees} signées · ${brouillons.length} brouillon(s)`} />
-        <StatCard label="Rôles d'équipage" value={roles.length} icon={Ship} hint={`${TOUS_NAVIRES.length} navires suivis`} />
-        <StatCard label="Entrées d'audit" value={audit.length} icon={KeyRound} tone={rupture === null ? "success" : "danger"} hint={rupture === null ? "Chaîne intacte" : `Rupture à l'entrée n° ${rupture}`} />
-      </div>
+      <SectionStatistiques
+        titre="Statistiques du système"
+        description="Volumes des données et état du journal de contrôle."
+      >
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard
+            label="Gens de mer"
+            value={marins.length}
+            icon={Users}
+            hint={`${marins.filter((m) => m.livret).length} fascicules délivrés`}
+          />
+          <StatCard
+            label="Visites médicales"
+            value={visites.length}
+            icon={FileClock}
+            hint={`${signees} signées · ${brouillons.length} brouillon(s)`}
+          />
+          <StatCard
+            label="Rôles d'équipage"
+            value={roles.length}
+            icon={Ship}
+            hint={`${TOUS_NAVIRES.length} navires suivis`}
+          />
+          <StatCard
+            label="Entrées d'audit"
+            value={audit.length}
+            icon={KeyRound}
+            tone={rupture === null ? "success" : "danger"}
+            hint={rupture === null ? "Chaîne intacte" : `Rupture à l'entrée n° ${rupture}`}
+          />
+        </div>
+      </SectionStatistiques>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Santé du système" description="Contrôles recalculés à chaque ouverture de la page." bodyClassName="p-0" actions={<Button size="sm" variant="outline" onClick={() => setTick((t) => t + 1)}><RotateCcw /> Actualiser</Button>}>
+        <Panel
+          title="Santé du système"
+          description="Contrôles recalculés à chaque ouverture de la page."
+          bodyClassName="p-0"
+          actions={
+            <Button size="sm" variant="outline" onClick={() => setTick((t) => t + 1)}>
+              <RotateCcw /> Actualiser
+            </Button>
+          }
+        >
           <ul className="divide-y">
-            <Ligne titre="Intégrité du journal d'audit" detail={rupture === null ? `${audit.length} entrées, empreintes chaînées cohérentes.` : `Altération détectée à l'entrée n° ${rupture}.`} etat={rupture === null ? "ok" : "erreur"} action={<Link to="/espace/audit" className="text-xs font-semibold text-primary hover:underline">Ouvrir le journal</Link>} />
-            <Ligne titre="Données du portail" detail={`Schéma ${CLE_DONNEES} · ${octets(stockage.cles.find(([k]) => k === CLE_DONNEES)?.[1] ?? 0)}`} etat="ok" />
-            <Ligne titre="Espace de stockage du navigateur" detail={`${octets(stockage.total)} utilisés sur environ 5 Mo (${pctStockage.toFixed(1)} %)`} etat={pctStockage > 80 ? "erreur" : pctStockage > 60 ? "attention" : "ok"} />
-            <Ligne titre="Cohérence des dossiers" detail={nbAnomalies ? `${nbAnomalies} type(s) d'anomalie à traiter (détail ci-contre).` : "Aucune anomalie bloquante."} etat={nbAnomalies ? "attention" : "ok"} />
-            <Ligne titre="Mode maintenance" detail={sys.maintenance.actif ? sys.maintenance.message : "Désactivé : aucun message affiché aux utilisateurs."} etat={sys.maintenance.actif ? "attention" : "ok"} />
-            <Ligne titre="Habillage du sceau" detail={sys.habillageMode === "calendrier" ? "Suit le calendrier des journées spéciales." : sys.habillageMode === "force" ? `Forcé : ${HABILLAGES[sys.habillageForce].evenement}.` : "Désactivé : sceau officiel partout."} etat="info" />
+            <Ligne
+              titre="Intégrité du journal d'audit"
+              detail={
+                rupture === null
+                  ? `${audit.length} entrées, empreintes chaînées cohérentes.`
+                  : `Altération détectée à l'entrée n° ${rupture}.`
+              }
+              etat={rupture === null ? "ok" : "erreur"}
+              action={
+                <Link
+                  to="/espace/audit"
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  Ouvrir le journal
+                </Link>
+              }
+            />
+            <Ligne
+              titre="Données du portail"
+              detail={`Schéma ${CLE_DONNEES} · ${octets(stockage.cles.find(([k]) => k === CLE_DONNEES)?.[1] ?? 0)}`}
+              etat="ok"
+            />
+            <Ligne
+              titre="Espace de stockage du navigateur"
+              detail={`${octets(stockage.total)} utilisés sur environ 5 Mo (${pctStockage.toFixed(1)} %)`}
+              etat={pctStockage > 80 ? "erreur" : pctStockage > 60 ? "attention" : "ok"}
+            />
+            <Ligne
+              titre="Cohérence des dossiers"
+              detail={
+                nbAnomalies
+                  ? `${nbAnomalies} type(s) d'anomalie à traiter (détail ci-contre).`
+                  : "Aucune anomalie bloquante."
+              }
+              etat={nbAnomalies ? "attention" : "ok"}
+            />
+            <Ligne
+              titre="Mode maintenance"
+              detail={
+                sys.maintenance.actif
+                  ? sys.maintenance.message
+                  : "Désactivé : aucun message affiché aux utilisateurs."
+              }
+              etat={sys.maintenance.actif ? "attention" : "ok"}
+            />
+            <Ligne
+              titre="Habillage du sceau"
+              detail={
+                sys.habillageMode === "calendrier"
+                  ? "Suit le calendrier des journées spéciales."
+                  : sys.habillageMode === "force"
+                    ? `Forcé : ${HABILLAGES[sys.habillageForce].evenement}.`
+                    : "Désactivé : sceau officiel partout."
+              }
+              etat="info"
+            />
           </ul>
         </Panel>
 
-        <Panel title="Cohérence des données" description="Situations qui sortent du circuit DGMM." bodyClassName="p-0">
+        <Panel
+          title="Cohérence des données"
+          description="Situations qui sortent du circuit DGMM."
+          bodyClassName="p-0"
+        >
           <ul className="divide-y">
             {anomalies.map((a) => (
               <Ligne
                 key={a.titre}
-                titre={<span>{a.titre} <span className="ml-1 font-display tabular-nums">{a.n}</span></span>}
+                titre={
+                  <span>
+                    {a.titre} <span className="ml-1 font-display tabular-nums">{a.n}</span>
+                  </span>
+                }
                 detail={a.detail}
                 etat={a.n === 0 ? "ok" : a.lien === null ? "info" : "attention"}
-                action={a.n > 0 && a.lien ? <Link to="/espace/marins" search={a.lien} className="text-xs font-semibold text-primary hover:underline">Voir</Link> : undefined}
+                action={
+                  a.n > 0 && a.lien ? (
+                    <Link
+                      to="/espace/marins"
+                      search={a.lien}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      Voir
+                    </Link>
+                  ) : undefined
+                }
               />
             ))}
           </ul>
@@ -317,9 +497,25 @@ function EtatSysteme() {
                 titre={label}
                 detail={v ? `Compte : ${v}` : "Aucune session"}
                 etat={v ? "ok" : "info"}
-                action={v && k !== "dgmm-session" ? (
-                  <Button size="sm" variant="outline" onClick={() => { try { localStorage.removeItem(k); } catch { /* */ } setTick((t) => t + 1); toast.success(`${label} : session fermée`); }}>Fermer</Button>
-                ) : undefined}
+                action={
+                  v && k !== "dgmm-session" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        try {
+                          localStorage.removeItem(k);
+                        } catch {
+                          /* */
+                        }
+                        setTick((t) => t + 1);
+                        toast.success(`${label} : session fermée`);
+                      }}
+                    >
+                      Fermer
+                    </Button>
+                  ) : undefined
+                }
               />
             ))}
           </ul>
@@ -328,16 +524,34 @@ function EtatSysteme() {
           <ul className="divide-y">
             {stockage.cles.map(([k, n]) => (
               <li key={k} className="px-5 py-2.5">
-                <div className="flex justify-between text-sm"><span className="font-mono text-xs">{k}</span><span className="tabular-nums text-muted-foreground">{octets(n)}</span></div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-secondary" style={{ width: `${Math.max(2, (n / Math.max(1, stockage.cles[0]?.[1] ?? 1)) * 100)}%` }} /></div>
+                <div className="flex justify-between text-sm">
+                  <span className="font-mono text-xs">{k}</span>
+                  <span className="tabular-nums text-muted-foreground">{octets(n)}</span>
+                </div>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-secondary"
+                    style={{
+                      width: `${Math.max(2, (n / Math.max(1, stockage.cles[0]?.[1] ?? 1)) * 100)}%`,
+                    }}
+                  />
+                </div>
               </li>
             ))}
           </ul>
         </Panel>
         <Panel title="Environnement du poste" bodyClassName="p-0">
           <dl className="divide-y">
-            {[...env, ["Thème", estSombre(prefs) ? "Nuit" : "Jour"], ["Densité", prefs.densite === "compact" ? "Compacte" : "Confort"], ["Contraste élevé", prefs.contraste === "eleve" ? "Oui" : "Non"]].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-3 px-5 py-2.5 text-sm"><dt className="text-muted-foreground">{k}</dt><dd className="text-right font-medium">{v}</dd></div>
+            {[
+              ...env,
+              ["Thème", estSombre(prefs) ? "Nuit" : "Jour"],
+              ["Densité", prefs.densite === "compact" ? "Compacte" : "Confort"],
+              ["Contraste élevé", prefs.contraste === "eleve" ? "Oui" : "Non"],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-3 px-5 py-2.5 text-sm">
+                <dt className="text-muted-foreground">{k}</dt>
+                <dd className="text-right font-medium">{v}</dd>
+              </div>
             ))}
           </dl>
         </Panel>
@@ -345,8 +559,18 @@ function EtatSysteme() {
 
       <Panel title="Référentiels" description="Tables de référence intégrées au portail.">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {[["Stations maritimes", STATIONS.length], ["Armateurs", ARMATEURS.length], ["Navires", TOUS_NAVIRES.length], ["Textes réglementaires", TEXTES.length], ["Avis AVURNAV", AVURNAV.length], ["Comptes DGMM", ACCOUNTS.length]].map(([k, v]) => (
-            <div key={k as string}><dt className="text-xs text-muted-foreground">{k}</dt><dd className="font-display text-2xl font-bold tabular-nums text-primary">{v}</dd></div>
+          {[
+            ["Stations maritimes", STATIONS.length],
+            ["Armateurs", ARMATEURS.length],
+            ["Navires", TOUS_NAVIRES.length],
+            ["Textes réglementaires", TEXTES.length],
+            ["Avis AVURNAV", AVURNAV.length],
+            ["Comptes DGMM", ACCOUNTS.length],
+          ].map(([k, v]) => (
+            <div key={k as string}>
+              <dt className="text-xs text-muted-foreground">{k}</dt>
+              <dd className="font-display text-2xl font-bold tabular-nums text-primary">{v}</dd>
+            </div>
           ))}
         </dl>
       </Panel>
@@ -380,7 +604,10 @@ function Habillages({ session }: { session: Account }) {
               role="radio"
               aria-checked={sys.habillageMode === m}
               onClick={() => maj({ habillageMode: m }, `Habillage du sceau : ${t.toLowerCase()}`)}
-              className={cn("rounded-xl border p-4 text-left transition-colors hover:border-gold", sys.habillageMode === m && "border-gold bg-gold/10")}
+              className={cn(
+                "rounded-xl border p-4 text-left transition-colors hover:border-gold",
+                sys.habillageMode === m && "border-gold bg-gold/10",
+              )}
             >
               <div className="font-semibold text-primary">{t}</div>
               <div className="mt-0.5 text-xs text-muted-foreground">{d}</div>
@@ -394,9 +621,18 @@ function Habillages({ session }: { session: Account }) {
               id="habillage-force"
               className="field-dgmm h-10 rounded-md bg-card px-3 text-sm"
               value={sys.habillageForce}
-              onChange={(e) => maj({ habillageForce: e.target.value as HabillageId }, `Habillage forcé : ${HABILLAGES[e.target.value as HabillageId].evenement}`)}
+              onChange={(e) =>
+                maj(
+                  { habillageForce: e.target.value as HabillageId },
+                  `Habillage forcé : ${HABILLAGES[e.target.value as HabillageId].evenement}`,
+                )
+              }
             >
-              {ids.map((id) => <option key={id} value={id}>{HABILLAGES[id].evenement}</option>)}
+              {ids.map((id) => (
+                <option key={id} value={id}>
+                  {HABILLAGES[id].evenement}
+                </option>
+              ))}
             </select>
           </label>
         )}
@@ -405,13 +641,45 @@ function Habillages({ session }: { session: Account }) {
       <Panel title="Animations d'ambiance">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
           <label className="flex items-center gap-3 text-sm">
-            <Switch id="animations" checked={sys.animations} onCheckedChange={(v) => maj({ animations: v }, v ? "Animations d'ambiance activées" : "Animations d'ambiance coupées pour tous")} />
-            <span><span className="font-medium">Autoriser les animations</span><span className="block text-xs text-muted-foreground">Chaque utilisateur peut encore les couper sur son poste.</span></span>
+            <Switch
+              id="animations"
+              checked={sys.animations}
+              onCheckedChange={(v) =>
+                maj(
+                  { animations: v },
+                  v ? "Animations d'ambiance activées" : "Animations d'ambiance coupées pour tous",
+                )
+              }
+            />
+            <span>
+              <span className="font-medium">Autoriser les animations</span>
+              <span className="block text-xs text-muted-foreground">
+                Chaque utilisateur peut encore les couper sur son poste.
+              </span>
+            </span>
           </label>
           <div className="flex items-center gap-2 text-sm" role="radiogroup" aria-label="Intensité">
             <span className="mr-1 font-medium">Intensité</span>
             {(["legere", "normale", "forte"] as const).map((i) => (
-              <button key={i} type="button" role="radio" aria-checked={sys.intensite === i} disabled={!sys.animations} onClick={() => maj({ intensite: i }, `Intensité des animations : ${i === "legere" ? "légère" : i}`)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50", sys.intensite === i ? "border-gold bg-gold text-gold-foreground" : "hover:border-gold")}>
+              <button
+                key={i}
+                type="button"
+                role="radio"
+                aria-checked={sys.intensite === i}
+                disabled={!sys.animations}
+                onClick={() =>
+                  maj(
+                    { intensite: i },
+                    `Intensité des animations : ${i === "legere" ? "légère" : i}`,
+                  )
+                }
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
+                  sys.intensite === i
+                    ? "border-gold bg-gold text-gold-foreground"
+                    : "hover:border-gold",
+                )}
+              >
                 {i === "legere" ? "Légère" : i === "normale" ? "Normale" : "Forte"}
               </button>
             ))}
@@ -419,7 +687,11 @@ function Habillages({ session }: { session: Account }) {
         </div>
       </Panel>
 
-      <Panel title="Calendrier des journées spéciales" description="Activez ou retirez un événement ; « Aperçu » montre l'habillage sur votre poste pour cette session." bodyClassName="p-0">
+      <Panel
+        title="Calendrier des journées spéciales"
+        description="Activez ou retirez un événement ; « Aperçu » montre l'habillage sur votre poste pour cette session."
+        bodyClassName="p-0"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -440,13 +712,24 @@ function Habillages({ session }: { session: Account }) {
                 const p = prochaineDate(id);
                 return (
                   <tr key={id} className={cn(!on && "opacity-55")}>
-                    <td className="px-4 py-2"><DgmmLogo className="size-14" apercu={id} /></td>
+                    <td className="px-4 py-2">
+                      <DgmmLogo className="size-14" apercu={id} />
+                    </td>
                     <td className="px-3 py-2">
                       <div className="font-semibold text-primary">{h.evenement}</div>
-                      <div className="text-xs text-muted-foreground">{h.accessoire}{h.substitution ? ` · ${h.substitution}` : ""}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {h.accessoire}
+                        {h.substitution ? ` · ${h.substitution}` : ""}
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-xs">{REGLES[id]}</td>
-                    <td className="px-3 py-2 text-xs tabular-nums">{p.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</td>
+                    <td className="px-3 py-2 text-xs tabular-nums">
+                      {p.toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
                     <td className="px-3 py-2 text-xs">{ANIMATION_LABEL[h.ambiance]}</td>
                     <td className="px-3 py-2">
                       <Switch
@@ -455,14 +738,24 @@ function Habillages({ session }: { session: Account }) {
                         checked={on}
                         onCheckedChange={(v) =>
                           maj(
-                            { evenementsInactifs: v ? sys.evenementsInactifs.filter((x) => x !== id) : [...sys.evenementsInactifs, id] },
+                            {
+                              evenementsInactifs: v
+                                ? sys.evenementsInactifs.filter((x) => x !== id)
+                                : [...sys.evenementsInactifs, id],
+                            },
                             `${h.evenement} : ${v ? "activé" : "retiré"} du calendrier`,
                           )
                         }
                       />
                     </td>
                     <td className="px-4 py-2">
-                      <Button size="sm" variant="outline" onClick={() => { window.location.href = `/espace/systeme?habillage=${id}`; }}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          window.location.href = `/espace/systeme?habillage=${id}`;
+                        }}
+                      >
                         <Eye /> Aperçu
                       </Button>
                     </td>
@@ -473,8 +766,16 @@ function Habillages({ session }: { session: Account }) {
           </table>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t px-5 py-3 text-xs text-muted-foreground">
-          <span>L'aperçu ne change que votre session ; les autres utilisateurs voient les réglages ci-dessus.</span>
-          <a href="/espace/systeme?habillage=auto" className="font-semibold text-primary hover:underline">Quitter l'aperçu</a>
+          <span>
+            L'aperçu ne change que votre session ; les autres utilisateurs voient les réglages
+            ci-dessus.
+          </span>
+          <a
+            href="/espace/systeme?habillage=auto"
+            className="font-semibold text-primary hover:underline"
+          >
+            Quitter l'aperçu
+          </a>
         </div>
       </Panel>
     </div>
@@ -503,18 +804,29 @@ const PERMS: [Permission, string][] = [
 function Comptes() {
   const marins = useMarins();
   useInscriptions();
-  const roles = [...new Map(ACCOUNTS.map((a) => [a.role, a.roleLabel])).entries()] as [Role, string][];
+  const roles = [...new Map(ACCOUNTS.map((a) => [a.role, a.roleLabel])).entries()] as [
+    Role,
+    string,
+  ][];
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Comptes du personnel" bodyClassName="p-0">
           <table className="w-full text-sm">
             <thead className="bg-muted/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr><th className="px-5 py-2.5 font-semibold">Identifiant</th><th className="px-3 py-2.5 font-semibold">Nom</th><th className="px-5 py-2.5 font-semibold">Rôle</th></tr>
+              <tr>
+                <th className="px-5 py-2.5 font-semibold">Identifiant</th>
+                <th className="px-3 py-2.5 font-semibold">Nom</th>
+                <th className="px-5 py-2.5 font-semibold">Rôle</th>
+              </tr>
             </thead>
             <tbody className="divide-y">
               {ACCOUNTS.map((a) => (
-                <tr key={a.username}><td className="px-5 py-2.5 font-mono text-xs">{a.username}</td><td className="px-3 py-2.5">{a.nom}</td><td className="px-5 py-2.5 text-muted-foreground">{a.roleLabel}</td></tr>
+                <tr key={a.username}>
+                  <td className="px-5 py-2.5 font-mono text-xs">{a.username}</td>
+                  <td className="px-3 py-2.5">{a.nom}</td>
+                  <td className="px-5 py-2.5 text-muted-foreground">{a.roleLabel}</td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -522,19 +834,36 @@ function Comptes() {
         <Panel title="Comptes externes" bodyClassName="p-0">
           <ul className="divide-y">
             {comptesArmateurs().map((a) => (
-              <Ligne key={a.username} titre={a.entreprise} detail={`Espace Armateurs · identifiant ${a.username} · ${a.contact}`} etat="ok" />
+              <Ligne
+                key={a.username}
+                titre={a.entreprise}
+                detail={`Espace Armateurs · identifiant ${a.username} · ${a.contact}`}
+                etat="ok"
+              />
             ))}
-            <Ligne titre="Espace Marin" detail={`${marins.length} comptes marins (connexion par NIP et mot de passe personnel)`} etat="ok" />
+            <Ligne
+              titre="Espace Marin"
+              detail={`${marins.length} comptes marins (connexion par NIP et mot de passe personnel)`}
+              etat="ok"
+            />
           </ul>
         </Panel>
       </div>
-      <Panel title="Matrice des droits" description="Ce que chaque rôle peut faire dans le portail. Les droits sont fixés par la réglementation DGMM." bodyClassName="p-0">
+      <Panel
+        title="Matrice des droits"
+        description="Ce que chaque rôle peut faire dans le portail. Les droits sont fixés par la réglementation DGMM."
+        bodyClassName="p-0"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-5 py-2.5 text-left font-semibold">Droit</th>
-                {roles.map(([r, l]) => <th key={r} className="px-3 py-2.5 text-center font-semibold">{l}</th>)}
+                {roles.map(([r, l]) => (
+                  <th key={r} className="px-3 py-2.5 text-center font-semibold">
+                    {l}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -543,7 +872,16 @@ function Comptes() {
                   <td className="px-5 py-2.5">{l}</td>
                   {roles.map(([r]) => (
                     <td key={r} className="px-3 py-2.5 text-center">
-                      {can(r, p) ? <CheckCircle2 className="mx-auto size-4 text-success" aria-label="Autorisé" /> : <span className="text-muted-foreground" aria-label="Non autorisé">—</span>}
+                      {can(r, p) ? (
+                        <CheckCircle2
+                          className="mx-auto size-4 text-success"
+                          aria-label="Autorisé"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground" aria-label="Non autorisé">
+                          —
+                        </span>
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -574,7 +912,9 @@ function Maintenance({ session }: { session: Account }) {
     a.click();
     URL.revokeObjectURL(url);
     journaliser(session.nom, "Sauvegarde complète des données téléchargée", "Système");
-    toast.success("Sauvegarde téléchargée", { description: `${marins.length} marins, visites, rôles et journal d'audit.` });
+    toast.success("Sauvegarde téléchargée", {
+      description: `${marins.length} marins, visites, rôles et journal d'audit.`,
+    });
   };
 
   const restaurer = async (f: File) => {
@@ -586,44 +926,121 @@ function Maintenance({ session }: { session: Account }) {
 
   return (
     <div className="space-y-6">
-      <Panel title="Mode maintenance" description="Affiche un message en haut de chaque écran pour tous les utilisateurs de ce poste.">
+      <Panel
+        title="Mode maintenance"
+        description="Affiche un message en haut de chaque écran pour tous les utilisateurs de ce poste."
+      >
         <div className="space-y-3">
           <label className="flex items-center gap-3 text-sm">
-            <Switch id="maintenance" checked={sys.maintenance.actif} onCheckedChange={(v) => { setSysteme({ maintenance: { actif: v, message } }); journaliser(session.nom, v ? "Mode maintenance activé" : "Mode maintenance désactivé", "Système"); toast.success(v ? "Mode maintenance activé" : "Mode maintenance désactivé"); }} />
-            <span className="font-medium">{sys.maintenance.actif ? "Message affiché" : "Message masqué"}</span>
+            <Switch
+              id="maintenance"
+              checked={sys.maintenance.actif}
+              onCheckedChange={(v) => {
+                setSysteme({ maintenance: { actif: v, message } });
+                journaliser(
+                  session.nom,
+                  v ? "Mode maintenance activé" : "Mode maintenance désactivé",
+                  "Système",
+                );
+                toast.success(v ? "Mode maintenance activé" : "Mode maintenance désactivé");
+              }}
+            />
+            <span className="font-medium">
+              {sys.maintenance.actif ? "Message affiché" : "Message masqué"}
+            </span>
           </label>
-          <label htmlFor="message-maintenance" className="block text-sm font-medium">Message</label>
-          <textarea id="message-maintenance" className={cn(textareaClass, "min-h-20")} value={message} onChange={(e) => setMessage(e.target.value)} />
-          <Button size="sm" variant="secondary" disabled={!message.trim() || message === sys.maintenance.message} onClick={() => { setSysteme({ maintenance: { actif: sys.maintenance.actif, message: message.trim() } }); journaliser(session.nom, "Message de maintenance modifié", "Système"); toast.success("Message enregistré"); }}>
+          <label htmlFor="message-maintenance" className="block text-sm font-medium">
+            Message
+          </label>
+          <textarea
+            id="message-maintenance"
+            className={cn(textareaClass, "min-h-20")}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!message.trim() || message === sys.maintenance.message}
+            onClick={() => {
+              setSysteme({
+                maintenance: { actif: sys.maintenance.actif, message: message.trim() },
+              });
+              journaliser(session.nom, "Message de maintenance modifié", "Système");
+              toast.success("Message enregistré");
+            }}
+          >
             Enregistrer le message
           </Button>
         </div>
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Sauvegarde" description="Fichier JSON complet : marins, visites, rôles d'équipage et journal d'audit chaîné.">
-          <Button onClick={telecharger}><Download /> Télécharger la sauvegarde</Button>
+        <Panel
+          title="Sauvegarde"
+          description="Fichier JSON complet : marins, visites, rôles d'équipage et journal d'audit chaîné."
+        >
+          <Button onClick={telecharger}>
+            <Download /> Télécharger la sauvegarde
+          </Button>
         </Panel>
-        <Panel title="Restauration" description="Remplace toutes les données par celles d'une sauvegarde. L'opération est inscrite au journal.">
-          <input ref={fichier} id="restauration" type="file" accept="application/json,.json" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) void restaurer(f); }} />
-          <Button variant="outline" onClick={() => fichier.current?.click()}><Upload /> Choisir une sauvegarde…</Button>
+        <Panel
+          title="Restauration"
+          description="Remplace toutes les données par celles d'une sauvegarde. L'opération est inscrite au journal."
+        >
+          <input
+            ref={fichier}
+            id="restauration"
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void restaurer(f);
+            }}
+          />
+          <Button variant="outline" onClick={() => fichier.current?.click()}>
+            <Upload /> Choisir une sauvegarde…
+          </Button>
         </Panel>
       </div>
 
-      <Panel title="Zone sensible" description="Actions irréversibles sur ce poste. Téléchargez une sauvegarde avant.">
+      <Panel
+        title="Zone sensible"
+        description="Actions irréversibles sur ce poste. Téléchargez une sauvegarde avant."
+      >
         <div className="space-y-5">
           <div className="rounded-lg border border-destructive/30 p-4">
             <div className="flex items-start gap-3">
               <Database className="mt-0.5 size-5 text-destructive" />
               <div className="flex-1">
-                <div className="font-semibold text-primary">Réinitialiser les données de démonstration</div>
-                <p className="text-xs text-muted-foreground">Efface tous les dossiers, visites et rôles saisis sur ce poste et recharge le jeu d'exemple.</p>
+                <div className="font-semibold text-primary">
+                  Réinitialiser les données de démonstration
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Efface tous les dossiers, visites et rôles saisis sur ce poste et recharge le jeu
+                  d'exemple.
+                </p>
                 <label className="mt-3 flex items-center gap-2 text-sm">
-                  <input id="confirme-reset" type="checkbox" checked={confirme} onChange={(e) => setConfirme(e.target.checked)} />
+                  <input
+                    id="confirme-reset"
+                    type="checkbox"
+                    checked={confirme}
+                    onChange={(e) => setConfirme(e.target.checked)}
+                  />
                   J'ai compris que les données actuelles seront remplacées.
                 </label>
               </div>
-              <Button variant="destructive" size="sm" disabled={!confirme} onClick={() => { resetDemo(session.nom); setConfirme(false); toast.success("Données de démonstration rechargées"); }}>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!confirme}
+                onClick={() => {
+                  resetDemo(session.nom);
+                  setConfirme(false);
+                  toast.success("Données de démonstration rechargées");
+                }}
+              >
                 <RotateCcw /> Réinitialiser
               </Button>
             </div>
@@ -632,24 +1049,56 @@ function Maintenance({ session }: { session: Account }) {
             <Settings2 className="size-5 text-muted-foreground" />
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-primary">Réglages système par défaut</div>
-              <p className="text-xs text-muted-foreground">Habillage selon le calendrier, animations normales, maintenance désactivée.</p>
+              <p className="text-xs text-muted-foreground">
+                Habillage selon le calendrier, animations normales, maintenance désactivée.
+              </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => { reinitialiserSysteme(); journaliser(session.nom, "Réglages système remis par défaut", "Système"); toast.success("Réglages par défaut rétablis"); }}>Rétablir</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                reinitialiserSysteme();
+                journaliser(session.nom, "Réglages système remis par défaut", "Système");
+                toast.success("Réglages par défaut rétablis");
+              }}
+            >
+              Rétablir
+            </Button>
           </div>
           <div className="flex flex-wrap items-center gap-3 rounded-lg border p-4">
             <MonitorSmartphone className="size-5 text-muted-foreground" />
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-primary">Préférences d'affichage de ce poste</div>
-              <p className="text-xs text-muted-foreground">Thème, densité, contraste, animations et visite guidée reviennent à leur état initial.</p>
+              <p className="text-xs text-muted-foreground">
+                Thème, densité, contraste, animations et visite guidée reviennent à leur état
+                initial.
+              </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => { setPrefs({ densite: "confort", contraste: "normal", theme: "systeme", tourVu: false, animationsSaison: true }); toast.success("Préférences d'affichage réinitialisées"); }}>Réinitialiser</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPrefs({
+                  densite: "confort",
+                  contraste: "normal",
+                  theme: "systeme",
+                  tourVu: false,
+                  animationsSaison: true,
+                });
+                toast.success("Préférences d'affichage réinitialisées");
+              }}
+            >
+              Réinitialiser
+            </Button>
           </div>
         </div>
       </Panel>
 
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-        Toutes les actions de cette console sont inscrites au journal d'audit sous votre nom. <HardDrive className="ml-2 mt-0.5 size-4 shrink-0" /> Les données sont conservées dans le navigateur de ce poste.
+        Toutes les actions de cette console sont inscrites au journal d'audit sous votre nom.{" "}
+        <HardDrive className="ml-2 mt-0.5 size-4 shrink-0" /> Les données sont conservées dans le
+        navigateur de ce poste.
       </p>
     </div>
   );
@@ -666,11 +1115,18 @@ function DemandesArmateurs({ session }: { session: Account }) {
       <Panel>
         <p className="text-sm text-muted-foreground">
           Aucune demande pour l'instant. Les compagnies s'inscrivent depuis la page publique{" "}
-          <Link to="/inscription/armateur" className="font-semibold text-primary hover:underline">Inscription armateur</Link>.
+          <Link to="/inscription/armateur" className="font-semibold text-primary hover:underline">
+            Inscription armateur
+          </Link>
+          .
         </p>
       </Panel>
     );
-  const STATUT: Record<string, [Etat, string]> = { en_attente: ["attention", "À examiner"], validee: ["ok", "Compte actif"], refusee: ["erreur", "Refusée"] };
+  const STATUT: Record<string, [Etat, string]> = {
+    en_attente: ["attention", "À examiner"],
+    validee: ["ok", "Compte actif"],
+    refusee: ["erreur", "Refusée"],
+  };
   return (
     <div className="space-y-4">
       {armateurs.map((d) => {
@@ -678,41 +1134,134 @@ function DemandesArmateurs({ session }: { session: Account }) {
         return (
           <Panel
             key={d.id}
-            title={<span className="flex flex-wrap items-center gap-2">{d.raisonSociale} <span className="font-mono text-xs font-normal text-muted-foreground">{d.numero}</span></span>}
+            title={
+              <span className="flex flex-wrap items-center gap-2">
+                {d.raisonSociale}{" "}
+                <span className="font-mono text-xs font-normal text-muted-foreground">
+                  {d.numero}
+                </span>
+              </span>
+            }
             description={`Déposée le ${new Date(d.creeLe).toLocaleDateString("fr-FR")} · ${d.segment} · ${d.ville}, siège : ${d.pays}`}
             actions={<Pastille etat={etat} label={label} />}
           >
             <div className="grid gap-4 text-sm md:grid-cols-3">
               <dl className="space-y-1.5">
-                <div><dt className="text-xs text-muted-foreground">RCCM</dt><dd className="font-mono text-xs">{d.rccm}</dd></div>
-                {d.nif && <div><dt className="text-xs text-muted-foreground">NIF</dt><dd className="font-mono text-xs">{d.nif}</dd></div>}
-                <div><dt className="text-xs text-muted-foreground">Identifiant demandé</dt><dd className="font-mono text-xs">{d.identifiant}</dd></div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">RCCM</dt>
+                  <dd className="font-mono text-xs">{d.rccm}</dd>
+                </div>
+                {d.nif && (
+                  <div>
+                    <dt className="text-xs text-muted-foreground">NIF</dt>
+                    <dd className="font-mono text-xs">{d.nif}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt className="text-xs text-muted-foreground">Identifiant demandé</dt>
+                  <dd className="font-mono text-xs">{d.identifiant}</dd>
+                </div>
               </dl>
               <dl className="space-y-1.5">
-                <div><dt className="text-xs text-muted-foreground">Responsable</dt><dd>{d.contactNom}{d.contactFonction ? `, ${d.contactFonction}` : ""}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Contact</dt><dd>{d.tel} · {d.email}</dd></div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Responsable</dt>
+                  <dd>
+                    {d.contactNom}
+                    {d.contactFonction ? `, ${d.contactFonction}` : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Contact</dt>
+                  <dd>
+                    {d.tel} · {d.email}
+                  </dd>
+                </div>
               </dl>
               <div>
-                <div className="text-xs text-muted-foreground">Flotte déclarée ({d.navires.length})</div>
-                <ul className="mt-1 space-y-0.5">{d.navires.map((n) => <li key={n.imo} className="text-xs"><span className="font-medium">{n.nom}</span> · OMI {n.imo}{n.jauge ? ` · ${n.jauge} GT` : ""}</li>)}</ul>
+                <div className="text-xs text-muted-foreground">
+                  Flotte déclarée ({d.navires.length})
+                </div>
+                <ul className="mt-1 space-y-0.5">
+                  {d.navires.map((n) => (
+                    <li key={n.imo} className="text-xs">
+                      <span className="font-medium">{n.nom}</span> · OMI {n.imo}
+                      {n.jauge ? ` · ${n.jauge} GT` : ""}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-            {d.motif && <p className="mt-3 text-xs text-muted-foreground">Motif du refus : {d.motif}</p>}
+            {d.motif && (
+              <p className="mt-3 text-xs text-muted-foreground">Motif du refus : {d.motif}</p>
+            )}
             {d.statut === "en_attente" && (
               <div className="mt-4 flex flex-wrap items-end justify-end gap-2 border-t pt-4">
                 {refus === d.id ? (
                   <>
                     <label className="min-w-60 flex-1 text-xs font-medium">
                       Motif du refus
-                      <input id={`refus-${d.id}`} className="field-dgmm mt-1 h-9 w-full rounded-md bg-card px-3 text-sm" value={motif} onChange={(e) => setMotif(e.target.value)} placeholder="Ex. RCCM introuvable au registre" />
+                      <input
+                        id={`refus-${d.id}`}
+                        className="field-dgmm mt-1 h-9 w-full rounded-md bg-card px-3 text-sm"
+                        value={motif}
+                        onChange={(e) => setMotif(e.target.value)}
+                        placeholder="Ex. RCCM introuvable au registre"
+                      />
                     </label>
-                    <Button size="sm" variant="ghost" onClick={() => setRefus(null)}>Annuler</Button>
-                    <Button size="sm" variant="destructive" disabled={!motif.trim()} onClick={() => { traiterDemandeArmateur(d.id, { statut: "refusee", motif: motif.trim(), traitePar: session.nom }); journaliser(session.nom, `Demande armateur ${d.numero} refusée : ${motif.trim()}`, d.raisonSociale); setRefus(null); toast.success("Demande refusée"); }}>Confirmer le refus</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setRefus(null)}>
+                      Annuler
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={!motif.trim()}
+                      onClick={() => {
+                        traiterDemandeArmateur(d.id, {
+                          statut: "refusee",
+                          motif: motif.trim(),
+                          traitePar: session.nom,
+                        });
+                        journaliser(
+                          session.nom,
+                          `Demande armateur ${d.numero} refusée : ${motif.trim()}`,
+                          d.raisonSociale,
+                        );
+                        setRefus(null);
+                        toast.success("Demande refusée");
+                      }}
+                    >
+                      Confirmer le refus
+                    </Button>
                   </>
                 ) : (
                   <>
-                    <Button size="sm" variant="outline" onClick={() => { setRefus(d.id); setMotif(""); }}><XCircle /> Refuser</Button>
-                    <Button size="sm" variant="secondary" onClick={() => { traiterDemandeArmateur(d.id, { statut: "validee", traitePar: session.nom }); journaliser(session.nom, `Demande armateur ${d.numero} validée : compte ${d.identifiant} ouvert`, d.raisonSociale); toast.success("Compte armateur activé", { description: `${d.raisonSociale} peut se connecter avec « ${d.identifiant} ».` }); }}><CheckCircle2 /> Valider et ouvrir le compte</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setRefus(d.id);
+                        setMotif("");
+                      }}
+                    >
+                      <XCircle /> Refuser
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        traiterDemandeArmateur(d.id, { statut: "validee", traitePar: session.nom });
+                        journaliser(
+                          session.nom,
+                          `Demande armateur ${d.numero} validée : compte ${d.identifiant} ouvert`,
+                          d.raisonSociale,
+                        );
+                        toast.success("Compte armateur activé", {
+                          description: `${d.raisonSociale} peut se connecter avec « ${d.identifiant} ».`,
+                        });
+                      }}
+                    >
+                      <CheckCircle2 /> Valider et ouvrir le compte
+                    </Button>
                   </>
                 )}
               </div>

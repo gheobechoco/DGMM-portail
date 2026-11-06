@@ -80,7 +80,10 @@ function lire(): Etat {
   if (typeof window === "undefined") return VIDE;
   if (!cache) {
     try {
-      cache = { ...VIDE, ...(JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Etat>) };
+      cache = {
+        ...VIDE,
+        ...(JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Etat>),
+      };
     } catch {
       cache = VIDE;
     }
@@ -130,9 +133,68 @@ export function deposerPreInscription(
 ): PreInscription {
   const e = lire();
   const id = Math.max(0, ...e.pre.map((x) => x.id)) + 1;
-  const p: PreInscription = { ...d, id, numero: numero("PRE", id), creeLe: new Date().toISOString(), statut: "en_attente" };
+  const p: PreInscription = {
+    ...d,
+    id,
+    numero: numero("PRE", id),
+    creeLe: new Date().toISOString(),
+    statut: "en_attente",
+  };
   ecrire({ ...e, pre: [p, ...e.pre] });
   return p;
+}
+
+/** Ajoute une fois deux demandes fictives pour essayer le parcours guichet et le scan QR. */
+export function chargerDemosPreInscription(marinId: number): PreInscription[] {
+  const e = lire();
+  const now = Date.now();
+  const exemples: Omit<PreInscription, "id" | "creeLe">[] = [
+    {
+      numero: "PRE-DEMO-CREE",
+      statut: "convertie",
+      nom: "HAPPI",
+      prenom: "Éric",
+      sexe: "M",
+      dateNaissance: "2004-06-14",
+      nationalite: "Gabonaise",
+      tel: "070000000",
+      email: "demo.happi@example.ga",
+      profession: "Matelot",
+      station: "ST-OWE",
+      entreprise: "",
+      rdv: "",
+      documents: { piece: "cni-demo.jpg", photo: "photo-demo.jpg" },
+      pieces: ["cni-demo.jpg", "photo-demo.jpg"],
+      marinId,
+      traitePar: "Démonstration DGMM",
+    },
+    {
+      numero: "PRE-DEMO-ATTENTE",
+      statut: "en_attente",
+      nom: "MABIKA",
+      prenom: "Laure",
+      sexe: "F",
+      dateNaissance: "2006-02-18",
+      nationalite: "Gabonaise",
+      tel: "070000001",
+      email: "demo.mabika@example.ga",
+      profession: "Élève officier",
+      station: "ST-OWE",
+      entreprise: "",
+      rdv: "",
+      documents: { piece: "cni-demo.jpg", photo: "photo-demo.jpg" },
+      pieces: ["cni-demo.jpg", "photo-demo.jpg"],
+    },
+  ];
+  const ajoutes = exemples
+    .filter((exemple) => !e.pre.some((p) => p.numero === exemple.numero))
+    .map((exemple, index) => ({
+      ...exemple,
+      id: Math.max(0, ...e.pre.map((p) => p.id)) + index + 1,
+      creeLe: new Date(now - (index + 1) * 86400000).toISOString(),
+    }));
+  if (ajoutes.length) ecrire({ ...e, pre: [...ajoutes, ...e.pre] });
+  return [...ajoutes, ...e.pre.filter((p) => exemples.some((x) => x.numero === p.numero))];
 }
 
 export function traiterPreInscription(id: number, patch: Partial<PreInscription>) {
@@ -145,7 +207,13 @@ export function deposerDemandeArmateur(
 ): DemandeArmateur {
   const e = lire();
   const id = Math.max(0, ...e.armateurs.map((x) => x.id)) + 1;
-  const a: DemandeArmateur = { ...d, id, numero: numero("ARM", id), creeLe: new Date().toISOString(), statut: "en_attente" };
+  const a: DemandeArmateur = {
+    ...d,
+    id,
+    numero: numero("ARM", id),
+    creeLe: new Date().toISOString(),
+    statut: "en_attente",
+  };
   ecrire({ ...e, armateurs: [a, ...e.armateurs] });
   return a;
 }
