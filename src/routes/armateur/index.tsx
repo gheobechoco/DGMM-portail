@@ -423,7 +423,7 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                             <div className="text-right">
                               <div className="font-semibold">{joursEmbarquement(e)} j</div>
                               {e.statut === "en_attente_validation" && (
-                                <div className="text-[10px] text-gold-foreground">débarquement en attente DGMM</div>
+                                <div className="text-[10px] italic text-muted-foreground">débarquement en attente DGMM</div>
                               )}
                             </div>
                           </li>
