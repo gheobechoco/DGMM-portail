@@ -6,6 +6,7 @@ import {
   Building2,
   Camera,
   CheckCircle2,
+  ChevronDown,
   FileCheck2,
   Lock,
   Plus,
@@ -312,11 +313,23 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         {roles.length === 0 ? (
           <EmptyState icon={Ship} title="Aucun rôle d'équipage déclaré" />
         ) : (
-          roles.map((r) => (
-            <div key={r.id} className="space-y-3">
-              <RoleCard r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} />
-              <DebarquementLot role={r} armateur={a} marins={marins} />
-            </div>
+          roles.map((r, i) => (
+            <details key={r.id} open={i === 0} className="group/acc rounded-lg border bg-card">
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-muted/40">
+                <Ship className="size-5 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-display font-semibold text-primary">{r.navire}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Appareillage du {formatDate(r.appareillage)} · {r.membres.length} marin(s)
+                  </div>
+                </div>
+                <ChevronDown className="size-4 text-muted-foreground transition-transform group-open/acc:rotate-180" />
+              </summary>
+              <div className="space-y-3 border-t p-3">
+                <RoleCard r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} />
+                <DebarquementLot role={r} armateur={a} marins={marins} />
+              </div>
+            </details>
           ))
         )}
       </Panel>
@@ -329,11 +342,14 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         >
           <ul className="stagger divide-y">
             {flotte.map((n) => {
-              const aBord = marins.filter((m) =>
-                (m.embarquements ?? []).some(
-                  (e) => e.navire === n.nom && (!e.debarquement || e.statut !== "valide_dgmm"),
-                ),
+              const aBordLignes = marins.flatMap((m) =>
+                (m.embarquements ?? [])
+                  .filter(
+                    (e) => e.navire === n.nom && (!e.debarquement || e.statut === "en_attente_validation"),
+                  )
+                  .map((e) => ({ m, e })),
               );
+              const aBord = aBordLignes.map((x) => x.m);
               const dernier = [...roles]
                 .filter((r) => r.navire === n.nom)
                 .sort((x, y) => y.appareillage.localeCompare(x.appareillage))[0];
@@ -346,8 +362,9 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                   })
                 : [];
               return (
-                <li key={n.imo} className="group px-5 py-4">
-                  <div className="flex items-start gap-3">
+                <li key={n.imo} className="group">
+                  <details className="group/nav">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 px-5 py-4 hover:bg-muted/40">
                     <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
                       <Ship className="sway size-5" />
                     </span>
@@ -383,7 +400,38 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                         </div>
                       )}
                     </div>
+                    <ChevronDown className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-open/nav:rotate-180" />
+                  </summary>
+                  <div className="border-t bg-muted/20 px-5 py-3">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary">
+                      Équipage en mer en temps réel ({aBordLignes.length})
+                    </div>
+                    {aBordLignes.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Aucun marin à bord actuellement.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {aBordLignes.map(({ m, e }) => (
+                          <li key={e.id} className="flex items-center gap-3 text-xs">
+                            <MarinPhoto m={m} className="size-8 shrink-0 rounded-full text-[10px]" />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate font-semibold text-primary">{fullName(m)}</div>
+                              <div className="truncate text-muted-foreground">
+                                {e.fonction} · <span className="font-mono">{m.nip}</span> · à bord depuis le{" "}
+                                {formatDate(e.embarquement)}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold">{joursEmbarquement(e)} j</div>
+                              {e.statut === "en_attente_validation" && (
+                                <div className="text-[10px] text-gold-foreground">débarquement en attente DGMM</div>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
+                  </details>
                 </li>
               );
             })}
