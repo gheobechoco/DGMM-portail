@@ -516,8 +516,6 @@ function EtatSysteme() {
             {[
               ...env,
               ["Thème", estSombre(prefs) ? "Nuit" : "Jour"],
-              ["Densité", prefs.densite === "compact" ? "Compacte" : "Confort"],
-              ["Contraste élevé", prefs.contraste === "eleve" ? "Oui" : "Non"],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3 px-5 py-2.5 text-sm">
                 <dt className="text-muted-foreground">{k}</dt>

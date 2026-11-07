@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Aide } from "@/components/dgmm/Aide";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -39,6 +40,7 @@ function Livrets({ auteur }: { auteur: string }) {
       delivres: marins.filter((m) => m.livret).sort((a, b) => a.livret.localeCompare(b.livret)),
     };
   }, [marins, visites]);
+  const pgDelivres = usePagination(delivres, 10);
 
   return (
     <>
@@ -143,7 +145,7 @@ function Livrets({ auteur }: { auteur: string }) {
               </tr>
             </thead>
             <tbody className="stagger divide-y">
-              {delivres.map((m) => (
+              {pgDelivres.visibles.map((m) => (
                 <tr key={m.id} className="hover:bg-muted/40">
                   <td className="px-5 py-2.5 font-mono text-xs font-semibold text-primary">
                     {m.livret}
@@ -173,6 +175,7 @@ function Livrets({ auteur }: { auteur: string }) {
             </tbody>
           </table>
         </div>
+        <Pagination {...pgDelivres} />
       </Panel>
     </>
   );

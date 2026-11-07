@@ -1,3 +1,4 @@
+import { BarreFiltres, FiltreSelect, Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Aide } from "@/components/dgmm/Aide";
 import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { createFileRoute } from "@tanstack/react-router";
@@ -51,6 +52,7 @@ function Contrats({ session }: { session: Account }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contrats, filtre]);
+  const pg = usePagination(liste, 8);
   const c = contrats.find((x) => x.id === ouvert);
   const marin = c ? marins.find((m) => m.id === c.marinId) : undefined;
   const ctrl = c ? controles(c, marin, visites) : [];
@@ -65,18 +67,16 @@ function Contrats({ session }: { session: Account }) {
         subtitle={<span className="inline-flex flex-wrap items-center gap-1">Modèle unique de la DGMM, signé par l'armateur, le marin puis l'inspecteur. Une fois validé, le contrat est scellé et ne peut plus être modifié. <Aide terme="cem" /> <Aide terme="mlc" /></span>}
       />
       <div className="mb-6"><LienStatistiques theme="contrats" texte="Contrats par étape, retards de versement et rapatriements" /></div>
-      <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Filtrer les contrats">
-        {FILTRES.map(([f, l]) => (
-          <button key={f} type="button" role="radio" aria-checked={filtre === f} onClick={() => setFiltre(f)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", filtre === f ? "border-gold bg-gold text-gold-foreground" : "bg-card hover:border-gold")}>{l}</button>
-        ))}
-      </div>
+      <BarreFiltres>
+        <FiltreSelect id="filtre-contrats" label="Afficher" value={filtre} onChange={setFiltre} options={FILTRES.map(([f, l]) => ({ value: f, label: l }))} />
+      </BarreFiltres>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
         <Panel bodyClassName="p-0">
           {liste.length === 0 ? (
             <EmptyState icon={FileSignature} title="Aucun contrat dans cette catégorie" />
           ) : (
             <ul className="divide-y">
-              {liste.map((x) => (
+              {pg.visibles.map((x) => (
                 <li key={x.id}>
                   <button type="button" onClick={() => { setOuvert(x.id); setRefus(""); }} className={cn("flex w-full items-start gap-3 px-5 py-3 text-left hover:bg-muted/40", ouvert === x.id && "bg-gold/10")}>
                     <div className="min-w-0 flex-1">
@@ -94,6 +94,7 @@ function Contrats({ session }: { session: Account }) {
               ))}
             </ul>
           )}
+          <Pagination {...pg} />
         </Panel>
         {c ? (
           <div className="space-y-4">

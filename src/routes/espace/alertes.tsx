@@ -1,3 +1,4 @@
+import { BarreFiltres, FiltreSelect, Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Aide } from "@/components/dgmm/Aide";
 import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -39,6 +40,7 @@ function Alertes({ session }: { session: Account }) {
   const liste = alertes
     .filter((a) => (niveau === "tous" || a.niveau === niveau) && (etat === "ouvertes" ? a.statut !== "cloturee" : a.statut === etat))
     .sort((x, y) => ({ rouge: 0, orange: 1, vert: 2 })[x.niveau] - ({ rouge: 0, orange: 1, vert: 2 })[y.niveau] || y.creeLe.localeCompare(x.creeLe));
+  const pg = usePagination(liste, 8);
   const a = alertes.find((x) => x.id === ouvert);
   useEffect(() => { if (a) marquerLu(a.id, qui); }, [a, qui]);
   const ouvertes = alertes.filter((x) => x.statut !== "cloturee");
@@ -52,22 +54,40 @@ function Alertes({ session }: { session: Account }) {
         subtitle={<span className="inline-flex flex-wrap items-center gap-1">Signalements reçus directement des marins, sans passer par les stations locales. Les alertes rouges appellent une inspection d'urgence au prochain port. <Aide terme="feux" /> <Aide terme="anonymat" /></span>}
       />
       <div className="mb-6"><LienStatistiques theme="alertes" texte="Alertes par gravité, délais de réponse et anonymat" /></div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        {(["tous", "rouge", "orange", "vert"] as const).map((n) => (
-          <button key={n} type="button" role="radio" aria-checked={niveau === n} onClick={() => setNiveau(n)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", niveau === n ? "border-gold bg-gold text-gold-foreground" : "bg-card hover:border-gold")}>{n === "tous" ? "Toutes gravités" : n[0]!.toUpperCase() + n.slice(1)}</button>
-        ))}
-        <span className="mx-1 h-5 w-px bg-border" />
-        {(["ouvertes", "recue", "en_traitement", "inspection_programmee", "cloturee"] as const).map((s) => (
-          <button key={s} type="button" role="radio" aria-checked={etat === s} onClick={() => setEtat(s)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", etat === s ? "border-gold bg-gold text-gold-foreground" : "bg-card hover:border-gold")}>{{ ouvertes: "Ouvertes", recue: "Reçues", en_traitement: "En traitement", inspection_programmee: "Inspection programmée", cloturee: "Clôturées" }[s]}</button>
-        ))}
-      </div>
+      <BarreFiltres>
+        <FiltreSelect<Niveau | "tous">
+          id="filtre-gravite"
+          label="Gravité"
+          value={niveau}
+          onChange={setNiveau}
+          options={[
+            { value: "tous", label: "Toutes gravités", n: alertes.length },
+            { value: "rouge", label: "Rouge — danger grave", n: alertes.filter((x) => x.niveau === "rouge").length },
+            { value: "orange", label: "Orange — technique", n: alertes.filter((x) => x.niveau === "orange").length },
+            { value: "vert", label: "Vert — social", n: alertes.filter((x) => x.niveau === "vert").length },
+          ]}
+        />
+        <FiltreSelect<StatutAlerte | "ouvertes">
+          id="filtre-etat"
+          label="État"
+          value={etat}
+          onChange={setEtat}
+          options={[
+            { value: "ouvertes", label: "Ouvertes", n: alertes.filter((x) => x.statut !== "cloturee").length },
+            { value: "recue", label: "Reçues", n: alertes.filter((x) => x.statut === "recue").length },
+            { value: "en_traitement", label: "En traitement", n: alertes.filter((x) => x.statut === "en_traitement").length },
+            { value: "inspection_programmee", label: "Inspection programmée", n: alertes.filter((x) => x.statut === "inspection_programmee").length },
+            { value: "cloturee", label: "Clôturées", n: alertes.filter((x) => x.statut === "cloturee").length },
+          ]}
+        />
+      </BarreFiltres>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)]">
         <Panel bodyClassName="p-0">
           {liste.length === 0 ? (
             <EmptyState icon={Siren} title="Aucune alerte dans cette catégorie" />
           ) : (
             <ul className="divide-y">
-              {liste.map((x) => {
+              {pg.visibles.map((x) => {
                 const h = heuresSansReponse(x);
                 return (
                   <li key={x.id}>
@@ -82,6 +102,7 @@ function Alertes({ session }: { session: Account }) {
               })}
             </ul>
           )}
+          <Pagination {...pg} />
         </Panel>
         {a ? <Detail key={a.id} id={a.id} session={session} traiter={traiter} /> : <Panel><EmptyState icon={Siren} title="Choisissez une alerte">Le détail, les preuves, l'équipage du navire et les contrats de la compagnie s'affichent ici.</EmptyState></Panel>}
       </div>

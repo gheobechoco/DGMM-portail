@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from "@/components/dgmm/Listes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Eye, FileSearch, Ship, ShieldCheck } from "lucide-react";
@@ -64,6 +65,7 @@ function Equipages({ session }: { session: Account }) {
       return st === "valide" || st === "expire_bientot";
     });
   const nbOk = liste.filter(conforme).length;
+  const pg = usePagination(liste, 6);
 
   return (
     <>
@@ -114,7 +116,7 @@ function Equipages({ session }: { session: Account }) {
           <EmptyState icon={Ship} title="Aucun rôle d'équipage déclaré" />
         ) : (
           <div className="stagger space-y-4">
-            {liste.map((r) => (
+            {pg.visibles.map((r) => (
               <div key={r.id}>
                 <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary">
                   {r.armateur}
@@ -122,6 +124,7 @@ function Equipages({ session }: { session: Account }) {
                 <RoleCard r={r} marins={marins} visites={visites} />
               </div>
             ))}
+            <Pagination {...pg} className="rounded-lg border bg-card" />
           </div>
         )}
       </Panel>

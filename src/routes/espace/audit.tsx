@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Aide } from "@/components/dgmm/Aide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -44,6 +45,7 @@ function Journal() {
             `${e.acteur} ${e.role} ${e.action} ${e.cible} ${e.hash}`.toLowerCase().includes(nq)),
       );
   }, [audit, q, cat]);
+  const pg = usePagination(rows, 15);
 
   const livrets = audit.filter((e) => /Délivrance du livret/.test(e.action)).length;
   const visas = audit.filter((e) => /Visa administratif/.test(e.action)).length;
@@ -165,7 +167,7 @@ function Journal() {
               </tr>
             </thead>
             <tbody className="stagger divide-y">
-              {rows.map((e) => (
+              {pg.visibles.map((e) => (
                 <tr key={e.seq} className={cn(verif?.rupture === e.seq && "bg-destructive/10")}>
                   <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{e.seq}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-xs tabular-nums">
@@ -188,6 +190,7 @@ function Journal() {
             </tbody>
           </table>
         </div>
+        <Pagination {...pg} />
         <div className="border-t px-4 py-2.5 text-xs text-muted-foreground">
           {rows.length} entrée(s) affichée(s). L'adresse IP n'est pas accessible depuis le
           navigateur : elle sera enregistrée par le serveur une fois la base de données branchée.

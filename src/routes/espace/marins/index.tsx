@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronRight, Search, UserPlus, Users } from "lucide-react";
@@ -94,6 +95,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
         return true;
       });
   }, [marins, visites, q, admin, medical, cert, armateur, station]);
+  const pg = usePagination(rows, 10);
   const filtered = !!(q || admin || medical || armateur || station || cert !== "tous");
 
   const set = (patch: Partial<Search>) =>
@@ -235,7 +237,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
                   </tr>
                 </thead>
                 <tbody className="stagger divide-y">
-                  {rows.map(({ m, st }) => (
+                  {pg.visibles.map(({ m, st }) => (
                     <tr
                       key={m.id}
                       className={cn(
@@ -299,7 +301,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
 
             {/* Cartes (mobile) */}
             <ul className="stagger divide-y md:hidden">
-              {rows.map(({ m, st }) => (
+              {pg.visibles.map(({ m, st }) => (
                 <li key={m.id}>
                   <button
                     type="button"
@@ -330,6 +332,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
             </ul>
           </>
         )}
+        <Pagination {...pg} />
         <div className="flex items-center justify-between border-t px-4 py-2.5 text-xs text-muted-foreground">
           <span>
             <CountUp value={rows.length} /> résultat{rows.length > 1 ? "s" : ""} sur {marins.length}

@@ -1,3 +1,4 @@
+import { BarreFiltres, FiltreSelect, Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -65,6 +66,7 @@ function Demandes({ session }: { session: Account }) {
   );
   const entreprises = [...new Set(pre.map((p) => p.entreprise).filter(Boolean))].sort();
   const n = (s: StatutPre) => pre.filter((p) => p.statut === s).length;
+  const pg = usePagination(liste, 8);
   const ouvrirCode = (code: string) => {
     const numero = code
       .trim()
@@ -229,27 +231,18 @@ function Demandes({ session }: { session: Account }) {
           </div>
         )}
       </Panel>
-      <div
-        className="mb-4 flex flex-wrap gap-2"
-        role="radiogroup"
-        aria-label="Filtrer les demandes"
-      >
-        {(["en_attente", "convertie", "classee", "tous"] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            role="radio"
-            aria-checked={filtre === s}
-            onClick={() => setFiltre(s)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-semibold",
-              filtre === s ? "border-gold bg-gold text-gold-foreground" : "hover:border-gold",
-            )}
-          >
-            {s === "tous" ? "Toutes" : LIBELLE[s]}
-          </button>
-        ))}
-      </div>
+      <BarreFiltres className="mb-2">
+        <FiltreSelect<StatutPre | "tous">
+          id="filtre-demandes"
+          label="État de la demande"
+          value={filtre}
+          onChange={setFiltre}
+          options={[
+            ...(["en_attente", "convertie", "classee"] as const).map((s) => ({ value: s, label: LIBELLE[s], n: n(s) })),
+            { value: "tous" as const, label: "Toutes", n: pre.length },
+          ]}
+        />
+      </BarreFiltres>
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
         <label className="text-xs font-semibold text-muted-foreground">
           Station maritime
@@ -289,7 +282,7 @@ function Demandes({ session }: { session: Account }) {
           </EmptyState>
         ) : (
           <ul className="divide-y">
-            {liste.map((p) => {
+            {pg.visibles.map((p) => {
               const st = STATIONS.find((s) => s.code === p.station);
               return (
                 <li key={p.id} className="px-5 py-4">
@@ -425,6 +418,7 @@ function Demandes({ session }: { session: Account }) {
             })}
           </ul>
         )}
+        <Pagination {...pg} />
       </Panel>
     </>
   );

@@ -45,8 +45,9 @@ let ecouteSysteme = false;
 export function appliquerPrefs(p: Prefs = read()) {
   if (typeof document === "undefined") return;
   const html = document.documentElement;
-  html.dataset["density"] = p.densite;
-  html.dataset["contrast"] = p.contraste;
+  // Les modes « compact » et « contraste élevé » ne sont plus proposés : affichage standard.
+  html.dataset["density"] = "confort";
+  html.dataset["contrast"] = "normal";
   const sombre = estSombre(p);
   html.classList.toggle("dark", sombre);
   html.style.colorScheme = sombre ? "dark" : "light";

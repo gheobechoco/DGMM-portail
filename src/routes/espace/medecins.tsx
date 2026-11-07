@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Aide } from "@/components/dgmm/Aide";
 import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -86,6 +87,7 @@ function Registre({ medecins, visites, marins }: { medecins: MedecinAgree[]; vis
   const m = medecins.find((x) => x.id === choisi);
   const siennes = m ? visites.filter((v) => medecinDeVisite(v, medecins)?.id === m.id).sort((a, b) => b.creeLe.localeCompare(a.creeLe)) : [];
   const patients = new Set(siennes.map((v) => v.marinId)).size;
+  const pg = usePagination(siennes, 8);
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
       <Panel bodyClassName="p-0">
@@ -119,7 +121,7 @@ function Registre({ medecins, visites, marins }: { medecins: MedecinAgree[]; vis
                 <table className="w-full min-w-[640px] text-sm">
                   <thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="px-5 py-2">Marin</th><th>Date</th><th>Verdict</th><th>Restrictions</th><th>Structure</th></tr></thead>
                   <tbody>
-                    {siennes.map((v) => {
+                    {pg.visibles.map((v) => {
                       const marin = marins.find((x) => x.id === v.marinId);
                       const r = restrictions(v);
                       return (
@@ -139,6 +141,7 @@ function Registre({ medecins, visites, marins }: { medecins: MedecinAgree[]; vis
                 </table>
               </div>
             )}
+            <Pagination {...pg} />
           </Panel>
         </div>
       )}
@@ -159,7 +162,7 @@ function ParStructure({ medecins, visites, marins }: { medecins: MedecinAgree[];
         return (
           <Panel key={s.code} title={s.nom} description={`${s.ville} · ${medecins.filter((m) => m.structure === s.code).length} médecin(s) agréé(s) · ${lignes.length} marin(s) suivi(s)`}>
             {lignes.length === 0 ? <p className="text-sm text-muted-foreground">Aucun marin rattaché pour l'instant.</p> : (
-              <ul className="divide-y text-sm">
+              <ul className="max-h-72 divide-y overflow-y-auto pr-1 text-sm">
                 {lignes.map(({ v, marin, medecin }) => (
                   <li key={v.id} className="flex flex-wrap items-baseline gap-x-3 py-1.5">
                     {marin ? <Link to="/espace/marins/$id" params={{ id: String(marin.id) }} className="font-semibold text-primary hover:underline">{fullName(marin)}</Link> : "—"}

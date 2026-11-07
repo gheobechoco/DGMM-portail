@@ -1,3 +1,4 @@
+import { FiltreSelect } from "@/components/dgmm/Listes";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
@@ -131,7 +132,7 @@ function Reglementation() {
         description="Législation régionale CEMAC et conventions internationales"
         bodyClassName="space-y-4"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <label className="field-dgmm flex h-10 flex-1 items-center gap-2 rounded-md bg-card px-3">
             <Search className="size-4 text-muted-foreground" />
             <span className="sr-only">Rechercher un texte</span>
@@ -142,24 +143,13 @@ function Reglementation() {
               className="h-full flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </label>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Catégories">
-            {[null, ...categories].map((c) => (
-              <button
-                key={c ?? "tous"}
-                type="button"
-                aria-pressed={cat === c}
-                onClick={() => setCat(c)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
-                  cat === c
-                    ? "border-gold bg-gold/20 text-primary"
-                    : "text-muted-foreground hover:border-gold",
-                )}
-              >
-                {c ?? "Toutes"}
-              </button>
-            ))}
-          </div>
+          <FiltreSelect
+            id="filtre-categorie"
+            label="Catégorie"
+            value={cat ?? "toutes"}
+            onChange={(v) => setCat(v === "toutes" ? null : v)}
+            options={[{ value: "toutes", label: "Toutes les catégories", n: TEXTES.length }, ...categories.map((c) => ({ value: c, label: c, n: TEXTES.filter((t) => t.categorie === c).length }))]}
+          />
         </div>
         {textes.length === 0 ? (
           <EmptyState icon={BookOpen} title="Aucun texte trouvé" />

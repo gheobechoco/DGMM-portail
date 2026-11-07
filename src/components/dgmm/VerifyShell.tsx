@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { ArrowLeft, Contrast } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { appliquerPrefs, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
@@ -25,7 +25,6 @@ export function VerifyShell({
   const prefs = usePrefs();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   useEffect(() => appliquerPrefs(prefs), [prefs]);
-  const eleve = prefs.contraste === "eleve";
   const retour = pathname.startsWith("/verifier/") ? "/verifier" : "/";
   const libelleRetour =
     retour === "/verifier"
@@ -75,19 +74,7 @@ export function VerifyShell({
             </div>
           </Link>
         </div>
-        <button
-          type="button"
-          onClick={() => setPrefs({ contraste: eleve ? "normal" : "eleve" })}
-          aria-pressed={eleve}
-          aria-label={
-            lang === "fr" ? "Contraste élevé (plein soleil)" : "High contrast (bright sunlight)"
-          }
-          title={lang === "fr" ? "Contraste élevé" : "High contrast"}
-          className="ml-auto grid size-8 shrink-0 place-items-center rounded-md border border-primary-foreground/30 aria-pressed:bg-gold aria-pressed:text-gold-foreground"
-        >
-          <Contrast className="size-4" />
-        </button>
-        <ThemeToggle light className="size-8" />
+        <ThemeToggle light className="ml-auto size-8" />
         <div
           className="flex shrink-0 overflow-hidden rounded-md border border-primary-foreground/30"
           role="group"

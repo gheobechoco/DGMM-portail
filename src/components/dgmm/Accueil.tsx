@@ -14,7 +14,7 @@ export type Profil = "marin" | "armateur" | "gestion" | "medical";
 
 /** Photographie de fond de chaque profil (public/images/profils). */
 export const FONDS: Record<Profil, string> = {
-  marin: "/images/profils/marins.jpg",
+  marin: "/images/profils/marin-portrait.jpg",
   armateur: "/images/profils/navire.jpg",
   gestion: "/images/profils/navire.jpg",
   medical: "/images/profils/sante.jpg",

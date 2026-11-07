@@ -1,4 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { BarreFiltres, FiltreSelect } from "@/components/dgmm/Listes";
 import { useMemo, type ReactNode } from "react";
 import {
   AlertTriangle, Archive, BadgeCheck, BookOpenCheck, CheckCircle2, ClipboardList, Clock, FileClock, FileSignature, Inbox,
@@ -59,6 +60,7 @@ function Page() {
 
 function Statistiques({ session }: { session: Account }) {
   const { theme } = Route.useSearch();
+  const navigate = useNavigate();
   const themes = themesPour(session.role);
   const actif = themes.find((t) => t.id === theme) ?? themes[0];
   return (
@@ -68,13 +70,11 @@ function Statistiques({ session }: { session: Account }) {
         title={actif ? actif.label : "Statistiques"}
         subtitle="Tous les indicateurs du portail, regroupés par thème. Les listes de travail restent sur les pages de chaque module."
       />
-      <div className="mb-2 flex flex-wrap gap-2" role="tablist" aria-label="Thèmes">
-        {themes.map((t) => (
-          <Link key={t.id} to="/espace/statistiques" search={{ theme: t.id }} role="tab" aria-selected={actif?.id === t.id} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", actif?.id === t.id ? "border-gold bg-gold text-gold-foreground" : "hover:border-gold")}>
-            {t.label}
-          </Link>
-        ))}
-      </div>
+      {actif && (
+        <BarreFiltres className="mb-0">
+          <FiltreSelect id="theme-stats" label="Thème" value={actif.id} onChange={(t) => navigate({ to: "/espace/statistiques", search: { theme: t } })} options={themes.map((t) => ({ value: t.id, label: t.label }))} />
+        </BarreFiltres>
+      )}
       {!actif && <Panel><p className="text-sm text-muted-foreground">Aucune statistique n'est disponible pour votre profil.</p></Panel>}
       {actif?.id === "pilotage" && <PilotageDashboard session={session} vue="statistiques" />}
       {actif?.id === "medical" && <MedicalDashboard session={session} vue="statistiques" />}

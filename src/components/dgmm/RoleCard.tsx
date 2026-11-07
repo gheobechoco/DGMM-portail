@@ -1,5 +1,6 @@
 import { Aide } from "@/components/dgmm/Aide";
-import { CheckCircle2, Ship, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronDown, Ship, XCircle } from "lucide-react";
+import { useState } from "react";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
 import { CircularGauge, CountUp } from "@/components/dgmm/Anim";
@@ -39,11 +40,14 @@ export function RoleCard({
   marins,
   visites,
   onEdit,
+  defautOuvert = false,
 }: {
   r: RoleEquipage;
   marins: Marin[];
   visites: Visite[];
   onEdit?: (() => void) | undefined;
+  /** Carte dépliée d'emblée (sinon seul l'en-tête est visible). */
+  defautOuvert?: boolean | undefined;
 }) {
   const rows = r.membres.map((x) => {
     const m = marins.find((y) => y.id === x.marinId);
@@ -61,6 +65,8 @@ export function RoleCard({
   const securite = fiche ? etatNavire(inspections, fiche.id) : null;
   const navireBloque = !passe && !!securite && !peutAppareiller(securite.etat);
   const ok = bloquants.length === 0 && rows.length > 0 && !sousEffectif && !navireBloque;
+  // Carte repliée par défaut : l'en-tête suffit pour juger la conformité ; l'équipage se déplie.
+  const [ouvert, setOuvert] = useState(defautOuvert);
   return (
     <article
       className={cn(
@@ -109,12 +115,22 @@ export function RoleCard({
               ? `Non conforme — effectif minimal ${minimum} non atteint`
               : `Non conforme — ${bloquants.length} marin(s) bloquant(s)`}
         </span>
+        <button
+          type="button"
+          onClick={() => setOuvert((o) => !o)}
+          aria-expanded={ouvert}
+          className="inline-flex items-center gap-1 rounded-md border bg-card px-2.5 py-1 text-xs font-semibold hover:border-gold"
+        >
+          {ouvert ? "Masquer" : "Voir l'équipage"}
+          <ChevronDown className={cn("size-3.5 transition-transform", ouvert && "rotate-180")} />
+        </button>
         {onEdit && (
           <Button size="sm" variant="outline" onClick={onEdit}>
             Modifier
           </Button>
         )}
       </div>
+      {ouvert && (<div className="role-details">
       <div className="flex items-center gap-4 border-b px-4 py-3">
         <CircularGauge
           value={rows.length ? ((rows.length - bloquants.length) / rows.length) * 100 : 0}
@@ -178,6 +194,8 @@ export function RoleCard({
           </tbody>
         </table>
       </div>
+      </div>
+      )}
     </article>
   );
 }

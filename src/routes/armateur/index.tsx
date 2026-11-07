@@ -354,7 +354,7 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                 <ChevronDown className="size-4 text-muted-foreground transition-transform group-open/acc:rotate-180" />
               </summary>
               <div className="space-y-3 border-t p-3">
-                <RoleCard r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} />
+                <RoleCard r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} defautOuvert />
                 <DebarquementLot role={r} armateur={a} marins={marins} />
               </div>
             </details>

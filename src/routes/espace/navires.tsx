@@ -1,3 +1,4 @@
+import { BarreFiltres, FiltreSelect, Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Aide } from "@/components/dgmm/Aide";
 import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { createFileRoute } from "@tanstack/react-router";
@@ -51,6 +52,7 @@ function Navires({ session }: { session: Account }) {
   const compte = (f: (e: EtatNavire) => boolean) => lignes.filter((l) => f(l.etat)).length;
   const bloque = (e: EtatNavire) => e === "expire" || e === "visa_refuse" || e === "non_inspecte";
   const visibles = lignes.filter((l) => filtre === "tous" || (filtre === "attente_visa" ? l.etat === "attente_visa" : filtre === "a_surveiller" ? l.etat === "a_surveiller" : bloque(l.etat)));
+  const pg = usePagination(visibles, 8);
   const sel = lignes.find((l) => l.n.id === choisi);
   const inspecteur = can(session.role, "navires.inspection");
 
@@ -62,11 +64,20 @@ function Navires({ session }: { session: Account }) {
         subtitle={<span className="inline-flex flex-wrap items-center gap-1">L'inspecteur contrôle à bord et scelle les certificats ; le responsable RH vise. Un navire n'est autorisé à appareiller qu'après ce double verrouillage. <Aide terme="doubleVerrou" /></span>}
       />
       <div className="mb-6"><LienStatistiques theme="navires" texte="États des navires, renouvellements et certificats les plus courts" /></div>
-      <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Filtrer les navires">
-        {([["attente_visa", "En attente de visa"], ["a_surveiller", "À renouveler"], ["bloques", "Interdits"], ["tous", "Tous"]] as const).map(([f, l]) => (
-          <button key={f} type="button" role="radio" aria-checked={filtre === f} onClick={() => setFiltre(f)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", filtre === f ? "border-gold bg-gold text-gold-foreground" : "hover:border-gold")}>{l}</button>
-        ))}
-      </div>
+      <BarreFiltres>
+        <FiltreSelect
+          id="filtre-navires"
+          label="Afficher"
+          value={filtre}
+          onChange={setFiltre}
+          options={[
+            { value: "attente_visa", label: "En attente de visa", n: compte((e) => e === "attente_visa") },
+            { value: "a_surveiller", label: "À renouveler", n: compte((e) => e === "a_surveiller") },
+            { value: "bloques", label: "Interdits", n: compte(bloque) },
+            { value: "tous", label: "Tous les navires", n: lignes.length },
+          ]}
+        />
+      </BarreFiltres>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
         <Panel bodyClassName="p-0">
@@ -74,7 +85,7 @@ function Navires({ session }: { session: Account }) {
             <EmptyState icon={Ship} title="Aucun navire">Aucun navire ne correspond à ce filtre.</EmptyState>
           ) : (
             <ul className="divide-y">
-              {visibles.map((l) => (
+              {pg.visibles.map((l) => (
                 <li key={l.n.id}>
                   <button type="button" onClick={() => { setChoisi(l.n.id); setSaisie(false); }} aria-current={choisi === l.n.id} className={cn("selection-carte w-full px-5 py-3 text-left hover:bg-muted/50", choisi === l.n.id && "bg-primary/5")}>
                     <div className="flex flex-wrap items-center gap-2">
@@ -88,6 +99,7 @@ function Navires({ session }: { session: Account }) {
               ))}
             </ul>
           )}
+          <Pagination {...pg} />
         </Panel>
 
         <div>

@@ -4,8 +4,6 @@ import {
   BookOpenCheck,
   CircleHelp,
   LayoutDashboard,
-  Rows3,
-  Rows4,
   FileSignature,
   Siren,
   ClipboardCheck,
@@ -15,7 +13,6 @@ import {
   Settings2,
   Sparkles,
   Wrench,
-  Contrast,
   LogOut,
   ShieldCheck,
   Ship,
@@ -263,9 +260,9 @@ function tourSteps(session: Account): TourStep[] {
     },
     {
       cible: "affichage",
-      titre: "Confort d'affichage",
+      titre: "Affichage",
       texte:
-        "Basculez entre les modes confort et compact, entre le mode clair et le mode nuit, activez le contraste « plein soleil » pour les contrôles à quai, et relancez ce guide (touche ?). Autres raccourcis : P pour imprimer, Échap pour fermer.",
+        "Basculez entre le mode clair et le mode nuit et relancez ce guide (touche ?). Autres raccourcis : P pour imprimer, Échap pour fermer.",
     },
   ];
 }
@@ -281,8 +278,6 @@ function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
   const prefs = usePrefs();
   const habillage = useHabillage();
   const sys = useSysteme();
-  const compact = prefs.densite === "compact";
-  const eleve = prefs.contraste === "eleve";
   const btn =
     "grid size-9 place-items-center rounded-md border text-muted-foreground transition-colors hover:border-gold hover:text-primary aria-pressed:border-gold aria-pressed:bg-gold/15 aria-pressed:text-primary";
   return (
@@ -290,41 +285,11 @@ function AffichageToolbar({ onGuide }: { onGuide: () => void }) {
       <div className="flex items-center gap-1.5" data-tour="affichage">
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
-              type="button"
-              className={btn}
-              aria-pressed={compact}
-              aria-label={compact ? "Passer en mode confort" : "Passer en mode compact"}
-              onClick={() => setPrefs({ densite: compact ? "confort" : "compact" })}
-            >
-              {compact ? <Rows4 className="size-4" /> : <Rows3 className="size-4" />}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {compact ? "Mode compact (actif)" : "Mode confort (actif)"}
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
             <span>
               <ThemeToggle />
             </span>
           </TooltipTrigger>
           <TooltipContent>Mode nuit / mode clair</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className={btn}
-              aria-pressed={eleve}
-              aria-label="Contraste élevé (plein soleil)"
-              onClick={() => setPrefs({ contraste: eleve ? "normal" : "eleve" })}
-            >
-              <Contrast className="size-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>Contraste élevé · plein soleil</TooltipContent>
         </Tooltip>
         {habillage && sys.animations && (
           <Tooltip>

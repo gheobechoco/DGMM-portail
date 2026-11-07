@@ -1,3 +1,4 @@
+import { Pagination, usePagination } from "@/components/dgmm/Listes";
 import { Aide } from "@/components/dgmm/Aide";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -64,6 +65,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
         return true;
       });
   }, [visites, byId, q, etat]);
+  const pg = usePagination(rows, 10);
 
   const brouillons = visites.filter((v) => !v.signee).length;
   const aRenouveler = visites.filter(
@@ -125,7 +127,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
           <EmptyState icon={ShieldCheck} title="Aucune visite trouvée" />
         ) : (
           <ul className="stagger divide-y">
-            {rows.map((v) => {
+            {pg.visibles.map((v) => {
               const m = byId.get(v.marinId);
               return (
                 <li key={v.id}>
@@ -159,6 +161,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
             })}
           </ul>
         )}
+        <Pagination {...pg} />
         <div className="border-t px-4 py-2.5 text-xs text-muted-foreground">
           {rows.length} visite{rows.length > 1 ? "s" : ""}
         </div>

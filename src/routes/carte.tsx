@@ -1,3 +1,4 @@
+import { BarreFiltres, FiltreSelect, Pagination, usePagination } from "@/components/dgmm/Listes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { Anchor, Building2, MapPin, Navigation, Phone, Search } from "lucide-react";
@@ -32,6 +33,7 @@ function CarteMaritime() {
   const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const nq = norm(q.trim());
   const entreprises = ENTREPRISES_MARITIMES.filter((e) => (filtre === "tous" || filtre === e.hub) && (!nq || norm(`${e.nom} ${e.role} ${e.adresse}`).includes(nq)));
+  const pg = usePagination(entreprises, 6);
   const stationsVisibles = stations.filter((s) => (filtre === "tous" || filtre === "stations") && (!nq || norm(`${s.nom} ${s.ville}`).includes(nq)));
   const voir = (id: string) => { setActif(id); carte.current?.allerA(id); };
 
@@ -52,15 +54,18 @@ function CarteMaritime() {
             <span className="sr-only">Rechercher</span>
             <input id="recherche-carte" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Entreprise, activité, adresse…" className="h-full flex-1 bg-transparent text-sm outline-none" />
           </label>
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Filtrer">
-            {(["tous", "Libreville / Owendo", "Port-Gentil", "stations"] as const).map((f) => (
-              <button key={f} type="button" role="radio" aria-checked={filtre === f} onClick={() => setFiltre(f)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", filtre === f ? "border-gold bg-gold text-gold-foreground" : "bg-card hover:border-gold")}>
-                {f === "tous" ? "Tout" : f === "stations" ? "Stations" : f}
-              </button>
-            ))}
-          </div>
+          <BarreFiltres className="mb-0">
+            <FiltreSelect
+              id="filtre-carte"
+              label="Afficher"
+              value={filtre}
+              onChange={setFiltre}
+              options={[{ value: "tous", label: "Tout" }, { value: "Libreville / Owendo", label: "Libreville / Owendo" }, { value: "Port-Gentil", label: "Port-Gentil" }, { value: "stations", label: "Stations maritimes" }]}
+              className="w-full"
+            />
+          </BarreFiltres>
           <ul className="space-y-3">
-            {entreprises.map((e) => (
+            {pg.visibles.map((e) => (
               <li key={e.nom} className={cn("carte-survol rounded-xl border bg-card p-4 shadow-card", actif === e.nom && "border-gold")}>
                 <button type="button" onClick={() => voir(e.nom)} className="flex w-full items-start gap-3 text-left">
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg text-white" style={{ background: COULEUR_POINT.entreprise }}><Building2 className="size-4" /></span>
@@ -101,6 +106,7 @@ function CarteMaritime() {
               </li>
             ))}
           </ul>
+          <Pagination {...pg} className="rounded-lg border bg-card" />
           <p className="text-xs text-muted-foreground">Positions approximatives, à confirmer sur place ; le guidage pas à pas s'ouvre dans Google Maps.</p>
         </div>
       </div>
