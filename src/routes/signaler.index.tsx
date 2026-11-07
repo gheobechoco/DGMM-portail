@@ -1,3 +1,4 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Copy, EyeOff, ImagePlus, Lock, Send, ShieldCheck, Siren, Trash2 } from "lucide-react";
@@ -107,7 +108,7 @@ function Signaler() {
         </div>
       </div>
       <form onSubmit={envoyer} noValidate className="space-y-6">
-        <Panel title="1. Gravité">
+        <Panel title={<span className="inline-flex items-center gap-1.5">1. Gravité <Aide terme="feux" /></span>}>
           <div className="grid gap-3 md:grid-cols-3" role="radiogroup" aria-label="Gravité">
             {(Object.keys(NIVEAUX) as Niveau[]).map((n) => (
               <button key={n} type="button" role="radio" aria-checked={niveau === n} onClick={() => setNiveau(n)} className={cn("rounded-xl border-2 p-4 text-left transition-colors", niveau === n ? "bg-card shadow-card" : "border-border hover:border-[color:var(--c)]")} style={{ ["--c" as string]: NIVEAUX[n].couleur, borderColor: niveau === n ? NIVEAUX[n].couleur : undefined }}>
@@ -162,7 +163,7 @@ function Signaler() {
           {erreur && <p className="mt-2 text-xs text-destructive">{erreur}</p>}
         </Panel>
 
-        <Panel title="4. Votre identité et votre syndicat">
+        <Panel title={<span className="inline-flex items-center gap-1.5">4. Votre identité et votre syndicat <Aide terme="anonymat" /></span>}>
           <label className="choix flex cursor-pointer items-start gap-3" data-actif={anonyme}>
             <input id="al-anonyme" type="checkbox" className="mt-1" checked={anonyme} onChange={(x) => setAnonyme(x.target.checked)} />
             <span className="text-sm"><span className="flex items-center gap-1.5 font-semibold text-primary"><EyeOff className="choix-icone size-4" /> Signalement anonyme</span><span className="text-muted-foreground">Aucune donnée permettant de vous identifier n'est enregistrée.</span></span>

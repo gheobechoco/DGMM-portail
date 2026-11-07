@@ -1,3 +1,4 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, ChevronDown, FileText, Plus, Save, Ship, ShieldCheck, Trash2 } from "lucide-react";
@@ -208,7 +209,7 @@ function InscriptionArmateur() {
                 <Field label="Activité principale" htmlFor="segment" required error={err1("segment")}>
                   <select id="segment" className={selectClass} value={f.segment} onChange={(x) => up("segment", x.target.value)}><option value="">Choisir…</option>{TYPES_FLOTTE.map((t) => <option key={t}>{t}</option>)}</select>
                 </Field>
-                <Field label="N° RCCM" htmlFor="rccm" required error={err1("rccm")} valid={!e1.rccm}><input id="rccm" className={cn(inputClass, "font-mono uppercase")} value={f.rccm} onChange={(x) => up("rccm", x.target.value)} placeholder="GA-LBV-2026-B-01234" /></Field>
+                <Field label="N° RCCM" htmlFor="rccm" aide="rccm" required error={err1("rccm")} valid={!e1.rccm}><input id="rccm" className={cn(inputClass, "font-mono uppercase")} value={f.rccm} onChange={(x) => up("rccm", x.target.value)} placeholder="GA-LBV-2026-B-01234" /></Field>
                 <Field label="N° d'identification fiscale (NIF)" htmlFor="nif" required error={err1("nif")} valid={!e1.nif}><input id="nif" className={cn(inputClass, "font-mono uppercase")} value={f.nif} onChange={(x) => up("nif", x.target.value)} /></Field>
                 <Field label="Ville d'implantation au Gabon" htmlFor="ville" required error={err1("ville")}>
                   <select id="ville" className={selectClass} value={f.ville} onChange={(x) => up("ville", x.target.value)}><option value="">Choisir…</option>{VILLES.map((v) => <option key={v}>{v}</option>)}</select>
@@ -226,7 +227,7 @@ function InscriptionArmateur() {
                 <Field label="E-mail professionnel" htmlFor="email" required error={err1("email")} valid={!e1.email}><input id="email" type="email" className={inputClass} value={f.email} onChange={(x) => up("email", x.target.value)} autoComplete="email" /></Field>
               </div>
             </Panel>
-            <Panel title="Personne désignée à terre (DPA)" description="Exigée par le code ISM : contact joignable 24 h/24 en cas d'accident ou de détresse en mer.">
+            <Panel title={<span className="inline-flex items-center gap-1.5">Personne désignée à terre (DPA) <Aide terme="dpa" /></span>} description="Exigée par le code ISM : contact joignable 24 h/24 en cas d'accident ou de détresse en mer.">
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="Nom et prénom" htmlFor="dpaNom" required error={err1("dpaNom")}><input id="dpaNom" className={inputClass} value={f.dpaNom} onChange={(x) => up("dpaNom", x.target.value)} /></Field>
                 <Field label="Ligne directe 24 h/24" htmlFor="dpaTel" required error={err1("dpaTel")} valid={!e1.dpaTel}><input id="dpaTel" type="tel" className={inputClass} value={f.dpaTel} onChange={(x) => up("dpaTel", x.target.value)} placeholder="066 00 00 00 ou +870…" /></Field>
@@ -400,7 +401,7 @@ function FicheNavire({
         <div className="space-y-5 border-t px-5 py-4">
           {/* 1. Nom */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Nom proposé" htmlFor={id("nom")} required error={e.nom ?? (eSansAffichage.nom && n.nom.trim() ? eSansAffichage.nom : undefined)} valid={nomLibre} hint={nomLibre ? "Nom libre sous pavillon gabonais : il sera soumis à l'approbation de la DGMM." : "Sans préfixe (MV, MT…) : il est ignoré pour vérifier l'unicité."}>
+            <Field label="Nom proposé" htmlFor={id("nom")} aide="marquage" required error={e.nom ?? (eSansAffichage.nom && n.nom.trim() ? eSansAffichage.nom : undefined)} valid={nomLibre} hint={nomLibre ? "Nom libre sous pavillon gabonais : il sera soumis à l'approbation de la DGMM." : "Sans préfixe (MV, MT…) : il est ignoré pour vérifier l'unicité."}>
               <input id={id("nom")} className={cn(inputClass, "uppercase")} value={n.nom} onChange={(x) => onChange({ nom: x.target.value })} placeholder="OGOOUÉ EXPRESS" />
             </Field>
             <Field label="Port d'attache" htmlFor={id("port")} required error={e.portAttache}>
@@ -416,7 +417,7 @@ function FicheNavire({
                 {(Object.keys(CATEGORIES_NAVIRE) as CategorieNavire[]).map((c) => <option key={c} value={c}>{CATEGORIES_NAVIRE[c]}</option>)}
               </select>
             </Field>
-            <Field label="Jauge brute (GT)" htmlFor={id("gt")} required error={e.jauge} hint="Volume des espaces clos (Convention de 1969), pas un poids.">
+            <Field label="Jauge brute (GT)" htmlFor={id("gt")} aide="jauge" required error={e.jauge} hint="Volume des espaces clos (Convention de 1969), pas un poids.">
               <input id={id("gt")} inputMode="numeric" className={inputClass} value={n.jauge || ""} onChange={(x) => onChange({ jauge: Number(x.target.value.replace(/\D/g, "")) || 0 })} placeholder="Ex. 1 850" />
             </Field>
           </div>
@@ -432,17 +433,17 @@ function FicheNavire({
 
           {/* 3. Identifiants */}
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label={`Numéro OMI${imoRequis ? "" : " (facultatif)"}`} htmlFor={id("imo")} required={imoRequis} error={e.imo ?? (n.imo.trim() ? eSansAffichage.imo : undefined)} valid={!!imoNormalise(n.imo) && !eSansAffichage.imo} hint="« IMO » suivi de 7 chiffres">
+            <Field label={`Numéro OMI${imoRequis ? "" : " (facultatif)"}`} htmlFor={id("imo")} aide="omi" required={imoRequis} error={e.imo ?? (n.imo.trim() ? eSansAffichage.imo : undefined)} valid={!!imoNormalise(n.imo) && !eSansAffichage.imo} hint="« IMO » suivi de 7 chiffres">
               <input id={id("imo")} className={cn(inputClass, "font-mono uppercase")} value={n.imo} onChange={(x) => onChange({ imo: x.target.value })} placeholder="IMO 9074729" />
             </Field>
-            <Field label="Indicatif d'appel radio" htmlFor={id("ind")} required={!n.indicatifADemander} error={e.indicatif}>
+            <Field label="Indicatif d'appel radio" htmlFor={id("ind")} aide="indicatif" required={!n.indicatifADemander} error={e.indicatif}>
               <input id={id("ind")} disabled={n.indicatifADemander} className={cn(inputClass, "font-mono uppercase disabled:opacity-50")} value={n.indicatifADemander ? "" : n.indicatif} onChange={(x) => onChange({ indicatif: x.target.value })} placeholder="TR1234" />
               <label className="flex items-center gap-2 text-xs">
                 <input id={id("ind-dem")} type="checkbox" checked={n.indicatifADemander} onChange={(x) => onChange({ indicatifADemander: x.target.checked })} />
                 À attribuer par l'administration gabonaise
               </label>
             </Field>
-            <Field label="MMSI (facultatif)" htmlFor={id("mmsi")} error={e.mmsi} hint="9 chiffres commençant par 626">
+            <Field label="MMSI (facultatif)" htmlFor={id("mmsi")} aide="mmsi" error={e.mmsi} hint="9 chiffres commençant par 626">
               <input id={id("mmsi")} inputMode="numeric" className={cn(inputClass, "font-mono")} value={n.mmsi} onChange={(x) => onChange({ mmsi: x.target.value })} placeholder="626123456" />
             </Field>
           </div>
@@ -455,7 +456,7 @@ function FicheNavire({
             <Field label="Année de construction" htmlFor={id("an")} hint="Facultatif">
               <input id={id("an")} inputMode="numeric" maxLength={4} className={inputClass} value={n.anneeConstruction} onChange={(x) => onChange({ anneeConstruction: x.target.value.replace(/\D/g, "") })} />
             </Field>
-            <Field label="Société de classification" htmlFor={id("classe")} required error={e.classe}>
+            <Field label="Société de classification" htmlFor={id("classe")} aide="classe" required error={e.classe}>
               <select id={id("classe")} className={selectClass} value={n.classe} onChange={(x) => onChange({ classe: x.target.value })}><option value="">Choisir…</option>{SOCIETES_CLASSIFICATION.map((c) => <option key={c}>{c}</option>)}</select>
             </Field>
           </div>
@@ -469,7 +470,7 @@ function FicheNavire({
               ))}
             </div>
             {n.provenance === "transfert" && (
-              <Field label="Pavillon précédent" htmlFor={id("pav")} required error={e.ancienPavillon}>
+              <Field label="Pavillon précédent" htmlFor={id("pav")} aide="radiation" required error={e.ancienPavillon}>
                 <input id={id("pav")} className={inputClass} value={n.ancienPavillon} onChange={(x) => onChange({ ancienPavillon: x.target.value })} placeholder="Ex. Panama" />
               </Field>
             )}

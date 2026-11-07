@@ -1,3 +1,4 @@
+import { Aide, type Terme } from "@/components/dgmm/Aide";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Lock, ShieldAlert } from "lucide-react";
@@ -18,6 +19,7 @@ import {
 } from "@/lib/dgmm/navires";
 
 const fr = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR");
+const AIDE_CERT: Partial<Record<string, Terme>> = { franc_bord: "francBord", radio: "smdsm", sanitaire: "sanitaireNavire", mlc3: "mlc", dms: "dms" };
 
 /** Formulaire de l'inspecteur : un certificat par ligne, rapport co-signé, puis scellement. */
 export function InspectionNavireForm({ navire, inspecteur, onFini }: { navire: FicheNavire; inspecteur: string; onFini: () => void }) {
@@ -89,7 +91,7 @@ export function InspectionNavireForm({ navire, inspecteur, onFini }: { navire: F
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" variant="gold" size="lg" disabled={manques.length > 0} onClick={sceller}><Lock /> Sceller et transmettre au visa RH</Button>
           <Button type="button" variant="ghost" onClick={onFini}>Annuler</Button>
-          <span className="text-xs text-muted-foreground">Après scellement, plus aucune donnée n'est modifiable. Le navire passe « En attente de visa RH ».</span>
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Aide terme="doubleVerrou" /> Après scellement, plus aucune donnée n'est modifiable. Le navire passe « En attente de visa RH ».</span>
         </div>
       </div>
     </div>
@@ -102,7 +104,7 @@ function LigneCertificat({ c, s, onChange }: { c: DefCertificat; s: SaisieCertif
   return (
     <li className={cn("grid gap-3 px-5 py-4 lg:grid-cols-[1.3fr_auto_2fr]", s.conforme && "bg-success/5")}>
       <div>
-        <div className="font-semibold text-primary">{c.titre}</div>
+        <div className="flex items-center gap-1 font-semibold text-primary">{c.titre}{AIDE_CERT[c.id] && <Aide terme={AIDE_CERT[c.id]!} />}</div>
         <div className="text-xs text-muted-foreground">{c.detail}</div>
       </div>
       <div className="flex items-start gap-2" role="radiogroup" aria-label={`Constat : ${c.titre}`}>

@@ -1,3 +1,5 @@
+import { Aide } from "@/components/dgmm/Aide";
+import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -60,14 +62,9 @@ function Contrats({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Tiers de confiance"
         title="Contrats d'engagement maritime"
-        subtitle="Modèle unique de la DGMM, signé par l'armateur, le marin puis l'inspecteur. Une fois validé, le contrat est scellé et ne peut plus être modifié."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Modèle unique de la DGMM, signé par l'armateur, le marin puis l'inspecteur. Une fois validé, le contrat est scellé et ne peut plus être modifié. <Aide terme="cem" /> <Aide terme="mlc" /></span>}
       />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="À valider" value={contrats.filter((x) => statut(x) === "attente_dgmm").length} icon={FileSignature} tone="warning" />
-        <StatCard label="En vigueur" value={contrats.filter((x) => statut(x) === "actif").length} icon={CheckCircle2} tone="success" />
-        <StatCard label="Versements en retard" value={contrats.filter((x) => statut(x) === "actif" && enRetard(x.id)).length} icon={FileWarning} tone="danger" hint="salaire ou cotisations non déclarés" />
-        <StatCard label="Rapatriements demandés" value={rapatriements.length} icon={Plane} />
-      </div>
+      <div className="mb-6"><LienStatistiques theme="contrats" texte="Contrats par étape, retards de versement et rapatriements" /></div>
       <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Filtrer les contrats">
         {FILTRES.map(([f, l]) => (
           <button key={f} type="button" role="radio" aria-checked={filtre === f} onClick={() => setFiltre(f)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", filtre === f ? "border-gold bg-gold text-gold-foreground" : "bg-card hover:border-gold")}>{l}</button>

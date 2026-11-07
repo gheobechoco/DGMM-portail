@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { PageHeader, Panel, StatCard, textareaClass } from "@/components/dgmm/Page";
-import { SectionStatistiques } from "@/components/dgmm/Statistiques";
+import { SectionStatistiques, LienStatistiques } from "@/components/dgmm/Statistiques";
 import { DgmmLogo } from "@/components/dgmm/Logo";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -353,38 +353,7 @@ function EtatSysteme() {
 
   return (
     <div className="space-y-6">
-      <SectionStatistiques
-        titre="Statistiques du système"
-        description="Volumes des données et état du journal de contrôle."
-      >
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard
-            label="Gens de mer"
-            value={marins.length}
-            icon={Users}
-            hint={`${marins.filter((m) => m.livret).length} fascicules délivrés`}
-          />
-          <StatCard
-            label="Visites médicales"
-            value={visites.length}
-            icon={FileClock}
-            hint={`${signees} signées · ${brouillons.length} brouillon(s)`}
-          />
-          <StatCard
-            label="Rôles d'équipage"
-            value={roles.length}
-            icon={Ship}
-            hint={`${TOUS_NAVIRES.length} navires suivis`}
-          />
-          <StatCard
-            label="Entrées d'audit"
-            value={audit.length}
-            icon={KeyRound}
-            tone={rupture === null ? "success" : "danger"}
-            hint={rupture === null ? "Chaîne intacte" : `Rupture à l'entrée n° ${rupture}`}
-          />
-        </div>
-      </SectionStatistiques>
+      <LienStatistiques theme="systeme" texte="Volumes des données et état du journal de contrôle" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel

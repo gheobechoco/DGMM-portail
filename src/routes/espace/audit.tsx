@@ -1,9 +1,10 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Download, KeyRound, Search, ShieldAlert, ShieldCheck } from "lucide-react";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { PageHeader, Panel, StatCard, selectClass } from "@/components/dgmm/Page";
-import { SectionStatistiques } from "@/components/dgmm/Statistiques";
+import { SectionStatistiques, LienStatistiques } from "@/components/dgmm/Statistiques";
 import { Button } from "@/components/ui/button";
 import { useAudit, verifierAudit } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
@@ -82,7 +83,7 @@ function Journal() {
       <PageHeader
         eyebrow="Sécurité & traçabilité"
         title="Journal d'audit"
-        subtitle="Historique chaîné des actions sensibles : chaque entrée scelle la précédente, toute altération est détectée."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Historique chaîné des actions sensibles : chaque entrée scelle la précédente, toute altération est détectée. <Aide terme="journal" /></span>}
         actions={
           <>
             <Button variant="outline" onClick={exportCsv}>
@@ -126,28 +127,7 @@ function Journal() {
         </div>
       )}
 
-      <SectionStatistiques
-        titre="Statistiques du journal d’audit"
-        description="Synthèse des événements enregistrés et de la chaîne d’intégrité."
-      >
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Entrées journalisées" value={audit.length} icon={KeyRound} />
-          <StatCard
-            label="Livrets délivrés (tracés)"
-            value={livrets}
-            icon={ShieldCheck}
-            tone="gold"
-          />
-          <StatCard label="Visas administratifs" value={visas} icon={ShieldCheck} tone="success" />
-          <StatCard
-            label="Dernière empreinte"
-            value={
-              <span className="font-mono text-base">{audit.at(-1)?.hash.slice(0, 10) ?? "—"}</span>
-            }
-            icon={KeyRound}
-          />
-        </div>
-      </SectionStatistiques>
+      <LienStatistiques theme="audit" texte="Volume du journal, actes tracés et intégrité de la chaîne" />
 
       <Panel bodyClassName="p-0">
         <div className="grid gap-3 border-b p-4 sm:grid-cols-[1fr_260px]">

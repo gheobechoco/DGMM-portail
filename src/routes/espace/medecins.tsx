@@ -1,3 +1,5 @@
+import { Aide } from "@/components/dgmm/Aide";
+import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -62,14 +64,9 @@ function Medecins({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Santé des gens de mer"
         title="Médecins des gens de mer"
-        subtitle="Médecins assermentés par la DGMM, structures de rattachement, marins examinés et demandes d'agrément."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Médecins assermentés par la DGMM, structures de rattachement, marins examinés et demandes d'agrément. <Aide terme="agrement" /></span>}
       />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Médecins agréés" value={medecins.filter((m) => etatAgrement(m).etat !== "expire").length} icon={BadgeCheck} tone="success" />
-        <StatCard label="Agréments à renouveler" value={aRenouveler} icon={AlertTriangle} tone="warning" hint="sous 90 jours ou expirés" />
-        <StatCard label="Structures agréées" value={STRUCTURES_MEDICALES.length} icon={Building2} />
-        <StatCard label="Demandes à traiter" value={enCours.length} icon={Inbox} tone="warning" />
-      </div>
+      <div className="mb-6"><LienStatistiques theme="medecins" texte="Médecins agréés, échéances, demandes et visites par structure" /></div>
       <Tabs defaultValue={enCours.length && (can(session.role, "medecins.assermenter") || can(session.role, "medecins.instruire")) ? "demandes" : "medecins"}>
         <TabsList className="mb-5 flex h-auto flex-wrap justify-start">
           <TabsTrigger value="medecins"><Stethoscope className="mr-1.5 size-4" /> Médecins agréés</TabsTrigger>

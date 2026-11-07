@@ -10,6 +10,7 @@ import {
   Siren,
   ClipboardCheck,
   BadgeCheck,
+  ChartNoAxesCombined,
   Inbox,
   Settings2,
   Sparkles,
@@ -39,6 +40,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { appliquerPrefs, setPrefs, usePrefs } from "@/lib/dgmm/prefs";
 import { useVisites } from "@/lib/dgmm/store";
 import { can, type Permission } from "@/lib/dgmm/rules";
+import { themesPour } from "@/lib/dgmm/themesStats";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -132,6 +134,38 @@ function NavLinks({
   );
 }
 
+/** Section « Statistiques » : tous les indicateurs regroupés par thème. */
+function StatsLinks({ session, onNavigate }: { session: Account; onNavigate?: (() => void) | undefined }) {
+  const loc = useRouterState({ select: (s) => ({ path: s.location.pathname, theme: (s.location.search as { theme?: string }).theme }) });
+  const themes = themesPour(session.role);
+  if (!themes.length) return null;
+  const surPage = loc.path.startsWith("/espace/statistiques");
+  return (
+    <nav className="space-y-0.5" aria-label="Statistiques">
+      {themes.map((t, i) => {
+        const active = surPage && (loc.theme ? loc.theme === t.id : i === 0);
+        return (
+          <Link
+            key={t.id}
+            to="/espace/statistiques"
+            search={{ theme: t.id }}
+            onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "group relative flex items-center gap-3 rounded-md px-3 py-1.5 text-[13px] transition-colors",
+              active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+            )}
+          >
+            {active && <span className="absolute inset-y-1 left-0 w-1 rounded-r bg-gold" aria-hidden />}
+            <ChartNoAxesCombined className={cn("size-3.5", active ? "text-gold" : "text-sidebar-foreground/50 group-hover:text-gold")} />
+            {t.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 function SidebarContent({
   session,
   onNavigate,
@@ -161,13 +195,21 @@ function SidebarContent({
           )}
         </div>
       </Link>
-      <div className="px-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
         <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
           Modules
         </div>
         <NavLinks session={session} onNavigate={onNavigate} />
+        {themesPour(session.role).length > 0 && (
+          <>
+            <div className="mb-2 mt-5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
+              Statistiques
+            </div>
+            <StatsLinks session={session} onNavigate={onNavigate} />
+          </>
+        )}
       </div>
-      <div className="mt-auto border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-4">
         <div className="flex items-center gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gold font-display text-xs font-bold text-gold-foreground">
             {initials(session.nom)}

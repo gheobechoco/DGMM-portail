@@ -1,3 +1,5 @@
+import { Aide } from "@/components/dgmm/Aide";
+import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -53,14 +55,9 @@ function Navires({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Sécurité de la navigation"
         title="Navires et certificats de sécurité"
-        subtitle="L'inspecteur contrôle à bord et scelle les certificats ; le responsable RH vise. Un navire n'est autorisé à appareiller qu'après ce double verrouillage."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-1">L'inspecteur contrôle à bord et scelle les certificats ; le responsable RH vise. Un navire n'est autorisé à appareiller qu'après ce double verrouillage. <Aide terme="doubleVerrou" /></span>}
       />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Appareillage autorisé" value={compte((e) => e === "autorise" || e === "a_surveiller")} icon={CheckCircle2} tone="success" />
-        <StatCard label="En attente de visa RH" value={compte((e) => e === "attente_visa")} icon={Clock} tone="warning" />
-        <StatCard label="À renouveler sous 30 j" value={compte((e) => e === "a_surveiller")} icon={AlertTriangle} tone="warning" />
-        <StatCard label="Appareillage interdit" value={compte(bloque)} icon={ShieldX} tone="danger" hint="expiré, refusé ou jamais inspecté" />
-      </div>
+      <div className="mb-6"><LienStatistiques theme="navires" texte="États des navires, renouvellements et certificats les plus courts" /></div>
       <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Filtrer les navires">
         {([["attente_visa", "En attente de visa"], ["a_surveiller", "À renouveler"], ["bloques", "Interdits"], ["tous", "Tous"]] as const).map(([f, l]) => (
           <button key={f} type="button" role="radio" aria-checked={filtre === f} onClick={() => setFiltre(f)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", filtre === f ? "border-gold bg-gold text-gold-foreground" : "hover:border-gold")}>{l}</button>

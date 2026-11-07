@@ -1,4 +1,7 @@
 import { useId, useMemo, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
+import type { ThemeStats } from "@/lib/dgmm/themesStats";
+import { ArrowRight, ChartNoAxesCombined as IconeStats } from "lucide-react";
 import {
   ArrowDownToLine,
   ChartNoAxesCombined,
@@ -764,5 +767,33 @@ export function JaugeCarriere({ marin }: { marin: Marin }) {
         </p>
       </div>
     </Panel>
+  );
+}
+
+
+/* ---------- Section « Statistiques » de l'espace DGMM ---------- */
+
+
+/** Enveloppe : section de statistiques sur la page dédiée, simple bloc ailleurs. */
+export function ZoneStats({ stats, titre, description, children }: { stats: boolean; titre: string; description: string; children: ReactNode }) {
+  if (stats) return <SectionStatistiques titre={titre} description={description}>{children}</SectionStatistiques>;
+  return <div className="mt-6 space-y-6">{children}</div>;
+}
+
+/** Renvoi compact vers la section Statistiques (les chiffres ne sont plus mêlés aux listes de travail). */
+export function LienStatistiques({ theme, texte }: { theme: ThemeStats; texte: string }) {
+  return (
+    <Link
+      to="/espace/statistiques"
+      search={{ theme }}
+      className="carte-survol mt-2 flex items-center gap-3 rounded-xl border border-dashed bg-card/70 px-4 py-3 text-sm shadow-card"
+    >
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary"><IconeStats className="size-4" aria-hidden /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-primary">Voir les statistiques</span>
+        <span className="block truncate text-xs text-muted-foreground">{texte}</span>
+      </span>
+      <ArrowRight className="size-4 text-muted-foreground" />
+    </Link>
   );
 }

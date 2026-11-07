@@ -15,7 +15,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { EmptyState, PageHeader, Panel, StatCard } from "@/components/dgmm/Page";
-import { SectionStatistiques } from "@/components/dgmm/Statistiques";
+import { SectionStatistiques, LienStatistiques } from "@/components/dgmm/Statistiques";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { STATIONS } from "@/lib/dgmm/maritime";
@@ -140,16 +140,7 @@ function Demandes({ session }: { session: Account }) {
           </Link>
         }
       />
-      <SectionStatistiques
-        titre="Statistiques des pré-inscriptions"
-        description="Répartition des demandes selon leur état de traitement."
-      >
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard label="À recevoir" value={n("en_attente")} icon={Inbox} tone="warning" />
-          <StatCard label="Dossiers créés" value={n("convertie")} icon={UserPlus} tone="success" />
-          <StatCard label="Classées" value={n("classee")} icon={Archive} />
-        </div>
-      </SectionStatistiques>
+      <LienStatistiques theme="preinscriptions" texte="Demandes reçues, converties et classées, par station" />
       <Panel
         title="Accès rapide — scanner un récépissé ou un NIP"
         description="Scannez le QR code du récépissé avec la caméra, utilisez un lecteur QR clavier ou saisissez le numéro. Le dossier correspondant s'ouvrira automatiquement."

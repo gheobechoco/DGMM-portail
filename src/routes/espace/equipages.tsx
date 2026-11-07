@@ -11,7 +11,7 @@ import {
   StatCard,
   selectClass,
 } from "@/components/dgmm/Page";
-import { SectionStatistiques } from "@/components/dgmm/Statistiques";
+import { SectionStatistiques, LienStatistiques } from "@/components/dgmm/Statistiques";
 import { RoleCard, aptitudeAu } from "@/components/dgmm/RoleCard";
 import { Aide } from "@/components/dgmm/Aide";
 import { Button } from "@/components/ui/button";
@@ -90,26 +90,7 @@ function Equipages({ session }: { session: Account }) {
           </span>
         }
       />
-      <SectionStatistiques
-        titre="Statistiques des rôles d’équipage"
-        description="Volume des rôles déclarés et niveau de conformité des appareillages."
-      >
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Rôles déclarés" value={liste.length} icon={Ship} />
-          <StatCard
-            label="Appareillages conformes"
-            value={nbOk}
-            icon={CheckCircle2}
-            tone="success"
-          />
-          <StatCard
-            label="Rôles non conformes"
-            value={liste.length - nbOk}
-            icon={AlertTriangle}
-            tone="danger"
-          />
-        </div>
-      </SectionStatistiques>
+      <LienStatistiques theme="equipages" texte="Rôles déclarés et conformité des équipages par armateur" />
       <Panel
         bodyClassName="space-y-4"
         actions={

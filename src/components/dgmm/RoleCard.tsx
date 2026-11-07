@@ -1,3 +1,4 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { CheckCircle2, Ship, XCircle } from "lucide-react";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
@@ -81,7 +82,7 @@ export function RoleCard({
             {rows.length} marin(s)
             {minimum > 0 && (
               <span className={cn("ml-1", sousEffectif && "font-semibold text-destructive")}>
-                · effectif minimal de sécurité {minimum} (indicatif)
+                · effectif minimal de sécurité {minimum} (indicatif) <Aide terme="effectifMinimal" className="align-text-bottom" />
               </span>
             )}
           </div>

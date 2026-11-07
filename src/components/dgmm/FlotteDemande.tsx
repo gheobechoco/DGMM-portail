@@ -1,3 +1,4 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, FileCheck2, FileX2, Ship, XCircle } from "lucide-react";
@@ -61,7 +62,7 @@ export function FlotteDemande({ d, auteur }: { d: DemandeArmateur; auteur: strin
   const modifiable = d.statut === "en_attente";
   return (
     <div className="mt-4 space-y-3 border-t pt-4">
-      <div className="text-xs font-semibold uppercase tracking-wide text-secondary">Flotte : noms soumis à approbation ({d.flotte.length})</div>
+      <div className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-secondary">Flotte : noms soumis à approbation ({d.flotte.length}) <Aide terme="marquage" /></div>
       {d.flotte.map((n, i) => {
         const conflit = occupe.noms.get(nomNormalise(n.nom));
         const ind = (indicatifs[i] ?? "").toUpperCase().replace(/\s/g, "");

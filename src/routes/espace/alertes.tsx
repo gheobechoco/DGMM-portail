@@ -1,3 +1,5 @@
+import { Aide } from "@/components/dgmm/Aide";
+import { LienStatistiques } from "@/components/dgmm/Statistiques";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -43,14 +45,9 @@ function Alertes({ session }: { session: Account }) {
       <PageHeader
         eyebrow={session.role === "delegue_syndical" ? `Délégués ${session.syndicat}` : "Sécurité et droits des marins"}
         title="Alertes des gens de mer"
-        subtitle="Signalements reçus directement des marins, sans passer par les stations locales. Les alertes rouges appellent une inspection d'urgence au prochain port."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Signalements reçus directement des marins, sans passer par les stations locales. Les alertes rouges appellent une inspection d'urgence au prochain port. <Aide terme="feux" /> <Aide terme="anonymat" /></span>}
       />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Alertes ouvertes" value={ouvertes.length} icon={Siren} />
-        <StatCard label="Rouges ouvertes" value={ouvertes.filter((x) => x.niveau === "rouge").length} icon={ShieldAlert} tone="danger" />
-        <StatCard label={`Rouges sans réponse > ${DELAI_ROUGE} h`} value={rougesEnRetard.length} icon={Hourglass} tone={rougesEnRetard.length ? "danger" : "primary"} />
-        <StatCard label="Inspections programmées" value={alertes.filter((x) => x.statut === "inspection_programmee").length} icon={ClipboardCheck} tone="success" />
-      </div>
+      <div className="mb-6"><LienStatistiques theme="alertes" texte="Alertes par gravité, délais de réponse et anonymat" /></div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {(["tous", "rouge", "orange", "vert"] as const).map((n) => (
           <button key={n} type="button" role="radio" aria-checked={niveau === n} onClick={() => setNiveau(n)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", niveau === n ? "border-gold bg-gold text-gold-foreground" : "bg-card hover:border-gold")}>{n === "tous" ? "Toutes gravités" : n[0]!.toUpperCase() + n.slice(1)}</button>

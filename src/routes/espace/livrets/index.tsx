@@ -1,10 +1,11 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { BookOpenCheck, BookX, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { RequirePerm } from "@/components/dgmm/Guard";
 import { EmptyState, PageHeader, Panel, StatCard } from "@/components/dgmm/Page";
-import { SectionStatistiques } from "@/components/dgmm/Statistiques";
+import { SectionStatistiques, LienStatistiques } from "@/components/dgmm/Statistiques";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,29 +45,9 @@ function Livrets({ auteur }: { auteur: string }) {
       <PageHeader
         eyebrow="Titres maritimes"
         title="Fascicules de marin"
-        subtitle="Génération du fascicule (livret maritime) après validation du Directeur des Gens de Mer — sécurisé par QR code."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Génération du fascicule (livret maritime) après validation du Directeur des Gens de Mer — sécurisé par QR code. <Aide terme="visa" /> <Aide terme="seaService" /></span>}
       />
-      <SectionStatistiques
-        titre="Statistiques des livrets"
-        description="État des demandes prêtes, dossiers à compléter et livrets déjà délivrés."
-      >
-        <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard
-            label="Prêts à délivrer"
-            value={aDelivrer.length}
-            icon={BookOpenCheck}
-            tone="success"
-          />
-          <StatCard
-            label="Dossiers à compléter"
-            value={bloques.length}
-            icon={ClipboardList}
-            tone="warning"
-            hint="validés mais incomplets ou certificat expiré"
-          />
-          <StatCard label="Livrets délivrés" value={delivres.length} icon={BookOpenCheck} />
-        </div>
-      </SectionStatistiques>
+      <LienStatistiques theme="livrets" texte="Livrets prêts, dossiers à compléter et livrets délivrés" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Prêts à délivrer" bodyClassName="p-0">

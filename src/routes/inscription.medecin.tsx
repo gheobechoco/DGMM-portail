@@ -1,3 +1,4 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Rocket, Stethoscope } from "lucide-react";
@@ -95,7 +96,7 @@ function DemandeMedecin() {
         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary">Médecins</div>
         <h1 className="mt-1 font-display text-3xl font-bold text-primary">Demande d'agrément et d'assermentation</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Première demande ou renouvellement de votre agrément de médecin des gens de mer (<Sigle s="STCW" />). L'agrément est délivré par la <Sigle s="DGMM" /> pour {DUREE_AGREMENT_ANS} ans.
+          Première demande ou renouvellement de votre agrément de médecin des gens de mer (<Sigle s="STCW" />). L'agrément est délivré par la <Sigle s="DGMM" /> pour {DUREE_AGREMENT_ANS} ans. <Aide terme="agrement" />
         </p>
       </div>
       <form onSubmit={envoyer} noValidate className="space-y-6">

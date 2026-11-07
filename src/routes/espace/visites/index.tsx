@@ -1,3 +1,4 @@
+import { Aide } from "@/components/dgmm/Aide";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { ChevronRight, FilePlus2, Search, Stethoscope } from "lucide-react";
@@ -16,7 +17,7 @@ import {
   useVisites,
 } from "@/lib/dgmm/store";
 import { CalendarClock, FileClock, ShieldCheck } from "lucide-react";
-import { SectionStatistiques, TableauClinique } from "@/components/dgmm/Statistiques";
+import { SectionStatistiques, TableauClinique, LienStatistiques } from "@/components/dgmm/Statistiques";
 
 type Etat = "tous" | "brouillon" | "signee";
 interface Search {
@@ -79,7 +80,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
       <PageHeader
         eyebrow="Médecine des gens de mer"
         title="Visites médicales"
-        subtitle="Examens d'aptitude et certificats médicaux conformes à la convention STCW."
+        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Examens d'aptitude et certificats médicaux conformes à la convention STCW. <Aide terme="stcw" /> <Aide terme="aptitude" /> <Aide terme="agrement" /></span>}
         actions={
           canSaisir && (
             <Button asChild variant="gold">
@@ -91,32 +92,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
         }
       />
 
-      <SectionStatistiques
-        titre="Statistiques médicales"
-        description="Indicateurs de file active, de renouvellement et d’aptitude clinique STCW."
-      >
-        <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard
-            label="Marins à examiner"
-            value={enAttente}
-            icon={Stethoscope}
-            tone="warning"
-            hint="enrôlés, aptitude en attente"
-          />
-          <StatCard label="Brouillons à signer" value={brouillons} icon={FileClock} tone="gold" />
-          <StatCard
-            label="Certificats bientôt expirés"
-            value={aRenouveler}
-            icon={CalendarClock}
-            tone="danger"
-            hint="sous 30 jours"
-          />
-        </div>
-
-        <div>
-          <TableauClinique />
-        </div>
-      </SectionStatistiques>
+      <LienStatistiques theme="medical" texte="Visites, échéances, synthèse clinique et répartition des verdicts" />
 
       <Panel bodyClassName="p-0">
         <div className="grid gap-3 border-b p-4 sm:grid-cols-[1fr_220px]">
