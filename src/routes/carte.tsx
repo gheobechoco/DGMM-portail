@@ -1,6 +1,6 @@
 import { BarreFiltres, FiltreSelect, Pagination, usePagination } from "@/components/dgmm/Listes";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Anchor, Building2, MapPin, Navigation, Phone, Search } from "lucide-react";
 import { PublicShell } from "@/components/dgmm/PublicShell";
 import { Carte3D, COULEUR_POINT, type Carte3DRef, type PointCarte } from "@/components/dgmm/Carte3D";
@@ -21,20 +21,29 @@ function CarteMaritime() {
   const [q, setQ] = useState("");
   const [actif, setActif] = useState<string | null>(null);
 
-  const stations = STATIONS.filter((s) => POSITION_STATION[s.code]).map((s) => ({ ...s, ...POSITION_STATION[s.code]! }));
-  const points: PointCarte[] = useMemo(
-    () => [
-      ...ENTREPRISES_MARITIMES.map((e) => ({ id: e.nom, nom: e.nom, detail: e.adresse, lat: e.lat, lng: e.lng, type: "entreprise" as const })),
-      ...stations.map((s) => ({ id: s.code, nom: s.nom, detail: s.adresse, lat: s.lat, lng: s.lng, type: "station" as const })),
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-  const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const stations = useMemo(() => STATIONS.filter((s) => POSITION_STATION[s.code]).map((s) => ({ ...s, ...POSITION_STATION[s.code]! })), []);
+  const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const nq = norm(q.trim());
   const entreprises = ENTREPRISES_MARITIMES.filter((e) => (filtre === "tous" || filtre === e.hub) && (!nq || norm(`${e.nom} ${e.role} ${e.adresse}`).includes(nq)));
   const pg = usePagination(entreprises, 6);
   const stationsVisibles = stations.filter((s) => (filtre === "tous" || filtre === "stations") && (!nq || norm(`${s.nom} ${s.ville}`).includes(nq)));
+  // La carte n'affiche que ce que la liste montre (filtre et recherche).
+  const cleVisible = [...entreprises.map((e) => e.nom), ...stationsVisibles.map((s) => s.code)].join("|");
+  const points: PointCarte[] = useMemo(
+    () => [
+      ...entreprises.map((e) => ({ id: e.nom, nom: e.nom, detail: e.adresse, lat: e.lat, lng: e.lng, type: "entreprise" as const })),
+      ...stationsVisibles.map((s) => ({ id: s.code, nom: s.nom, detail: s.adresse, lat: s.lat, lng: s.lng, type: "station" as const })),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cleVisible],
+  );
+  // Recentre la carte sur la sélection après chaque changement de filtre ou de recherche.
+  const premier = useRef(true);
+  useEffect(() => {
+    if (premier.current) { premier.current = false; return; }
+    const t = window.setTimeout(() => carte.current?.vueGenerale(), 80);
+    return () => window.clearTimeout(t);
+  }, [cleVisible]);
   const voir = (id: string) => { setActif(id); carte.current?.allerA(id); };
 
   return (
