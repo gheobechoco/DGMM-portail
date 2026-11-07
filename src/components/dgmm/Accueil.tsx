@@ -9,7 +9,6 @@ import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { AmbianceLayer } from "@/components/dgmm/Ambiance";
-import { BarometreBleu } from "@/components/dgmm/Statistiques";
 
 export type Profil = "marin" | "armateur" | "gestion" | "medical";
 
@@ -170,7 +169,7 @@ export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, usernam
             <p className="mt-0.5 text-xs text-primary-foreground/75">{d.texte}</p>
           </div>
         </div>
-        <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/55">Comptes de démonstration · mot de passe azerty</div>
+        <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/55">Choisissez votre fonction</div>
         <ul className="mt-2 space-y-2">
           {d.comptes.map((c) => {
             const IconC = c.icon;
@@ -187,7 +186,6 @@ export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, usernam
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold">{c.titre}</span>
                     <span className="block text-[11px] text-primary-foreground/70">{c.mission}</span>
-                    <span className="mt-1 inline-block rounded bg-primary-foreground/10 px-1.5 py-0.5 font-mono text-[11px] text-gold">{c.username}</span>
                   </span>
                   <ArrowRight className="mt-0.5 size-4 shrink-0 text-primary-foreground/50 transition-transform group-hover/c:translate-x-1 group-hover/c:text-gold" aria-label="Se connecter" />
                 </button>
@@ -235,7 +233,7 @@ export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, usernam
           </div>
           <h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Qui êtes-vous ?</h1>
           <p className="mt-2 text-sm text-primary-foreground/75">
-            Choisissez votre profil ou votre département, puis le compte : vous arrivez directement sur sa page de connexion.
+            Choisissez votre profil ou votre département, puis votre fonction : vous arrivez directement sur sa page de connexion.
           </p>
         </div>
         <div className="w-full max-w-6xl space-y-6">
@@ -270,9 +268,6 @@ export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, usernam
             Accéder au contrôle <ArrowRight className="size-4" />
           </span>
         </Link>
-        <div className="mt-5">
-          <BarometreBleu />
-        </div>
         <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
           <Link
             to="/reglementation"
