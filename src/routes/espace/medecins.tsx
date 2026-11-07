@@ -66,8 +66,8 @@ function Medecins({ session }: { session: Account }) {
         eyebrow="Santé des gens de mer"
         title="Médecins des gens de mer"
         aides={["agrement"]}
+        stats={<LienStatistiques theme="medecins" texte="Médecins agréés, échéances, demandes et visites par structure" />}
       />
-      <div className="mb-6"><LienStatistiques theme="medecins" texte="Médecins agréés, échéances, demandes et visites par structure" /></div>
       <Tabs defaultValue={enCours.length && (can(session.role, "medecins.assermenter") || can(session.role, "medecins.instruire")) ? "demandes" : "medecins"}>
         <TabsList className="mb-5 flex h-auto flex-wrap justify-start">
           <TabsTrigger value="medecins"><Stethoscope className="mr-1.5 size-4" /> Médecins agréés</TabsTrigger>

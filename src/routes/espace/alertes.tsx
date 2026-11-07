@@ -52,8 +52,8 @@ function Alertes({ session }: { session: Account }) {
         eyebrow="Sécurité et droits des marins"
         title="Alertes des gens de mer"
         aides={["feux", "anonymat"]}
+        stats={<LienStatistiques theme="alertes" texte="Alertes par gravité, délais de réponse et anonymat" />}
       />
-      <div className="mb-6"><LienStatistiques theme="alertes" texte="Alertes par gravité, délais de réponse et anonymat" /></div>
       <BarreFiltres>
         <FiltreSelect<Niveau | "tous">
           id="filtre-gravite"

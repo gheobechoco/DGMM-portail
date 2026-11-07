@@ -149,6 +149,11 @@ export const GLOSSAIRE = {
     texte:
       "Le nom proposé doit être libre sous pavillon gabonais et approuvé par la DGMM. Une fois approuvé, il est marqué de façon permanente et visible à la proue (des deux bords) et à la poupe, avec le port d'attache.",
   },
+  brevetSuperieur: {
+    titre: "Temps de mer et brevet supérieur",
+    texte:
+      "Seuls les embarquements validés par la DGMM sont comptés, sur les 3 dernières années. Le nombre de jours exigé pour un brevet supérieur dépend du brevet visé, du navire et de sa jauge : 360 jours est un repère indicatif. Une période sans embarquement enregistré n'est pas forcément passée à terre (navire étranger, embarquement pas encore visé).",
+  },
   effectifMinimal: {
     titre: "Effectif minimal de sécurité",
     texte:

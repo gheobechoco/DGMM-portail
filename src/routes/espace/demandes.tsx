@@ -132,6 +132,7 @@ function Demandes({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Enrôlement"
         title="Pré-inscriptions en ligne"
+        stats={<LienStatistiques theme="preinscriptions" texte="Demandes reçues, converties et classées, par station" />}
         subtitle="Demandes déposées par les futurs marins. Recevez la personne à la station, puis créez son dossier à partir de la demande."
         actions={
           <Link
@@ -142,7 +143,6 @@ function Demandes({ session }: { session: Account }) {
           </Link>
         }
       />
-      <LienStatistiques theme="preinscriptions" texte="Demandes reçues, converties et classées, par station" />
       <Panel
         title="Accès rapide — scanner un récépissé ou un NIP"
         description="Scannez le QR code du récépissé avec la caméra, utilisez un lecteur QR clavier ou saisissez le numéro. Le dossier correspondant s'ouvrira automatiquement."

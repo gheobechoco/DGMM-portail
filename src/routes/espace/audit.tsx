@@ -86,6 +86,7 @@ function Journal() {
         eyebrow="Sécurité & traçabilité"
         title="Journal d'audit"
         aides={["journal"]}
+        stats={<LienStatistiques theme="audit" texte="Volume du journal, actes tracés et intégrité de la chaîne" />}
         actions={
           <>
             <Button variant="outline" onClick={exportCsv}>
@@ -129,7 +130,6 @@ function Journal() {
         </div>
       )}
 
-      <LienStatistiques theme="audit" texte="Volume du journal, actes tracés et intégrité de la chaîne" />
 
       <Panel bodyClassName="p-0">
         <div className="grid gap-3 border-b p-4 sm:grid-cols-[1fr_260px]">

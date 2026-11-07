@@ -65,8 +65,8 @@ function Contrats({ session }: { session: Account }) {
         eyebrow="Tiers de confiance"
         title="Contrats d'engagement maritime"
         aides={["cem", "mlc"]}
+        stats={<LienStatistiques theme="contrats" texte="Contrats par étape, retards de versement et rapatriements" />}
       />
-      <div className="mb-6"><LienStatistiques theme="contrats" texte="Contrats par étape, retards de versement et rapatriements" /></div>
       <BarreFiltres>
         <FiltreSelect id="filtre-contrats" label="Afficher" value={filtre} onChange={setFiltre} options={FILTRES.map(([f, l]) => ({ value: f, label: l }))} />
       </BarreFiltres>

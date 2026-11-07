@@ -48,8 +48,8 @@ function Livrets({ auteur }: { auteur: string }) {
         eyebrow="Titres maritimes"
         title="Fascicules de marin"
         aides={["visa", "seaService"]}
+        stats={<LienStatistiques theme="livrets" texte="Livrets prêts, dossiers à compléter et livrets délivrés" />}
       />
-      <LienStatistiques theme="livrets" texte="Livrets prêts, dossiers à compléter et livrets délivrés" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Prêts à délivrer" bodyClassName="p-0">

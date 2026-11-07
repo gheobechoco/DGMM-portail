@@ -80,6 +80,7 @@ function Equipages({ session }: { session: Account }) {
         eyebrow="Contrôle des armements"
         title="Rôles d'équipage"
         aides={["role"]}
+        stats={<LienStatistiques theme="equipages" texte="Rôles déclarés et conformité des équipages par armateur" />}
         actions={
           <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
             {can(session.role, "embarquements.valider") ? (
@@ -94,7 +95,6 @@ function Equipages({ session }: { session: Account }) {
           </span>
         }
       />
-      <LienStatistiques theme="equipages" texte="Rôles déclarés et conformité des équipages par armateur" />
       <Panel
         bodyClassName="space-y-4"
         actions={

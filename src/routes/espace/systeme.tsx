@@ -353,7 +353,7 @@ function EtatSysteme() {
 
   return (
     <div className="space-y-6">
-      <LienStatistiques theme="systeme" texte="Volumes des données et état du journal de contrôle" />
+      <LienStatistiques aligne theme="systeme" texte="Volumes des données et état du journal de contrôle" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel

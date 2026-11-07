@@ -10,7 +10,10 @@ export function PageHeader({
   actions,
   eyebrow,
   aides,
+  stats,
 }: {
+  /** Petit lien vers les statistiques du thème, placé avec les actions. */
+  stats?: ReactNode | undefined;
   title: string;
   /** Points « ? » placés à côté du titre : ils remplacent une phrase d'explication. */
   aides?: Terme[] | undefined;
@@ -32,7 +35,12 @@ export function PageHeader({
         </h1>
         {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {(actions || stats) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {stats}
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

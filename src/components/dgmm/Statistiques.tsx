@@ -1,4 +1,5 @@
 import { useId, useMemo, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { Aide, type Terme } from "@/components/dgmm/Aide";
 import { Link } from "@tanstack/react-router";
 import type { ThemeStats } from "@/lib/dgmm/themesStats";
@@ -635,8 +636,7 @@ export function TableauArmateur({ entreprise }: { entreprise: string }) {
   ).size;
   return (
     <Panel
-      title="Performance flotte & prédictif"
-      description="Données calculées pour votre compagnie; les règles de safe manning ne sont pas encore enregistrées dans le portail."
+      title="Performance de la flotte"
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -660,7 +660,7 @@ export function TableauArmateur({ entreprise }: { entreprise: string }) {
           tone="danger"
         />
       </div>
-      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+      <div className="mt-5 max-w-xl">
         <div>
           <h3 className="mb-3 text-sm font-semibold text-primary">Alertes de renouvellement</h3>
           <Barres
@@ -672,23 +672,16 @@ export function TableauArmateur({ entreprise }: { entreprise: string }) {
             palette={["bg-destructive", "bg-warning", "bg-secondary"]}
           />
         </div>
-        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          <p className="font-semibold text-primary">Indicateurs à compléter</p>
-          <p className="mt-1">
-            Le minimum de sécurité par navire et l'historique des corrections/rejets de rôle ne sont
-            pas stockés. Le taux de validation du premier coup ne peut donc pas être calculé de
-            façon fiable.
-          </p>
-        </div>
       </div>
     </Panel>
   );
 }
 
 export function JaugeCarriere({ marin }: { marin: Marin }) {
-  const visites = useVisites();
   const maintenant = Date.now();
-  const debutPeriode = maintenant - 3 * 365 * 86_400_000;
+  const PERIODE = 3 * 365;
+  const OBJECTIF = 360;
+  const debutPeriode = maintenant - PERIODE * 86_400_000;
   const jours = (marin.embarquements ?? [])
     .filter((emb) => emb.statut === "valide_dgmm")
     .reduce((sum, emb) => {
@@ -700,81 +693,44 @@ export function JaugeCarriere({ marin }: { marin: Marin }) {
       if (!Number.isFinite(debut) || !Number.isFinite(fin) || fin < debut) return sum;
       return sum + Math.ceil((fin - debut) / 86_400_000);
     }, 0);
-  const joursMer = Math.min(3 * 365, jours);
-  const joursTerre = Math.max(0, 3 * 365 - joursMer);
-  const cert = lastCertificate(visites, marin.id);
-  const joursCertificat = cert
-    ? Math.ceil(
-        (new Date(`${cert.stcw.validJusquau}T23:59:59`).getTime() - Date.now()) / 86_400_000,
-      )
-    : null;
-  const progression = Math.min(100, Math.round((jours / 360) * 100));
+  const joursMer = Math.min(PERIODE, jours);
+  const partMer = Math.round((joursMer / PERIODE) * 100);
+  const reste = Math.max(0, OBJECTIF - jours);
+  const progression = Math.min(100, Math.round((jours / OBJECTIF) * 100));
   return (
     <Panel
-      title="Ma jauge de carrière STCW"
-      description="Temps de mer officiel validé et échéances de vos titres."
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          Mon temps de mer <Aide terme="brevetSuperieur" />
+        </span>
+      }
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Service en mer validé"
-          value={`${jours} j`}
-          icon={Ship}
-          hint="cible illustrative : 360 jours"
-        />
-        <StatCard
-          label="Visite STCW"
-          value={joursCertificat === null ? "—" : `${joursCertificat} j`}
-          icon={Clock3}
-          hint={cert ? "avant échéance" : "certificat absent"}
-          tone={
-            joursCertificat === null || joursCertificat < 0
-              ? "danger"
-              : joursCertificat <= 90
-                ? "warning"
-                : "success"
-          }
-        />
-        <StatCard
-          label="Visa DGMM"
-          value={marin.validationAdmin === "validee" ? "Accordé" : "En attente"}
-          icon={ShieldAlert}
-          tone={marin.validationAdmin === "validee" ? "success" : "warning"}
-        />
-        <StatCard
-          label="Livret maritime"
-          value={marin.livret ? "Délivré" : "En attente"}
-          icon={Ship}
-          tone={marin.livret ? "success" : "warning"}
-        />
-      </div>
-      <div className="mt-4 rounded-lg border p-4">
-        <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-          <span>Ratio mer / terre sur les 3 dernières années</span>
-          <strong className="tabular-nums text-primary">
-            {joursMer} j / {joursTerre} j
-          </strong>
+      <div className="space-y-5">
+        <div>
+          <p className="mb-2 text-sm">
+            <strong className="text-primary">{joursMer} jours en mer</strong> sur les 3 dernières
+            années <span className="text-muted-foreground">({partMer} % du temps)</span>
+          </p>
+          <Barre valeur={joursMer} maximum={PERIODE} couleur="bg-secondary" />
         </div>
-        <Barre valeur={joursMer} maximum={3 * 365} couleur="bg-secondary" />
-      </div>
-      <div className="mt-5">
-        <div className="mb-2 flex justify-between text-sm">
-          <span>Progression vers un brevet supérieur</span>
-          <strong className="tabular-nums">{jours} / 360 j</strong>
+        <div>
+          <p className="mb-2 text-sm">
+            Brevet supérieur :{" "}
+            {reste === 0 ? (
+              <strong className="text-success">repère de {OBJECTIF} jours atteint</strong>
+            ) : (
+              <>
+                encore <strong className="text-primary">{reste} jours</strong> de mer pour
+                atteindre {OBJECTIF} jours
+              </>
+            )}
+          </p>
+          <Progress value={progression} aria-label={`Progression vers ${OBJECTIF} jours : ${progression} pour cent`} />
         </div>
-        <Progress
-          value={progression}
-          aria-label={`Progression indicative ${progression} pour cent`}
-        />
-        <p className="mt-2 text-xs text-muted-foreground">
-          Le seuil réglementaire dépend du brevet, du navire et de la jauge; 360 jours est
-          uniquement un exemple de visualisation. Le temps sans embarquement enregistré n'est pas
-          nécessairement un congé à terre.
-        </p>
       </div>
     </Panel>
   );
 }
-
 
 /* ---------- Section « Statistiques » de l'espace DGMM ---------- */
 
@@ -785,20 +741,23 @@ export function ZoneStats({ stats, titre, description, children }: { stats: bool
   return <div className="mt-6 space-y-6">{children}</div>;
 }
 
-/** Renvoi compact vers la section Statistiques (les chiffres ne sont plus mêlés aux listes de travail). */
-export function LienStatistiques({ theme, texte }: { theme: ThemeStats; texte: string }) {
-  return (
+/** Petit bouton « Statistiques » (en-tête de page) : les chiffres restent sur la page dédiée. */
+export function LienStatistiques({ theme, texte, aligne, clair }: { theme: ThemeStats; texte: string; aligne?: boolean | undefined; /** Sur fond sombre (bandeau d'accueil). */ clair?: boolean | undefined }) {
+  const lien = (
     <Link
       to="/espace/statistiques"
       search={{ theme }}
-      className="carte-survol mt-2 flex items-center gap-3 rounded-xl border border-dashed bg-card/70 px-4 py-3 text-sm shadow-card"
+      title={texte}
+      aria-label={`Voir les statistiques : ${texte}`}
+      className={cn(
+        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold transition-colors hover:border-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        clair
+          ? "border-primary-foreground/25 text-primary-foreground/75 hover:text-primary-foreground"
+          : "bg-card text-muted-foreground hover:text-primary",
+      )}
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary"><IconeStats className="size-4" aria-hidden /></span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-primary">Voir les statistiques</span>
-        <span className="block truncate text-xs text-muted-foreground">{texte}</span>
-      </span>
-      <ArrowRight className="size-4 text-muted-foreground" />
+      <IconeStats className="size-3.5" aria-hidden /> Statistiques
     </Link>
   );
+  return aligne ? <div className="mb-4 flex justify-end">{lien}</div> : lien;
 }

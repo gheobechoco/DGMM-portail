@@ -371,18 +371,20 @@ export function PilotageDashboard({ session, vue = "tableau" }: { session: Accou
           ) : null
         }
         action={
-          can(session.role, "marins.enroler") && (
-            <Button asChild variant="gold" data-tour="action">
-              <Link to="/espace/marins/nouveau">
-                <UserPlus /> Enrôler un marin
-              </Link>
-            </Button>
-          )
+          <>
+            {can(session.role, "marins.enroler") && (
+              <Button asChild variant="gold" data-tour="action">
+                <Link to="/espace/marins/nouveau">
+                  <UserPlus /> Enrôler un marin
+                </Link>
+              </Button>
+            )}
+            <LienStatistiques clair theme="pilotage" texte="Indicateurs, conformité STCW, répartitions et pilotage national" />
+          </>
         }
       />
       )}
 
-      {!stats && <LienStatistiques theme="pilotage" texte="Indicateurs, conformité STCW, répartitions et pilotage national" />}
       <ZoneStats
         stats={stats}
         titre="Statistiques et pilotage DGMM"
@@ -839,13 +841,16 @@ export function MedicalDashboard({ session, vue = "tableau" }: { session: Accoun
           ) : null
         }
         action={
-          canSaisir && (
-            <Button asChild variant="gold" data-tour="action">
-              <Link to="/espace/visites/nouvelle">
-                <FilePlus2 /> Nouvelle visite STCW
-              </Link>
-            </Button>
-          )
+          <>
+            {canSaisir && (
+              <Button asChild variant="gold" data-tour="action">
+                <Link to="/espace/visites/nouvelle">
+                  <FilePlus2 /> Nouvelle visite STCW
+                </Link>
+              </Button>
+            )}
+            <LienStatistiques clair theme="medical" texte="Visites, échéances, synthèse clinique et répartition des verdicts" />
+          </>
         }
       />
 
@@ -867,7 +872,6 @@ export function MedicalDashboard({ session, vue = "tableau" }: { session: Accoun
       </div>
       </>)}
 
-      {!stats && <LienStatistiques theme="medical" texte="Visites, échéances, synthèse clinique et répartition des verdicts" />}
       {stats && (
       <SectionStatistiques
         titre="Statistiques médicales"

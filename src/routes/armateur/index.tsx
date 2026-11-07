@@ -1,9 +1,13 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TexteTape } from "@/components/dgmm/TexteTape";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   FileSignature,
+  Anchor,
+  ChartNoAxesCombined,
+  ClipboardList,
   AlertTriangle,
   Building2,
   Camera,
@@ -253,69 +257,42 @@ function Tableau({ a }: { a: ArmateurAccount }) {
       .sort((p, q) => p.etat.joursRestants - q.etat.joursRestants);
   }, [effectif, allRoles, a.entreprise, marins, visites]);
 
+  const nbAlertes = alertes.filter((x) => x.etat.status === "expire").length;
   return (
     <>
-      <div className="mb-6">
-        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-secondary">
-          Espace armateur
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-secondary">
+            Espace armateur
+          </div>
+          <h1 className="font-display text-2xl font-bold text-primary sm:text-[28px]">
+            <TexteTape texte={a.entreprise} />
+          </h1>
         </div>
-        <h1 className="font-display text-2xl font-bold text-primary sm:text-[28px]">
-          <TexteTape texte={a.entreprise} />
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Rôles d'équipage et conformité médicale STCW de vos équipages avant appareillage.
-        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link to="/armateur/contrats">
+              <FileSignature /> Contrats d'engagement
+            </Link>
+          </Button>
+          <Button variant="gold" onClick={() => setEdit("new")} disabled={!flotte.length}>
+            <Plus /> Déclarer un rôle
+          </Button>
+        </div>
       </div>
 
-      <Link to="/armateur/contrats" className="carte-survol mb-6 flex items-center gap-4 rounded-xl border bg-card p-4 shadow-card">
-        <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><FileSignature className="size-5" /></span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold text-primary">Contrats d'engagement maritime</span>
-          <span className="block text-sm text-muted-foreground">Créer et signer les contrats de vos marins, déclarer les versements mensuels, organiser les rapatriements.</span>
-        </span>
-      </Link>
-      <SectionStatistiques
-        titre="Statistiques et performance de la flotte"
-        description="Conformité de l’effectif, alertes d’expiration et indicateurs prédictifs de votre compagnie."
-      >
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Marins rattachés" value={effectif.length} icon={Users} />
-          <StatCard
-            label="Aptes aujourd'hui"
-            value={conformes}
-            icon={CheckCircle2}
-            tone="success"
-          />
-          <StatCard
-            label="Non conformes"
-            value={effectif.length - conformes}
-            icon={AlertTriangle}
-            tone="danger"
-            hint="certificat expiré ou absent"
-          />
-          <StatCard label="Navires" value={flotte.length} icon={Ship} />
-        </div>
-
-        <Panel
-          title="Santé réglementaire de l'effectif"
-          description="Certificats médicaux STCW à ce jour"
-        >
-          <div className="flex flex-col items-center gap-6 sm:flex-row">
-            <CircularGauge
-              value={effectif.length ? (conformes / effectif.length) * 100 : 0}
-              label="Aptitude globale de l'effectif"
-              size={108}
-            />
-            <div className="w-full flex-1">
-              <ConformityGauge niveaux={effectif.map((m) => niveauConformite(m, visites))} />
-            </div>
-          </div>
-        </Panel>
-
-        <div>
-          <TableauArmateur entreprise={a.entreprise} />
-        </div>
-      </SectionStatistiques>
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Marins rattachés" value={effectif.length} icon={Users} />
+        <StatCard label="Aptes aujourd'hui" value={conformes} icon={CheckCircle2} tone="success" />
+        <StatCard
+          label="Non conformes"
+          value={effectif.length - conformes}
+          icon={AlertTriangle}
+          tone="danger"
+          hint="certificat expiré ou absent"
+        />
+        <StatCard label="Navires" value={flotte.length} icon={Ship} />
+      </div>
 
       {aSignaler.length > 0 && (
         <Panel title="Certificats de sécurité de vos navires" description="Alertes de la DGMM : un navire non autorisé ne peut pas recevoir de rôle d'équipage." className="mb-6">
@@ -332,39 +309,44 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         </Panel>
       )}
 
-      <ArmateurOutils />
+      {/* Onglets : chaque sujet a sa vue, la page ne s'allonge plus. */}
+      <Tabs defaultValue="roles">
+        <div className="-mx-1 mb-4 overflow-x-auto px-1">
+          <TabsList className="h-auto">
+            <TabsTrigger value="roles" className="gap-1.5 py-1.5"><Ship className="size-4" /> Rôles d'équipage <span className="text-xs text-muted-foreground">({roles.length})</span></TabsTrigger>
+            <TabsTrigger value="flotte" className="gap-1.5 py-1.5"><Anchor className="size-4" /> Ma flotte <span className="text-xs text-muted-foreground">({flotte.length})</span></TabsTrigger>
+            <TabsTrigger value="marins" className="gap-1.5 py-1.5">
+              <Users className="size-4" /> Mes marins
+              {nbAlertes > 0 && <span className="rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">{nbAlertes}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="gap-1.5 py-1.5"><ChartNoAxesCombined className="size-4" /> Statistiques</TabsTrigger>
+            <TabsTrigger value="demarches" className="gap-1.5 py-1.5"><ClipboardList className="size-4" /> Démarches</TabsTrigger>
+          </TabsList>
+        </div>
 
-      <Panel
-        title={
-          <span className="inline-flex items-center gap-1.5">
-            Rôles d'équipage <Aide terme="role" />
-          </span>
-        }
-        description="Déclarez l'équipage de chaque appareillage : la conformité est contrôlée à la date de départ."
-        actions={
-          <Button size="sm" variant="gold" onClick={() => setEdit("new")} disabled={!flotte.length}>
-            <Plus /> Déclarer un rôle
-          </Button>
-        }
-        bodyClassName="space-y-4"
-      >
-        {roles.length === 0 ? (
-          <EmptyState icon={Ship} title="Aucun rôle d'équipage déclaré" />
-        ) : (
-          roles.map((r, i) => (
-            <RoleCard key={r.id} r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} defautOuvert={i === 0}>
-              <DebarquementLot role={r} armateur={a} marins={marins} />
-            </RoleCard>
-          ))
-        )}
-      </Panel>
+        <TabsContent value="roles" className="mt-0">
+          {roles.length === 0 ? (
+            <Panel>
+              <EmptyState icon={Ship} title="Aucun rôle d'équipage déclaré">
+                Déclarez l'équipage avant chaque appareillage : la conformité est contrôlée à la date de départ.
+              </EmptyState>
+            </Panel>
+          ) : (
+            <div className="space-y-3">
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                Appareillages à venir en premier <Aide terme="role" />
+              </p>
+              {roles.map((r, i) => (
+                <RoleCard key={r.id} r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} defautOuvert={i === 0}>
+                  <DebarquementLot role={r} armateur={a} marins={marins} />
+                </RoleCard>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <Panel
-          title="Vue flotte"
-          description="Navires de la compagnie, équipage à bord et conformité du dernier rôle déclaré"
-          bodyClassName="p-0"
-        >
+        <TabsContent value="flotte" className="mt-0">
+        <Panel bodyClassName="p-0">
           <ul className="stagger divide-y">
             {flotte.map((n) => {
               const aBordLignes = marins.flatMap((m) =>
@@ -466,6 +448,36 @@ function Tableau({ a }: { a: ArmateurAccount }) {
             })}
           </ul>
         </Panel>
+        </TabsContent>
+
+        <TabsContent value="marins" className="mt-0">
+          <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+  <Panel title="Effectif rattaché à la compagnie" bodyClassName="p-0">
+        {effectif.length === 0 ? (
+          <EmptyState icon={Users} title="Aucun marin rattaché" />
+        ) : (
+          <ul className="stagger divide-y">
+            {effectif.map((m) => {
+              const { st, cert } = aptitudeAu(m, visites, today);
+              return (
+                <li key={m.id} className="flex items-center gap-3 px-5 py-3">
+                  <MarinPhoto m={m} className="size-9 shrink-0 rounded-full text-xs" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-primary">{fullName(m)}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {m.profession} · <span className="font-mono">{m.nip}</span>
+                    </div>
+                  </div>
+                  <span className="hidden text-xs text-muted-foreground sm:block">
+                    {cert ? `→ ${formatDate(cert.stcw.validJusquau)}` : ""}
+                  </span>
+                  <StatusPill status={st} />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Panel>
         <Panel
           title="Alertes d'expiration"
           description="Certificats expirés ou expirant sous 30 jours"
@@ -497,34 +509,29 @@ function Tableau({ a }: { a: ArmateurAccount }) {
             </ul>
           )}
         </Panel>
-      </div>
+          </div>
+        </TabsContent>
 
-      <Panel title="Effectif rattaché à la compagnie" className="mt-6" bodyClassName="p-0">
-        {effectif.length === 0 ? (
-          <EmptyState icon={Users} title="Aucun marin rattaché" />
-        ) : (
-          <ul className="stagger divide-y">
-            {effectif.map((m) => {
-              const { st, cert } = aptitudeAu(m, visites, today);
-              return (
-                <li key={m.id} className="flex items-center gap-3 px-5 py-3">
-                  <MarinPhoto m={m} className="size-9 shrink-0 rounded-full text-xs" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-primary">{fullName(m)}</div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {m.profession} · <span className="font-mono">{m.nip}</span>
-                    </div>
-                  </div>
-                  <span className="hidden text-xs text-muted-foreground sm:block">
-                    {cert ? `→ ${formatDate(cert.stcw.validJusquau)}` : ""}
-                  </span>
-                  <StatusPill status={st} />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Panel>
+        <TabsContent value="stats" className="mt-0 space-y-6">
+          <Panel title="Santé réglementaire de l'effectif">
+            <div className="flex flex-col items-center gap-6 sm:flex-row">
+              <CircularGauge
+                value={effectif.length ? (conformes / effectif.length) * 100 : 0}
+                label="Aptitude globale de l'effectif"
+                size={108}
+              />
+              <div className="w-full flex-1">
+                <ConformityGauge niveaux={effectif.map((m) => niveauConformite(m, visites))} />
+              </div>
+            </div>
+          </Panel>
+          <TableauArmateur entreprise={a.entreprise} />
+        </TabsContent>
+
+        <TabsContent value="demarches" className="mt-0">
+          <ArmateurOutils />
+        </TabsContent>
+      </Tabs>
 
       {edit && (
         <RoleDialog a={a} role={edit === "new" ? null : edit} onClose={() => setEdit(null)} />

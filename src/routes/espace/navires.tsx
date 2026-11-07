@@ -62,8 +62,8 @@ function Navires({ session }: { session: Account }) {
         eyebrow="Sécurité de la navigation"
         title="Navires et certificats de sécurité"
         aides={["doubleVerrou"]}
+        stats={<LienStatistiques theme="navires" texte="États des navires, renouvellements et certificats les plus courts" />}
       />
-      <div className="mb-6"><LienStatistiques theme="navires" texte="États des navires, renouvellements et certificats les plus courts" /></div>
       <BarreFiltres>
         <FiltreSelect
           id="filtre-navires"

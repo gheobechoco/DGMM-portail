@@ -83,6 +83,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
         eyebrow="Médecine des gens de mer"
         title="Visites médicales"
         aides={["stcw", "aptitude", "agrement"]}
+        stats={<LienStatistiques theme="medical" texte="Visites, échéances, synthèse clinique et répartition des verdicts" />}
         actions={
           canSaisir && (
             <Button asChild variant="gold">
@@ -94,7 +95,6 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
         }
       />
 
-      <LienStatistiques theme="medical" texte="Visites, échéances, synthèse clinique et répartition des verdicts" />
 
       <Panel bodyClassName="p-0">
         <div className="grid gap-3 border-b p-4 sm:grid-cols-[1fr_220px]">
