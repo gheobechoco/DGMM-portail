@@ -39,7 +39,7 @@ function Certificat({ session }: { session: Account }) {
   }
   const etat = etatCertificat(v);
   const code = m ? codeValidation(v, m.nip) : "";
-  const verifyPath = `/verifier/certificat/${encodeURIComponent(code)}`;
+  const verifyPath = `/verifier/certificat/${encodeURIComponent(code)}?source=qr`;
   const canPrint = can(session.role, "certificats.imprimer") && v.signee;
 
   return (

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import type { Ambiance as Type, Habillage } from "@/lib/dgmm/saisons";
+import { useHabillage, type Ambiance as Type, type Habillage } from "@/lib/dgmm/saisons";
 import { estSombre, usePrefs } from "@/lib/dgmm/prefs";
 import { INTENSITE, useSysteme } from "@/lib/dgmm/systeme";
+import { DELAI_APPARITION_MS, FONDU_APPARITION_MS, OPACITE_MAX } from "@/lib/dgmm/ambiance";
 
 interface P {
   x: number;
@@ -109,9 +110,20 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
   const facteur = INTENSITE[sys.intensite];
   const sombre = estSombre(prefs);
 
+  // La page se lit d'abord : l'animation ne s'installe qu'après un délai, en fondu.
+  const [revele, setRevele] = useState(false);
+  useEffect(() => {
+    if (!actif) {
+      setRevele(false);
+      return;
+    }
+    const t = window.setTimeout(() => setRevele(true), DELAI_APPARITION_MS);
+    return () => window.clearTimeout(t);
+  }, [actif]);
+
   useEffect(() => {
     const cv = ref.current;
-    if (!cv || !habillage || !actif) return;
+    if (!cv || !habillage || !actif || !revele) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = cv.getContext("2d");
     if (!ctx) return;
@@ -342,7 +354,7 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
       window.removeEventListener("resize", auDefilement);
       document.removeEventListener("scroll", auDefilement, { capture: true });
     };
-  }, [habillage, actif, sombre, facteur]);
+  }, [habillage, actif, revele, sombre, facteur]);
 
   if (!actif) return null;
   return (
@@ -350,8 +362,19 @@ export function AmbianceSaison({ habillage }: { habillage: Habillage | null }) {
       ref={ref}
       data-ambiance
       aria-hidden
-      style={{ opacity: visible ? 1 : 0 }}
-      className="no-print pointer-events-none fixed inset-0 z-[35] transition-opacity duration-[1500ms] ease-in-out"
+      // Au-dessus de la page mais gommée sur tout ce qui se lit (texte, cartes, images) :
+      // l'ambiance n'apparaît que dans les marges et les espaces vides.
+      style={{ opacity: visible && revele ? OPACITE_MAX : 0, transition: `opacity ${FONDU_APPARITION_MS}ms ease-in-out` }}
+      className="no-print pointer-events-none ambiance-couche fixed inset-0 z-[35]"
     />
   );
+}
+
+/**
+ * Couche d'ambiance à placer une fois par page (coquilles d'espace, pages publiques) ;
+ * elle ne s'installe qu'après un court délai.
+ */
+export function AmbianceLayer() {
+  const habillage = useHabillage();
+  return <AmbianceSaison habillage={habillage} />;
 }

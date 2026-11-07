@@ -86,7 +86,7 @@ export function destinataires(a: Pick<Alerte, "syndicat">): string[] {
 /** Ce que chaque compte du personnel peut voir. */
 export function visiblePour(a: Alerte, s: Account): boolean {
   if (s.role === "delegue_syndical") return !!s.syndicat && a.syndicat === s.syndicat;
-  return s.role === "gestionnaire_mm" || s.role === "inspecteur_travail";
+  return s.role === "directeur_gm" || s.role === "inspecteur_travail";
 }
 export function emetteurDe(s: Account): Exclude<Emetteur, "declarant"> {
   return s.role === "delegue_syndical" ? "syndicat" : s.role === "inspecteur_travail" ? "inspection" : "dgmm";

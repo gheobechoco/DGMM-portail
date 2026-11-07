@@ -45,6 +45,7 @@ import {
   type Marin,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
+import { JaugeCarriere, SectionStatistiques } from "@/components/dgmm/Statistiques";
 
 export const Route = createFileRoute("/mon-espace/")({
   ssr: false,
@@ -88,7 +89,10 @@ function ConnexionMarin() {
   const [nip, setNip] = useState("");
   const [mdp, setMdp] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const demo = marins.filter((m) => m.livret).slice(0, 2);
+  const demo = ["HAPPI", "ATENDE"].flatMap((nom) => {
+    const marin = marins.find((m) => m.nom === nom && m.livret);
+    return marin ? [marin] : [];
+  });
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const m = marins.find((x) => x.nip.toUpperCase() === nip.trim().toUpperCase() && x.mdp === mdp);
@@ -100,7 +104,11 @@ function ConnexionMarin() {
     journaliser(`Marin ${m.nip}`, "Connexion à l'espace marin", `${m.nom} ${m.prenom} (${m.nip})`);
   };
   return (
-    <EcranConnexion profil="marin" titre="Espace Marin" accroche="Votre dossier, votre certificat d'aptitude, votre fascicule et vos jours en mer, au même endroit.">
+    <EcranConnexion
+      profil="marin"
+      titre="Espace Marin"
+      accroche="Votre dossier, votre certificat d'aptitude, votre fascicule et vos jours en mer, au même endroit."
+    >
       <div>
         <div>
           <div className="mb-5 flex items-center gap-3">
@@ -186,7 +194,11 @@ function ConnexionMarin() {
           </Link>
           <span className="mx-2">·</span>
           Agent de la DGMM ?{" "}
-          <Link to="/" search={{ profil: "gestion" }} className="font-semibold text-primary hover:underline">
+          <Link
+            to="/"
+            search={{ profil: "gestion" }}
+            className="font-semibold text-primary hover:underline"
+          >
             Espace professionnel
           </Link>
         </p>
@@ -206,7 +218,10 @@ function Tableau({ m }: { m: Marin }) {
   const emb = [...(m.embarquements ?? [])].sort((a, b) =>
     b.embarquement.localeCompare(a.embarquement),
   );
-  const totalMer = emb.reduce((s, e) => s + joursEmbarquement(e), 0);
+  const totalMer = emb.reduce(
+    (s, e) => s + (e.statut === "valide_dgmm" ? joursEmbarquement(e) : 0),
+    0,
+  );
   const alertes = m.alertes ?? { sms: true, email: !!m.email };
   const j60 = cert ? new Date(new Date(cert.stcw.validJusquau).getTime() - 60 * DAY) : null;
   const j30 = cert ? new Date(new Date(cert.stcw.validJusquau).getTime() - 30 * DAY) : null;
@@ -286,41 +301,50 @@ function Tableau({ m }: { m: Marin }) {
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          label="Certificat d'aptitude"
-          value={jours === null ? "—" : jours < 0 ? "Expiré" : `${jours} j`}
-          icon={Stethoscope}
-          tone={jours === null || jours < 0 ? "danger" : jours <= 60 ? "warning" : "success"}
-          hint={
-            cert ? `échéance le ${formatDate(cert.stcw.validJusquau)}` : "aucun certificat valide"
-          }
-        />
-        <StatCard
-          label="Livret maritime"
-          value={m.livret || "—"}
-          icon={BookOpenCheck}
-          hint={m.livret ? "délivré" : "en cours d'instruction"}
-        />
-        <StatCard
-          label="Service en mer"
-          value={`${totalMer} j`}
-          icon={Anchor}
-          hint={`${emb.length} embarquement(s)`}
-        />
-        <StatCard
-          label="Visa DGMM"
-          value={
-            m.validationAdmin === "validee"
-              ? "Accordé"
-              : m.validationAdmin === "rejetee"
-                ? "Refusé"
-                : "En attente"
-          }
-          icon={ShieldCheck}
-          tone={m.validationAdmin === "validee" ? "success" : "warning"}
-        />
-      </div>
+      <SectionStatistiques
+        titre="Mes statistiques maritimes"
+        description="Suivi personnel de vos titres, de votre service en mer et de votre progression STCW."
+      >
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard
+            label="Certificat d'aptitude"
+            value={jours === null ? "—" : jours < 0 ? "Expiré" : `${jours} j`}
+            icon={Stethoscope}
+            tone={jours === null || jours < 0 ? "danger" : jours <= 60 ? "warning" : "success"}
+            hint={
+              cert ? `échéance le ${formatDate(cert.stcw.validJusquau)}` : "aucun certificat valide"
+            }
+          />
+          <StatCard
+            label="Livret maritime"
+            value={m.livret || "—"}
+            icon={BookOpenCheck}
+            hint={m.livret ? "délivré" : "en cours d'instruction"}
+          />
+          <StatCard
+            label="Service en mer"
+            value={`${totalMer} j`}
+            icon={Anchor}
+            hint={`${emb.length} embarquement(s)`}
+          />
+          <StatCard
+            label="Visa DGMM"
+            value={
+              m.validationAdmin === "validee"
+                ? "Accordé"
+                : m.validationAdmin === "rejetee"
+                  ? "Refusé"
+                  : "En attente"
+            }
+            icon={ShieldCheck}
+            tone={m.validationAdmin === "validee" ? "success" : "warning"}
+          />
+        </div>
+
+        <div>
+          <JaugeCarriere marin={m} />
+        </div>
+      </SectionStatistiques>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Panel title="Mes certificats d'aptitude" className="lg:col-span-2" bodyClassName="p-0">
@@ -358,7 +382,10 @@ function Tableau({ m }: { m: Marin }) {
           description="Rappels avant l'échéance de votre certificat."
         >
           <div className="space-y-4">
-            <label className="choix flex cursor-pointer items-center justify-between gap-3" data-actif={alertes.sms}>
+            <label
+              className="choix flex cursor-pointer items-center justify-between gap-3"
+              data-actif={alertes.sms}
+            >
               <span className="flex items-center gap-2 text-sm">
                 <MessageSquare className="choix-icone size-4 text-muted-foreground" />
                 <span>
@@ -377,7 +404,10 @@ function Tableau({ m }: { m: Marin }) {
                 }}
               />
             </label>
-            <label className="choix flex cursor-pointer items-center justify-between gap-3" data-actif={alertes.email}>
+            <label
+              className="choix flex cursor-pointer items-center justify-between gap-3"
+              data-actif={alertes.email}
+            >
               <span className="flex items-center gap-2 text-sm">
                 <Mail className="choix-icone size-4 text-muted-foreground" />
                 <span>

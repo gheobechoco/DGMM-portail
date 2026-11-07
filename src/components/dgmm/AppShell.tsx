@@ -18,12 +18,14 @@ import {
   Ship,
   Scale,
   Menu,
+  ArrowLeft,
   Stethoscope,
   Users,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
+import { AmbianceLayer } from "@/components/dgmm/Ambiance";
 import { useHabillage } from "@/lib/dgmm/saisons";
 import { useSysteme } from "@/lib/dgmm/systeme";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
@@ -54,9 +56,14 @@ export const NAV: NavItem[] = [
     exact: true,
   },
   { to: "/espace/marins", label: "Gens de mer", icon: Users, perm: "marins" },
-  { to: "/espace/demandes", label: "Pré-inscriptions", icon: Inbox, perm: "marins.creer" },
+  { to: "/espace/demandes", label: "Pré-inscriptions", icon: Inbox, perm: "marins.enroler" },
   { to: "/espace/visites", label: "Visites médicales", icon: Stethoscope, perm: "visites" },
-  { to: "/espace/livrets", label: "Fascicules / livrets", icon: BookOpenCheck, perm: "marins.livret" },
+  {
+    to: "/espace/livrets",
+    label: "Fascicules / livrets",
+    icon: BookOpenCheck,
+    perm: "livrets.delivrer",
+  },
   { to: "/espace/equipages", label: "Rôles d'équipage", icon: Ship, perm: "roles.lecture" },
   { to: "/espace/contrats", label: "Contrats (CEM)", icon: FileSignature, perm: "contrats" },
   { to: "/espace/alertes", label: "Alertes des marins", icon: Siren, perm: "alertes" },
@@ -131,18 +138,25 @@ function SidebarContent({
   const habillage = useHabillage();
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 px-5 py-5">
+      <Link
+        to="/espace"
+        className="flex items-center gap-3 px-5 py-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        aria-label="Retour au tableau de bord DGMM"
+      >
         <DgmmLogo className="size-11 shrink-0" />
         <div className="leading-tight">
           <div className="font-display text-sm font-bold text-white">DGMM</div>
           <div className="text-[11px] text-sidebar-foreground/70">Système GDM · Gens de mer</div>
           {habillage && (
-            <div className="mt-0.5 text-[11px] font-semibold text-gold" title={habillage.accessoire}>
+            <div
+              className="mt-0.5 text-[11px] font-semibold text-gold"
+              title={habillage.accessoire}
+            >
               {habillage.evenement}
             </div>
           )}
         </div>
-      </div>
+      </Link>
       <div className="px-3">
         <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
           Modules
@@ -194,7 +208,7 @@ function tourSteps(session: Account): TourStep[] {
       cible: "action",
       titre: medical
         ? "Nouvelle visite STCW"
-        : can(session.role, "marins.creer")
+        : can(session.role, "marins.enroler")
           ? "Enrôler un marin"
           : "Action principale",
       texte: medical
@@ -358,7 +372,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
       )
         return;
       const k = e.key.toLowerCase();
-      if (k === "n" && can(session.role, "marins.creer")) {
+      if (k === "n" && can(session.role, "marins.enroler")) {
         e.preventDefault();
         navigate({ to: "/espace/marins/nouveau" });
       } else if (k === "v" && can(session.role, "visites.saisir")) {
@@ -388,7 +402,11 @@ export function AppShell({ session, children }: { session: Account; children: Re
         className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[32rem]"
         opacite={0.045}
       />
-      <aside data-ambiance-zone className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block">
+      <AmbianceLayer />
+      <aside
+        data-ambiance-zone
+        className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block"
+      >
         <Tricolor />
         <SidebarContent session={session} />
       </aside>
@@ -425,6 +443,18 @@ export function AppShell({ session, children }: { session: Account; children: Re
         <header className="no-print sticky top-0 z-20 border-b bg-card/90 backdrop-blur">
           <Tricolor className="lg:hidden" />
           <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+            {pathname !== "/espace" && pathname !== "/espace/" && (
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/espace" })}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Retour au tableau de bord DGMM"
+                title="Retour au tableau de bord"
+              >
+                <ArrowLeft className="size-4" />
+                <span className="hidden sm:inline">Retour</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setOpen(true)}
@@ -434,10 +464,16 @@ export function AppShell({ session, children }: { session: Account; children: Re
               <Menu className="size-5" />
             </button>
             <div className="flex items-center gap-2 lg:hidden">
-              <DgmmLogo className="size-8" />
-              <span className="hidden font-display text-sm font-bold text-primary sm:inline">
-                DGMM
-              </span>
+              <Link
+                to="/espace"
+                className="flex cursor-pointer items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Retour au tableau de bord DGMM"
+              >
+                <DgmmLogo className="size-8" />
+                <span className="hidden font-display text-sm font-bold text-primary sm:inline">
+                  DGMM
+                </span>
+              </Link>
             </div>
             <div className="min-w-0 flex-1" data-tour="omnibar">
               <Omnibar session={session} />

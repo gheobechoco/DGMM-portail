@@ -36,7 +36,7 @@ interface Search {
   station?: string | undefined;
 }
 
-const STATUTS: Statut[] = ["tous", "en_attente", "validee", "rejetee"];
+const STATUTS: Statut[] = ["tous", "en_attente", "transmis_direction", "validee", "rejetee"];
 const CERTS: Cert[] = ["tous", "valide", "expire_bientot", "expire", "aucun"];
 
 export const Route = createFileRoute("/espace/marins/")({
@@ -58,7 +58,7 @@ export const Route = createFileRoute("/espace/marins/")({
   head: () => ({ meta: [{ title: "Gens de mer — GDM | DGMM" }] }),
   component: () => (
     <RequirePerm perm="marins">
-      {(session) => <MarinsList canCreate={can(session.role, "marins.creer")} session={session} />}
+      {(session) => <MarinsList canCreate={can(session.role, "marins.enroler")} session={session} />}
     </RequirePerm>
   ),
 });
@@ -146,6 +146,7 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
             >
               <option value="tous">Administratif : tous</option>
               <option value="en_attente">Admin. en attente</option>
+              <option value="transmis_direction">Transmis à la Direction</option>
               <option value="validee">Admin. validé</option>
               <option value="rejetee">Admin. rejeté</option>
             </select>

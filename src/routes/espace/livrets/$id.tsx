@@ -31,7 +31,7 @@ function Attestation() {
   const dateDeliv = evt?.date ?? m.modifieLe;
   const url =
     typeof window !== "undefined"
-      ? `${window.location.origin}/verifier/${encodeURIComponent(m.nip)}`
+      ? `${window.location.origin}/verifier/${encodeURIComponent(m.nip)}?source=qr`
       : "";
   return (
     <>

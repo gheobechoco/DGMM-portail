@@ -20,7 +20,7 @@ function Nouveau() {
   const { demande } = Route.useSearch();
   const pre = demande ? getInscriptions().pre.find((p) => p.id === demande) : undefined;
   return (
-    <RequirePerm perm="marins.creer">
+    <RequirePerm perm="marins.enroler">
       {(session) => (
         <>
           <Link
@@ -36,32 +36,67 @@ function Nouveau() {
           />
           {pre && (
             <p className="mb-4 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm">
-              Formulaire pré-rempli depuis la pré-inscription <strong className="font-mono">{pre.numero}</strong>. Vérifiez chaque information avec les pièces originales.
+              Formulaire pré-rempli depuis la pré-inscription{" "}
+              <strong className="font-mono">{pre.numero}</strong>. Vérifiez chaque information avec
+              les pièces originales.
             </p>
           )}
           <MarinForm
             preRempli={
               pre
                 ? {
-                    nom: pre.nom, prenom: pre.prenom, sexe: pre.sexe as "" | "M" | "F", dateNaissance: pre.dateNaissance,
-                    nationalite: pre.nationalite, tel1: pre.tel, email: pre.email, profession: pre.profession,
-                    station: pre.station, entreprise: pre.entreprise,
+                    nom: pre.nom,
+                    prenom: pre.prenom,
+                    sexe: pre.sexe as "" | "M" | "F",
+                    dateNaissance: pre.dateNaissance,
+                    nationalite: pre.nationalite,
+                    tel1: pre.tel,
+                    email: pre.email,
+                    profession: pre.profession,
+                    station: pre.station,
+                    entreprise: pre.entreprise,
+                    documents: pre.documents ?? {},
+                    piecesEnLigne: (
+                      [
+                        "piece",
+                        "photo",
+                        "photoSupplementaire",
+                        "naissance",
+                        "casier",
+                        "stcw",
+                      ] as const
+                    ).filter((piece) => !!pre.documents?.[piece]),
                   }
                 : undefined
             }
             submitLabel="Enregistrer le dossier"
             onCancel={() => navigate({ to: "/espace/marins" })}
             onSubmit={(v) => {
-              const m = saveMarin(v, session.nom);
-              if (pre) {
-                traiterPreInscription(pre.id, { statut: "convertie", marinId: m.id, traitePar: session.nom });
-                journaliser(session.nom, `Pré-inscription ${pre.numero} convertie en dossier`, `${m.nom} ${m.prenom} (${m.nip})`);
+              try {
+                const m = saveMarin(v, session.nom);
+                if (pre) {
+                  traiterPreInscription(pre.id, {
+                    statut: "convertie",
+                    marinId: m.id,
+                    traitePar: session.nom,
+                  });
+                  journaliser(
+                    session.nom,
+                    `Pré-inscription ${pre.numero} convertie en dossier`,
+                    `${m.nom} ${m.prenom} (${m.nip})`,
+                  );
+                }
+                toast.success(`Dossier ${m.nip} créé`, {
+                  description: `Identifiants du marin : ${m.login} / ${m.mdp}`,
+                  duration: 10000,
+                });
+                navigate({ to: "/espace/marins/$id", params: { id: String(m.id) } });
+              } catch (error) {
+                toast.error("Dossier non enregistré", {
+                  description:
+                    error instanceof Error ? error.message : "Le stockage local est indisponible.",
+                });
               }
-              toast.success(`Dossier ${m.nip} créé`, {
-                description: `Identifiants du marin : ${m.login} / ${m.mdp}`,
-                duration: 10000,
-              });
-              navigate({ to: "/espace/marins/$id", params: { id: String(m.id) } });
             }}
           />
         </>

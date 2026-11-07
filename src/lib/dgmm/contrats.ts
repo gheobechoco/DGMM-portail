@@ -191,7 +191,7 @@ function lire(): Contrat[] {
       cache = null;
     }
   }
-  return cache ?? [];
+  return cache ?? VIDE;
 }
 function ecrire(l: Contrat[]) {
   cache = l;

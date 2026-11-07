@@ -1,7 +1,7 @@
 // Règles métier pures (testées dans src/test/dgmm-rules.test.ts).
 
 export type Role =
-  | "gestionnaire_mm"
+  | "directeur_gm"
   | "rh_marine"
   | "medecin"
   | "gestionnaire_medical"
@@ -12,15 +12,17 @@ export type Role =
 export type Permission =
   | "dashboard"
   | "marins"
-  | "marins.creer"
-  | "marins.valider_admin"
-  | "marins.livret"
+  | "marins.enroler"
+  | "marins.transmettre"
+  | "marins.viser"
+  | "livrets.delivrer"
   | "visites"
   | "visites.saisir"
   | "visites.signer"
   | "certificats.imprimer"
   | "audit"
   | "embarquements"
+  | "embarquements.valider"
   | "roles.lecture"
   | "systeme"
   | "contrats"
@@ -30,25 +32,23 @@ export type Permission =
 
 /**
  * Matrice des droits (RBAC) :
- * - Gestionnaire MM (Directeur des Gens de Mer) : pilotage complet, fiches en écriture, enrôlement, validation administrative,
- *   délivrance du livret, impression des certificats.
- * - RH Marine (Agent DGMM, siège ou station) : pilotage restreint RH, fiches en écriture, enrôlement, validation administrative.
+ * - Directeur des Gens de Mer : visa régalien, délivrance du livret, audit et supervision.
+ * - RH Marine (Agent DGMM, siège ou station) : instruction et enrôlement, sans visa ni livret.
  * - Médecin du travail : tableau de bord santé, fiches en lecture seule, saisie et signature des visites,
  *   impression des certificats.
  * - Gestionnaire médical : tableau de bord santé, fiches en lecture seule, saisie des visites (sans signature),
  *   impression des certificats.
  */
 const PERMISSIONS: Record<Role, Permission[]> = {
-  gestionnaire_mm: [
+  directeur_gm: [
     "dashboard",
     "marins",
-    "marins.creer",
-    "marins.valider_admin",
-    "marins.livret",
+    "marins.viser",
+    "livrets.delivrer",
     "visites",
-    "certificats.imprimer",
     "audit",
     "embarquements",
+    "embarquements.valider",
     "roles.lecture",
     "contrats",
     "contrats.valider",
@@ -58,9 +58,10 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   rh_marine: [
     "dashboard",
     "marins",
-    "marins.creer",
-    "marins.valider_admin",
+    "marins.enroler",
+    "marins.transmettre",
     "embarquements",
+    "embarquements.valider",
     "roles.lecture",
     "contrats",
     "contrats.valider",
@@ -81,7 +82,7 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "certificats.imprimer",
   ],
   // Administrateur système : supervision et réglages, sans acte métier (ni visa, ni signature).
-  admin_systeme: ["dashboard", "marins", "visites", "audit", "roles.lecture", "systeme"],
+  admin_systeme: ["dashboard", "marins", "visites", "roles.lecture", "systeme"],
   // Inspection du travail maritime : contrôle des contrats et traitement des alertes.
   inspecteur_travail: ["marins", "roles.lecture", "contrats", "contrats.valider", "alertes", "alertes.traiter"],
   // Délégué syndical : suit les alertes adressées à son syndicat et les contrats, sans pouvoir de décision.

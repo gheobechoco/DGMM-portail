@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CarteRouteImport } from './routes/carte'
 import { Route as EspaceRouteImport } from './routes/espace'
 import { Route as ReglementationRouteImport } from './routes/reglementation'
+import { Route as SuiviDemandeRouteImport } from './routes/suivi-demande'
 import { Route as ArmateurIndexRouteImport } from './routes/armateur/index'
 import { Route as ArmateurContratsRouteImport } from './routes/armateur/contrats'
 import { Route as EspaceIndexRouteImport } from './routes/espace/index'
@@ -62,6 +63,11 @@ const EspaceRoute = EspaceRouteImport.update({
 const ReglementationRoute = ReglementationRouteImport.update({
   id: '/reglementation',
   path: '/reglementation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuiviDemandeRoute = SuiviDemandeRouteImport.update({
+  id: '/suivi-demande',
+  path: '/suivi-demande',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArmateurIndexRoute = ArmateurIndexRouteImport.update({
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/carte': typeof CarteRoute
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
+  '/suivi-demande': typeof SuiviDemandeRoute
   '/armateur/contrats': typeof ArmateurContratsRoute
   '/espace/alertes': typeof EspaceAlertesRoute
   '/espace/audit': typeof EspaceAuditRoute
@@ -255,6 +262,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/carte': typeof CarteRoute
   '/reglementation': typeof ReglementationRoute
+  '/suivi-demande': typeof SuiviDemandeRoute
   '/armateur/contrats': typeof ArmateurContratsRoute
   '/espace/alertes': typeof EspaceAlertesRoute
   '/espace/audit': typeof EspaceAuditRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/carte': typeof CarteRoute
   '/espace': typeof EspaceRouteWithChildren
   '/reglementation': typeof ReglementationRoute
+  '/suivi-demande': typeof SuiviDemandeRoute
   '/armateur/contrats': typeof ArmateurContratsRoute
   '/espace/alertes': typeof EspaceAlertesRoute
   '/espace/audit': typeof EspaceAuditRoute
@@ -330,6 +339,7 @@ export interface FileRouteTypes {
     | '/carte'
     | '/espace'
     | '/reglementation'
+    | '/suivi-demande'
     | '/armateur/contrats'
     | '/espace/alertes'
     | '/espace/audit'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/'
     | '/carte'
     | '/reglementation'
+    | '/suivi-demande'
     | '/armateur/contrats'
     | '/espace/alertes'
     | '/espace/audit'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/carte'
     | '/espace'
     | '/reglementation'
+    | '/suivi-demande'
     | '/armateur/contrats'
     | '/espace/alertes'
     | '/espace/audit'
@@ -438,6 +450,7 @@ export interface RootRouteChildren {
   CarteRoute: typeof CarteRoute
   EspaceRoute: typeof EspaceRouteWithChildren
   ReglementationRoute: typeof ReglementationRoute
+  SuiviDemandeRoute: typeof SuiviDemandeRoute
   ArmateurContratsRoute: typeof ArmateurContratsRoute
   InscriptionArmateurRoute: typeof InscriptionArmateurRoute
   InscriptionMarinRoute: typeof InscriptionMarinRoute
@@ -481,6 +494,13 @@ declare module '@tanstack/react-router' {
       path: '/reglementation'
       fullPath: '/reglementation'
       preLoaderRoute: typeof ReglementationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suivi-demande': {
+      id: '/suivi-demande'
+      path: '/suivi-demande'
+      fullPath: '/suivi-demande'
+      preLoaderRoute: typeof SuiviDemandeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/armateur/': {
@@ -744,6 +764,7 @@ const rootRouteChildren: RootRouteChildren = {
   CarteRoute: CarteRoute,
   EspaceRoute: EspaceRouteWithChildren,
   ReglementationRoute: ReglementationRoute,
+  SuiviDemandeRoute: SuiviDemandeRoute,
   ArmateurContratsRoute: ArmateurContratsRoute,
   InscriptionArmateurRoute: InscriptionArmateurRoute,
   InscriptionMarinRoute: InscriptionMarinRoute,

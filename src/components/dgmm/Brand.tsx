@@ -18,6 +18,7 @@ export function RepubliqueBlock({ className, light }: { className?: string; ligh
 const STATUS_STYLES = {
   validee: "bg-success/12 text-success border-success/30",
   en_attente: "bg-warning/12 text-warning border-warning/30",
+  transmis_direction: "bg-primary/10 text-primary border-primary/30",
   rejetee: "bg-destructive/10 text-destructive border-destructive/30",
   valide: "bg-success/12 text-success border-success/30",
   expire_bientot: "bg-warning/12 text-warning border-warning/30",
@@ -27,6 +28,7 @@ const STATUS_STYLES = {
 const STATUS_LABELS = {
   validee: "Validé",
   en_attente: "En attente",
+  transmis_direction: "Transmis à la Direction",
   rejetee: "Rejeté",
   valide: "Valide",
   expire_bientot: "À renouveler",

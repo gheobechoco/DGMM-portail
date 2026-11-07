@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { LogOut } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
+import { AmbianceLayer } from "@/components/dgmm/Ambiance";
 
 /** Cadre des espaces externes (marins, armateurs). */
 export function PublicShell({
@@ -26,18 +27,30 @@ export function PublicShell({
     <div className="relative isolate flex min-h-screen flex-col bg-background">
       {fond && (
         <>
-          <div aria-hidden className="profil-fond profil-fond-actif fixed inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${fond})` }} />
-          <div aria-hidden className="fixed inset-0 -z-10 bg-gradient-to-b from-[#0a192f]/70 via-[#0a192f]/45 to-[#0a192f]/80" />
+          <div
+            aria-hidden
+            className="profil-fond profil-fond-actif fixed inset-0 -z-20 bg-cover bg-center"
+            style={{ backgroundImage: `url(${fond})` }}
+          />
+          <div
+            aria-hidden
+            className="fixed inset-0 -z-10 bg-gradient-to-b from-[#0a192f]/70 via-[#0a192f]/45 to-[#0a192f]/80"
+          />
         </>
       )}
       <SceauFiligrane
         className="no-print fixed -bottom-24 -right-24 -z-10 w-[26rem] lg:w-[34rem]"
         opacite={0.05}
       />
+      <AmbianceLayer />
       <Tricolor className="no-print" />
       <header className="no-print bg-sidebar text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
-          <Link to="/" className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="flex cursor-pointer items-center gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            aria-label="Retour à l'accueil DGMM"
+          >
             <DgmmLogo className="size-10" />
             <div className="leading-tight">
               <div className="font-display text-sm font-bold">DGMM · {titre}</div>

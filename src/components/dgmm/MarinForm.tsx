@@ -63,6 +63,7 @@ const SITUATIONS = ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf / veuve"];
  */
 const FORM_DOCS: DocKey[] = [
   "photo",
+  "photoSupplementaire",
   "piece",
   "naissance",
   "casier",
@@ -657,8 +658,12 @@ export function MarinForm({
           </Panel>
 
           <Panel
-            title="Pièces justificatives"
-            description="Téléversement sécurisé — PDF, JPG ou PNG. Photo et CNI/Passeport requises pour le livret."
+            title={
+              <span className="inline-flex items-center gap-1.5">
+                Pièces justificatives <Aide terme="televersement" />
+              </span>
+            }
+            description="Joignez les copies numériques scannées ou photographiées (PDF, JPG ou PNG). Photo et CNI/Passeport requises pour le livret."
           >
             <ul className="grid gap-3 sm:grid-cols-2">
               {FORM_DOCS.map((k) => {

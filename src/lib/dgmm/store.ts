@@ -3,7 +3,7 @@ import { ageFrom, canIssueLivret, certificateStatus, DAY, type CertStatus } from
 import { ACCOUNTS } from "./auth";
 import { TOUS_NAVIRES, type TypeFlotte } from "./maritime";
 
-export type Etat = "en_attente" | "validee" | "rejetee";
+export type Etat = "en_attente" | "transmis_direction" | "validee" | "rejetee";
 export type OuiNon = "oui" | "non" | "";
 
 export interface Marin {
@@ -41,6 +41,10 @@ export interface Marin {
   embarquements?: Embarquement[] | undefined;
   alertes?: { sms: boolean; email: boolean } | undefined;
   documents: Partial<Record<DocKey, string>>;
+  piecesEnLigne?: DocKey[] | undefined;
+  verificationPieces?: Partial<
+    Record<DocKey, { conforme: boolean; verifiePar: string; verifieLe: string }>
+  >;
   validationAdmin: Etat;
   validationMedicale: Etat;
   login: string;
@@ -60,6 +64,7 @@ export interface Evenement {
 /** Ligne du relevé des services en mer (sea service) inscrite au livret. */
 export interface Embarquement {
   id: number;
+  roleId?: number | undefined;
   navire: string;
   imo: string;
   typeNavire: TypeFlotte | string;
@@ -70,6 +75,12 @@ export interface Embarquement {
   debarquement: string;
   saisiPar: string;
   saisiLe: string;
+  statut: "en_attente_validation" | "valide_dgmm" | "rejete";
+  justificatifTampon?: string | undefined;
+  motifRejet?: string | undefined;
+  validePar?: string | undefined;
+  valideLe?: string | undefined;
+  stationValidation?: string | undefined;
 }
 
 /** Rôle d'équipage déclaré par un armateur pour un appareillage. */
@@ -77,8 +88,14 @@ export interface RoleEquipage {
   id: number;
   armateur: string;
   navire: string;
+  navireImo?: string | undefined;
+  typeNavire?: string | undefined;
+  jauge?: number | undefined;
   appareillage: string;
   membres: { marinId: number; fonction: string }[];
+  justificatifDebarquement?: string | undefined;
+  roleDebarquementSoumisLe?: string | undefined;
+  roleDebarquementSoumisPar?: string | undefined;
   creeLe: string;
   modifieLe: string;
 }
@@ -98,6 +115,7 @@ export interface AuditEntry {
 
 export type DocKey =
   | "photo"
+  | "photoSupplementaire"
   | "piece"
   | "naissance"
   | "casier"
@@ -108,6 +126,7 @@ export type DocKey =
   | "livret";
 export const DOC_LABELS: Record<DocKey, string> = {
   photo: "Photo d'identité",
+  photoSupplementaire: "Deuxième photo d'identité",
   piece: "CNI / Passeport",
   naissance: "Acte de naissance",
   casier: "Casier judiciaire",
@@ -185,7 +204,7 @@ interface State {
   audit: AuditEntry[];
 }
 
-const KEY = "dgmm-gdm-v6";
+const KEY = "dgmm-gdm-v7";
 
 /** Empreinte 64 bits (deux FNV-1a) — démonstration ; en production : SHA-256 côté serveur. */
 export function empreinte(src: string): string {
@@ -399,7 +418,7 @@ function seed(): State {
         signeParticulier: "Néant",
       },
     ],
-    ["HAPPI", "Éric", "M", 22, "Matelot", "validee", "validee", 160],
+    ["HAPPI", "Éric", "M", 22, "Matelot", "validee", "validee", 160, { nip: "GAB-2026-001202" }],
     [
       "ATENDE",
       "Mélissa",
@@ -722,6 +741,7 @@ function seed(): State {
       const deb = fin + duree;
       list.push({
         id: embId++,
+        statut: "valide_dgmm",
         navire: nav.nom,
         imo: nav.imo,
         typeNavire: nav.type,
@@ -737,22 +757,75 @@ function seed(): State {
     }
     m.embarquements = list;
   }
-  // Rôle d'équipage déclaré par Perenco Marine.
-  const perenco = marins.filter((m) => m.entreprise === "Perenco Marine");
-  const roles: RoleEquipage[] = [
-    {
-      id: 1,
-      armateur: "Perenco Marine",
-      navire: "Perenco Mandji",
-      appareillage: iso(new Date(Date.now() + 6 * DAY)),
-      membres: [
-        ...perenco.map((m) => ({ marinId: m.id, fonction: m.profession })),
-        { marinId: 3, fonction: "Officier de quart pont" },
-      ],
-      creeLe: daysAgo(4),
-      modifieLe: daysAgo(2),
-    },
-  ];
+  // Rôles d'équipage de démonstration : un rôle par navire des armateurs disposant d'un compte,
+  // avec un embarquement ouvert (équipage actuellement en mer) rattaché à chaque rôle.
+  const roles: RoleEquipage[] = [];
+  const rolesDemo = ["Perenco Marine", "Bourbon Offshore", "SNAT Gabon"];
+  for (const nomArm of rolesDemo) {
+    const navs = TOUS_NAVIRES.filter((n) => n.armateur === nomArm);
+    const equipe = marins.filter(
+      (m) => m.entreprise === nomArm && m.validationAdmin === "validee",
+    );
+    // Démo : compléter l'effectif (2 marins par navire) avec des marins validés sans armateur de démo.
+    const libres = marins.filter(
+      (m) => m.validationAdmin === "validee" && !rolesDemo.includes(m.entreprise) && m.id !== 3,
+    );
+    while (equipe.length < navs.length * 2 && libres.length) {
+      const m = libres.shift()!;
+      m.entreprise = nomArm;
+      equipe.push(m);
+    }
+    navs.forEach((nav, idx) => {
+      const membresNav = equipe.filter((_, i) => i % navs.length === idx);
+      if (nomArm === "Perenco Marine" && idx === 0 && !membresNav.some((m) => m.id === 3)) {
+        const m3 = marins.find((m) => m.id === 3);
+        if (m3 && !rolesDemo.includes(m3.entreprise)) membresNav.push(m3);
+      }
+      if (!membresNav.length) return;
+      const roleId = roles.length + 1;
+      const depart = 8 + idx * 11 + rolesDemo.indexOf(nomArm) * 5;
+      roles.push({
+        id: roleId,
+        armateur: nomArm,
+        navire: nav.nom,
+        navireImo: nav.imo,
+        typeNavire: nav.type,
+        jauge: nav.jauge,
+        appareillage: iso(new Date(Date.now() - depart * DAY)),
+        membres: membresNav.map((m) => ({
+          marinId: m.id,
+          fonction: m.id === 3 && nomArm === "Perenco Marine" ? "Officier de quart pont" : m.profession,
+        })),
+        creeLe: daysAgo(depart + 2),
+        modifieLe: daysAgo(depart),
+      });
+      for (const m of membresNav) {
+        const debutIso = iso(new Date(Date.now() - depart * DAY));
+        const veille = iso(new Date(Date.now() - (depart + 1) * DAY));
+        const hist = (m.embarquements ?? []).map((e) =>
+          !e.debarquement || e.debarquement > debutIso
+            ? { ...e, debarquement: e.embarquement < veille ? veille : e.embarquement }
+            : e,
+        );
+        hist.push({
+          id: embId++,
+          roleId,
+          statut: "valide_dgmm",
+          navire: nav.nom,
+          imo: nav.imo,
+          typeNavire: nav.type,
+          jauge: nav.jauge,
+          armateur: nomArm,
+          fonction: m.id === 3 && nomArm === "Perenco Marine" ? "Officier de quart pont" : m.profession,
+          embarquement: debutIso,
+          debarquement: "",
+          saisiPar: `Armateur ${nomArm}`,
+          saisiLe: daysAgo(depart),
+        });
+        m.embarquements = hist;
+      }
+    });
+  }
   // Journal d'audit initial reconstitué à partir des historiques.
   const evts = marins
     .flatMap((m) =>
@@ -779,7 +852,14 @@ function load(): State {
         marins: (parsed.marins ?? []).map((m) => {
           const ancien = m as Marin & { biometrie?: { signature?: string } };
           const { biometrie, ...reste } = ancien;
-          return { ...reste, signature: reste.signature ?? biometrie?.signature };
+          return {
+            ...reste,
+            signature: reste.signature ?? biometrie?.signature,
+            embarquements: (reste.embarquements ?? []).map((e) => ({
+              ...e,
+              statut: e.statut ?? "valide_dgmm",
+            })),
+          };
         }),
         visites: parsed.visites ?? [],
         roles: parsed.roles ?? [],
@@ -802,16 +882,20 @@ const serverState = seed();
 
 /** Enregistre le nouvel état ; si `log` est fourni, ajoute une entrée chaînée au journal d'audit. */
 function set(next: State, log?: { acteur: string; action: string; cible: string; poste?: string | undefined }) {
-  state = log
+  const updated = log
     ? { ...next, audit: appendAudit(next.audit, log.acteur, log.action, log.cible, nowIso(), log.poste ?? poste()) }
     : next;
   if (typeof window !== "undefined") {
     try {
-      window.localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {
-      console.warn("Stockage local plein : les dernières modifications ne seront pas conservées.");
+      window.localStorage.setItem(KEY, JSON.stringify(updated));
+    } catch (error) {
+      throw new Error(
+        "Impossible d'enregistrer les modifications : le stockage local est plein ou indisponible.",
+        { cause: error },
+      );
     }
   }
+  state = updated;
   listeners.forEach((l) => l());
 }
 
@@ -984,7 +1068,13 @@ export function saveVisite(
 export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM", motif = "") {
   const s = get();
   const cibleMarin = s.marins.find((m) => m.id === id);
-  if (etat === "validee" && cibleMarin && motifVisa(cibleMarin, s.visites)) return;
+  if (
+    !cibleMarin ||
+    cibleMarin.validationAdmin !== "transmis_direction" ||
+    (etat !== "validee" && etat !== "rejetee") ||
+    (etat === "validee" && motifVisa(cibleMarin, s.visites))
+  )
+    return;
   const action =
     etat === "validee"
       ? "Validation administrative accordée"
@@ -1004,6 +1094,70 @@ export function setValidationAdmin(id: number, etat: Etat, auteur = "Agent DGMM"
       cible: cible(s.marins.find((m) => m.id === id)),
     },
   );
+}
+
+export function transmettreDossierDirection(id: number, auteur: string) {
+  const s = get();
+  const marin = s.marins.find((m) => m.id === id);
+  const originauxNonVerifies = (marin?.piecesEnLigne ?? []).some(
+    (piece) => !marin?.verificationPieces?.[piece]?.conforme,
+  );
+  if (!marin || marin.validationAdmin !== "en_attente" || originauxNonVerifies) return false;
+  const action = "Dossier transmis à la Direction pour visa régalien";
+  set(
+    {
+      ...s,
+      marins: s.marins.map((m) =>
+        m.id === id
+          ? withEvent(
+              { ...m, validationAdmin: "transmis_direction", modifieLe: nowIso() },
+              action,
+              auteur,
+              "admin",
+            )
+          : m,
+      ),
+    },
+    { acteur: auteur, action, cible: cible(marin) },
+  );
+  return true;
+}
+
+export function verifierOriginalPiece(
+  id: number,
+  piece: DocKey,
+  conforme: boolean,
+  auteur: string,
+) {
+  const s = get();
+  const marin = s.marins.find((m) => m.id === id);
+  if (!marin || !marin.documents[piece]) return false;
+  const date = nowIso();
+  const action = `Original physique ${conforme ? "vérifié conforme" : "non conforme"} — ${DOC_LABELS[piece]}`;
+  set(
+    {
+      ...s,
+      marins: s.marins.map((m) =>
+        m.id === id
+          ? withEvent(
+              {
+                ...m,
+                verificationPieces: {
+                  ...m.verificationPieces,
+                  [piece]: { conforme, verifiePar: auteur, verifieLe: date },
+                },
+                modifieLe: date,
+              },
+              action,
+              auteur,
+              "admin",
+            )
+          : m,
+      ),
+    },
+    { acteur: auteur, action, cible: cible(marin) },
+  );
+  return true;
 }
 
 /** Révoque un certificat signé (il n'est plus valable, la vérification QR l'indique). */
@@ -1089,14 +1243,22 @@ export function delivrerLivret(id: number, auteur = "Gestionnaire MM"): string {
 
 export function ajouterEmbarquement(
   marinId: number,
-  e: Omit<Embarquement, "id" | "saisiLe" | "saisiPar">,
+  e: Omit<Embarquement, "id" | "saisiLe" | "saisiPar" | "statut"> & {
+    statut?: Embarquement["statut"];
+  },
   auteur: string,
 ) {
   const s = get();
   const m = s.marins.find((x) => x.id === marinId);
   if (!m) return;
   const id = Math.max(0, ...s.marins.flatMap((x) => (x.embarquements ?? []).map((y) => y.id))) + 1;
-  const emb: Embarquement = { ...e, id, saisiPar: auteur, saisiLe: nowIso() };
+  const emb: Embarquement = {
+    ...e,
+    statut: e.statut ?? "valide_dgmm",
+    id,
+    saisiPar: auteur,
+    saisiLe: nowIso(),
+  };
   set(
     {
       ...s,
@@ -1121,30 +1283,24 @@ export function cloturerEmbarquement(
   debarquement: string,
   auteur: string,
 ) {
-  const s = get();
-  const m = s.marins.find((x) => x.id === marinId);
-  set(
-    {
-      ...s,
-      marins: s.marins.map((x) =>
-        x.id === marinId
-          ? {
-              ...x,
-              embarquements: (x.embarquements ?? []).map((y) =>
-                y.id === embId ? { ...y, debarquement } : y,
-              ),
-              modifieLe: nowIso(),
-            }
-          : x,
-      ),
-    },
-    { acteur: auteur, action: `Débarquement enregistré le ${debarquement}`, cible: cible(m) },
+  void marinId;
+  void embId;
+  void debarquement;
+  void auteur;
+  throw new Error(
+    "Un débarquement doit être déclaré par l'armateur puis visé par la DGMM via le lot d'équipage.",
   );
 }
 
 export function joursEmbarquement(e: Embarquement, now = new Date()): number {
   const fin = e.debarquement ? new Date(e.debarquement) : now;
-  return Math.max(0, Math.round((fin.getTime() - new Date(e.embarquement).getTime()) / DAY) + 1);
+  if (!Number.isFinite(fin.getTime())) return 0;
+  const dateLocale = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  const debutJour = Date.parse(`${e.embarquement.slice(0, 10)}T00:00:00Z`);
+  const finJour = Date.parse(`${(e.debarquement || dateLocale(fin)).slice(0, 10)}T00:00:00Z`);
+  if (!Number.isFinite(debutJour) || !Number.isFinite(finJour)) return 0;
+  return Math.max(0, Math.floor((finJour - debutJour) / DAY) + 1);
 }
 
 /* ---------- Rôles d'équipage (armateurs) ---------- */
@@ -1168,8 +1324,36 @@ export function saveRole(
     };
     roles = [saved, ...s.roles];
   }
+  let nextEmbId =
+    Math.max(0, ...s.marins.flatMap((m) => (m.embarquements ?? []).map((e) => e.id))) + 1;
+  const navire = TOUS_NAVIRES.find((n) => n.nom === saved.navire);
+  const marins = s.marins.map((m) => {
+    const membre = saved.membres.find((x) => x.marinId === m.id);
+    if (!membre || (m.embarquements ?? []).some((e) => e.roleId === saved.id)) return m;
+    const embarquement: Embarquement = {
+      id: nextEmbId++,
+      roleId: saved.id,
+      navire: saved.navire,
+      imo: saved.navireImo ?? navire?.imo ?? "",
+      typeNavire: saved.typeNavire ?? navire?.type ?? "",
+      jauge: saved.jauge ?? navire?.jauge ?? 0,
+      armateur: saved.armateur,
+      fonction: membre.fonction,
+      embarquement: saved.appareillage,
+      debarquement: "",
+      saisiPar: acteur,
+      saisiLe: nowIso(),
+      statut: "valide_dgmm",
+    };
+    return withEvent(
+      { ...m, embarquements: [...(m.embarquements ?? []), embarquement], modifieLe: nowIso() },
+      `Embarquement déclaré sur ${saved.navire} au rôle ${saved.id}`,
+      acteur,
+      "modification",
+    );
+  });
   set(
-    { ...s, roles },
+    { ...s, roles, marins },
     {
       acteur,
       action: `Déclaration du rôle d'équipage — ${saved.navire} (${saved.membres.length} marins)`,
@@ -1177,6 +1361,196 @@ export function saveRole(
     },
   );
   return saved;
+}
+
+export interface SelectionDebarquement {
+  marinId: number;
+  embId: number;
+  dateDebarquement: string;
+  justificatif: string;
+}
+
+export function soumettreDebarquementLot(
+  armateur: string,
+  roleId: number,
+  selections: SelectionDebarquement[],
+  auteur: string,
+  justificatifRole?: string,
+): void {
+  const s = get();
+  const role = s.roles.find((x) => x.id === roleId && x.armateur === armateur);
+  if (!role) throw new Error("Rôle d'équipage introuvable pour cet armateur.");
+  if (!selections.length) throw new Error("Sélectionnez au moins un marin à débarquer.");
+  const vus = new Set<string>();
+  const lignes = selections.map((selection) => {
+    const cle = `${selection.marinId}:${selection.embId}`;
+    if (vus.has(cle)) throw new Error("Un marin figure plusieurs fois dans le lot.");
+    vus.add(cle);
+    const marin = s.marins.find((m) => m.id === selection.marinId);
+    const embarquement = marin?.embarquements?.find((e) => e.id === selection.embId);
+    if (
+      !marin ||
+      marin.entreprise !== armateur ||
+      !role.membres.some((x) => x.marinId === marin.id)
+    )
+      throw new Error("Un marin sélectionné ne relève pas de ce rôle ou de cet armateur.");
+    if (
+      !embarquement ||
+      embarquement.roleId !== roleId ||
+      (embarquement.statut !== "valide_dgmm" && embarquement.statut !== "rejete")
+    )
+      throw new Error(`L'embarquement de ${fullName(marin)} n'est pas disponible pour ce lot.`);
+    if (!selection.dateDebarquement || selection.dateDebarquement < embarquement.embarquement)
+      throw new Error(`La date de débarquement de ${fullName(marin)} est invalide.`);
+    if (!selection.justificatif)
+      throw new Error(`Joignez le justificatif du tampon pour ${fullName(marin)}.`);
+    return { marin, embarquement, selection };
+  });
+  const now = nowIso();
+  const ids = new Set(lignes.map(({ marin }) => marin.id));
+  const marins = s.marins.map((m) => {
+    if (!ids.has(m.id)) return m;
+    const selectionsParId = new Map(
+      lignes
+        .filter((ligne) => ligne.marin.id === m.id)
+        .map(({ embarquement, selection }) => [embarquement.id, selection]),
+    );
+    return withEvent(
+      {
+        ...m,
+        embarquements: (m.embarquements ?? []).map((emb) => {
+          const selection = selectionsParId.get(emb.id);
+          if (!selection) return emb;
+          return {
+            ...emb,
+            debarquement: selection.dateDebarquement,
+            justificatifTampon: selection.justificatif,
+            statut: "en_attente_validation" as const,
+            motifRejet: undefined,
+            validePar: undefined,
+            valideLe: undefined,
+            stationValidation: undefined,
+          };
+        }),
+        modifieLe: now,
+      },
+      `Débarquement transmis à la DGMM — rôle ${roleId}`,
+      auteur,
+      "modification",
+    );
+  });
+  const roles = s.roles.map((r) =>
+    r.id === roleId
+      ? {
+          ...r,
+          justificatifDebarquement: justificatifRole ?? r.justificatifDebarquement,
+          roleDebarquementSoumisLe: now,
+          roleDebarquementSoumisPar: auteur,
+          modifieLe: now,
+        }
+      : r,
+  );
+  set(
+    { ...s, marins, roles },
+    {
+      acteur: auteur,
+      action: `Débarquement groupé transmis — rôle ${roleId}, ${lignes.length} marin(s)`,
+      cible: `${armateur} — ${role.navire}`,
+    },
+  );
+}
+
+export function validerRoleEquipageDgmm(roleId: number, station: string, agent: string): number {
+  const s = get();
+  const role = s.roles.find((r) => r.id === roleId);
+  if (!role) throw new Error("Rôle d'équipage introuvable.");
+  if (!station.trim()) throw new Error("Sélectionnez une station de validation.");
+  const pending = s.marins.flatMap((marin) =>
+    (marin.embarquements ?? [])
+      .filter((emb) => emb.roleId === roleId && emb.statut === "en_attente_validation")
+      .map((emb) => ({ marin, emb })),
+  );
+  if (!pending.length) throw new Error("Aucun débarquement en attente pour ce rôle.");
+  if (!role.justificatifDebarquement)
+    throw new Error("Le rôle de désarmement global doit être joint au dossier.");
+  if (pending.some(({ emb }) => !emb.debarquement || !emb.justificatifTampon))
+    throw new Error("Chaque débarquement doit comporter une date et le justificatif du tampon.");
+  const now = nowIso();
+  const joursCredites = pending.reduce((total, { emb }) => total + joursEmbarquement(emb), 0);
+  const cles = new Set(pending.map(({ marin, emb }) => `${marin.id}:${emb.id}`));
+  const marins = s.marins.map((m) => {
+    const lignes = pending.filter((x) => x.marin.id === m.id);
+    if (!lignes.length) return m;
+    return withEvent(
+      {
+        ...m,
+        embarquements: (m.embarquements ?? []).map((emb) =>
+          cles.has(`${m.id}:${emb.id}`)
+            ? {
+                ...emb,
+                statut: "valide_dgmm" as const,
+                validePar: agent,
+                valideLe: now,
+                stationValidation: station,
+              }
+            : emb,
+        ),
+        modifieLe: now,
+      },
+      `Débarquement visé par la DGMM — ${station}; ${lignes.reduce((sum, x) => sum + joursEmbarquement(x.emb), 0)} jour(s) crédité(s)`,
+      agent,
+      "admin",
+    );
+  });
+  set(
+    { ...s, marins },
+    {
+      acteur: agent,
+      action: `Visa DGMM du rôle ${roleId} — ${pending.length} marin(s), ${joursCredites} jour(s) crédités à ${station}`,
+      cible: `${role.armateur} — ${role.navire}`,
+    },
+  );
+  return joursCredites;
+}
+
+export function rejeterEmbarquementDgmm(
+  marinId: number,
+  embId: number,
+  motif: string,
+  agent: string,
+): void {
+  const s = get();
+  const marin = s.marins.find((m) => m.id === marinId);
+  const embarquement = marin?.embarquements?.find((e) => e.id === embId);
+  if (!marin || !embarquement || embarquement.statut !== "en_attente_validation")
+    throw new Error("Débarquement introuvable ou déjà traité.");
+  if (!motif.trim()) throw new Error("Indiquez le motif du rejet.");
+  const now = nowIso();
+  const action = `Débarquement rejeté par la DGMM — ${motif.trim()}`;
+  set(
+    {
+      ...s,
+      marins: s.marins.map((m) =>
+        m.id === marinId
+          ? withEvent(
+              {
+                ...m,
+                embarquements: (m.embarquements ?? []).map((emb) =>
+                  emb.id === embId
+                    ? { ...emb, statut: "rejete" as const, motifRejet: motif.trim() }
+                    : emb,
+                ),
+                modifieLe: now,
+              },
+              action,
+              agent,
+              "admin",
+            )
+          : m,
+      ),
+    },
+    { acteur: agent, action, cible: cible(marin) },
+  );
 }
 
 export function setAlertes(marinId: number, alertes: { sms: boolean; email: boolean }) {
@@ -1193,7 +1567,11 @@ export function setAlertes(marinId: number, alertes: { sms: boolean; email: bool
 }
 
 export function resetDemo(auteur = "Administrateur système") {
-  set(seed(), { acteur: auteur, action: "Réinitialisation des données de démonstration", cible: "Système" });
+  set(seed(), {
+    acteur: auteur,
+    action: "Réinitialisation des données de démonstration",
+    cible: "Système",
+  });
 }
 
 /** Clé de stockage des données (version du schéma). */
@@ -1217,8 +1595,23 @@ export function importerDonnees(json: string, auteur: string): string | null {
   if (!Array.isArray(d.marins) || !Array.isArray(d.visites) || !Array.isArray(d.audit))
     return "Sauvegarde incomplète : marins, visites ou journal d'audit manquants.";
   set(
-    { marins: d.marins, visites: d.visites, roles: Array.isArray(d.roles) ? d.roles : [], audit: d.audit },
-    { acteur: auteur, action: `Restauration d'une sauvegarde (${d.marins.length} marins)`, cible: "Système" },
+    {
+      marins: d.marins.map((marin) => ({
+        ...marin,
+        embarquements: (marin.embarquements ?? []).map((emb) => ({
+          ...emb,
+          statut: emb.statut ?? "valide_dgmm",
+        })),
+      })),
+      visites: d.visites,
+      roles: Array.isArray(d.roles) ? d.roles : [],
+      audit: d.audit,
+    },
+    {
+      acteur: auteur,
+      action: `Restauration d'une sauvegarde (${d.marins.length} marins)`,
+      cible: "Système",
+    },
   );
   return null;
 }
@@ -1283,6 +1676,11 @@ export function motifVisa(m: Marin, visites: Visite[], now = new Date()): string
     return "Certificat d'aptitude du Médecin des Gens de Mer requis (visite médicale préalable).";
   const manque = PIECES_VISA.filter((k) => !m.documents[k]).map((k) => DOC_LABELS[k]);
   if (manque.length) return `Pièces manquantes : ${manque.join(", ")}.`;
+  const originauxNonVerifies = (m.piecesEnLigne ?? []).filter(
+    (piece) => !m.verificationPieces?.[piece]?.conforme,
+  );
+  if (originauxNonVerifies.length)
+    return `Originaux papier à vérifier : ${originauxNonVerifies.map((piece) => DOC_LABELS[piece]).join(", ")}.`;
   return null;
 }
 

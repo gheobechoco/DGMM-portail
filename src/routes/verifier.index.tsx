@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Camera, CameraOff, Search, ShieldCheck } from "lucide-react";
 import { VerifyShell, validateLang, type Lang } from "@/components/dgmm/VerifyShell";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { Aide } from "@/components/dgmm/Aide";
+import { BarometreControle } from "@/components/dgmm/Statistiques";
 import { Button } from "@/components/ui/button";
-import { useMarins } from "@/lib/dgmm/store";
+import { codeValidation, useMarins, useVisites } from "@/lib/dgmm/store";
 
 export const Route = createFileRoute("/verifier/")({
   ssr: false,
@@ -41,6 +42,19 @@ const T = {
     inconnu: "QR code non reconnu : il ne provient pas du registre DGMM.",
     vide: "Saisissez un identifiant.",
     psc: "Contrôle par l'État du port — MoU d'Abuja",
+    demoTitre: "Exemples de démonstration pour inspecteurs PSC",
+    demoTexte: "Lancez une vérification publique en un clic.",
+    demoValide: "Titre valide & conforme",
+    demoValideD: "HAPPI Éric",
+    demoRenouveler: "Certificat à renouveler",
+    demoRenouvelerD: "ATENDE Mélissa · expiration dans moins de 30 jours",
+    demoExpire: "Titre expiré / Inaptitude",
+    demoExpireD: "MBOUMA René · certificat expiré",
+    demoOfficiel: "Certificat médical officiel (QR Code)",
+    demoOfficielD: "OBAME NGUEMA Jean-Pierre",
+    demoFaux: "Simulation document non répertorié",
+    demoFauxD: "Identifiant fictif · alerte anti-fraude",
+    visaStcw: "Visa DGMM · STCW I/9",
   },
   en: {
     sous: "Public verification of seafarer documents",
@@ -58,6 +72,19 @@ const T = {
     inconnu: "Unrecognised QR code: it does not come from the DGMM register.",
     vide: "Enter an identifier.",
     psc: "Port State Control — Abuja MoU",
+    demoTitre: "PSC inspector demonstration examples",
+    demoTexte: "Run a public verification in one click.",
+    demoValide: "Valid & compliant document",
+    demoValideD: "HAPPI Éric",
+    demoRenouveler: "Certificate due for renewal",
+    demoRenouvelerD: "ATENDE Mélissa · expires in less than 30 days",
+    demoExpire: "Expired document / Unfit",
+    demoExpireD: "MBOUMA René · certificate expired",
+    demoOfficiel: "Official medical certificate (QR code)",
+    demoOfficielD: "OBAME NGUEMA Jean-Pierre",
+    demoFaux: "Unregistered document simulation",
+    demoFauxD: "Fictional ID · anti-fraud alert",
+    visaStcw: "DGMM endorsement · STCW I/9",
   },
 };
 
@@ -70,11 +97,65 @@ function VerifierAccueil() {
   const t = T[lang];
   const navigate = useNavigate();
   const marins = useMarins();
+  const visites = useVisites();
   const [saisie, setSaisie] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [scan, setScan] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
-  const search = lang === "en" ? { lang: "en" as const } : {};
+  const search = useMemo(() => (lang === "en" ? { lang: "en" as const } : {}), [lang]);
+  const marinValide =
+    marins.find((m) => m.nip === "GAB-2026-001202") ??
+    marins.find((m) => m.nom === "HAPPI" && m.prenom === "Éric");
+  const marinRenouvellement = marins.find((m) => m.nom === "ATENDE" && m.prenom === "Mélissa");
+  const marinExpire = marins.find((m) => m.nom === "MBOUMA" && m.prenom === "René");
+  const marinCertificat = marins.find(
+    (m) => m.nom === "OBAME NGUEMA" && m.prenom === "Jean-Pierre",
+  );
+  const certificatOfficiel = marinCertificat
+    ? visites.find(
+        (v) => v.marinId === marinCertificat.id && v.numero === "VM-2026-0042" && v.signee,
+      )
+    : undefined;
+  const exemples = [
+    {
+      key: "valide",
+      label: t.demoValide,
+      detail: t.demoValideD,
+      value: marinValide?.nip,
+      style: "border-success/40 hover:border-success",
+    },
+    {
+      key: "renouveler",
+      label: t.demoRenouveler,
+      detail: t.demoRenouvelerD,
+      value: marinRenouvellement?.nip,
+      style: "border-warning/50 hover:border-warning",
+    },
+    {
+      key: "expire",
+      label: t.demoExpire,
+      detail: t.demoExpireD,
+      value: marinExpire?.nip,
+      style: "border-destructive/40 hover:border-destructive",
+    },
+    {
+      key: "officiel",
+      label: t.demoOfficiel,
+      detail: `${t.demoOfficielD} · ${t.visaStcw}`,
+      value:
+        certificatOfficiel && marinCertificat
+          ? codeValidation(certificatOfficiel, marinCertificat.nip)
+          : undefined,
+      style: "border-primary/40 hover:border-primary",
+    },
+    {
+      key: "faux",
+      label: t.demoFaux,
+      detail: t.demoFauxD,
+      value: "GAB-9999-000000",
+      style: "border-destructive/40 hover:border-destructive",
+    },
+  ].filter((exemple) => exemple.value);
 
   const ouvrir = (valeur: string) => {
     const v = valeur.trim().toUpperCase();
@@ -123,8 +204,17 @@ function VerifierAccueil() {
                 setScan(false);
                 const id = decodeURIComponent(m[2]!);
                 if (m[1])
-                  navigate({ to: "/verifier/certificat/$code", params: { code: id }, search });
-                else navigate({ to: "/verifier/$nip", params: { nip: id }, search });
+                  navigate({
+                    to: "/verifier/certificat/$code",
+                    params: { code: id },
+                    search: { ...search, source: "qr" },
+                  });
+                else
+                  navigate({
+                    to: "/verifier/$nip",
+                    params: { nip: id },
+                    search: { ...search, source: "qr" },
+                  });
                 return;
               }
               setMsg(t.inconnu);
@@ -161,7 +251,7 @@ function VerifierAccueil() {
       }
       sousTitre={t.sous}
     >
-      <div className="reveal w-full max-w-md overflow-hidden rounded-xl border bg-card shadow-card">
+      <div className="reveal w-full max-w-2xl overflow-hidden rounded-xl border bg-card shadow-card">
         <div className="flex items-center gap-3 bg-primary-soft px-5 py-4">
           <ShieldCheck className="size-8 shrink-0 text-primary" />
           <div>
@@ -226,10 +316,43 @@ function VerifierAccueil() {
               {msg}
             </p>
           )}
+          <section aria-labelledby="demo-exemples" className="border-t pt-4">
+            <h2 id="demo-exemples" className="font-display text-sm font-bold text-primary">
+              {t.demoTitre}
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">{t.demoTexte}</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {exemples.map((exemple) => (
+                <button
+                  key={exemple.key}
+                  type="button"
+                  onClick={() => {
+                    setSaisie(exemple.value!);
+                    setMsg(null);
+                    ouvrir(exemple.value!);
+                  }}
+                  className={`rounded-lg border bg-card p-3 text-left text-xs font-semibold text-primary transition hover:bg-muted/50 ${exemple.style}`}
+                >
+                  <span className="block">{exemple.label}</span>
+                  {exemple.detail && (
+                    <span className="mt-1 block font-normal text-muted-foreground">
+                      {exemple.detail}
+                    </span>
+                  )}
+                  <span className="mt-1 block truncate font-mono font-normal text-muted-foreground">
+                    {exemple.value}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
           <p className="flex items-center gap-1 border-t pt-3 text-[11px] text-muted-foreground">
             {t.psc}
             {lang === "fr" && <Aide terme="abuja" />}
           </p>
+        </div>
+        <div className="mt-4">
+          <BarometreControle />
         </div>
       </div>
     </VerifyShell>

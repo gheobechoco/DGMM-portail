@@ -153,7 +153,7 @@ export function Omnibar({ session }: { session: Account }) {
                 >
                   <Users className="text-muted-foreground" /> Répertoire des gens de mer
                 </CommandItem>
-                {can(session.role, "marins.creer") && (
+                {can(session.role, "marins.enroler") && (
                   <CommandItem
                     value="enrôler nouveau marin"
                     onSelect={() => go("/espace/marins/nouveau")}
@@ -169,7 +169,7 @@ export function Omnibar({ session }: { session: Account }) {
                     <Stethoscope className="text-muted-foreground" /> Nouvelle visite médicale
                   </CommandItem>
                 )}
-                {can(session.role, "marins.livret") && (
+                {can(session.role, "livrets.delivrer") && (
                   <CommandItem value="livrets maritimes" onSelect={() => go("/espace/livrets")}>
                     <BookOpenCheck className="text-muted-foreground" /> Livrets maritimes
                   </CommandItem>

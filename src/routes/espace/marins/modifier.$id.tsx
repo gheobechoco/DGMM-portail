@@ -16,7 +16,7 @@ function Modifier() {
   const navigate = useNavigate();
   const marin = useMarins().find((m) => m.id === Number(id));
   return (
-    <RequirePerm perm="marins.creer">
+    <RequirePerm perm="marins.enroler">
       {(session) =>
         !marin ? (
           <EmptyState icon={UserX} title="Dossier introuvable" />
@@ -36,9 +36,16 @@ function Modifier() {
               submitLabel="Enregistrer les modifications"
               onCancel={() => navigate({ to: "/espace/marins/$id", params: { id } })}
               onSubmit={(v) => {
-                saveMarin({ ...v, id: marin.id }, session.nom);
-                toast.success("Dossier mis à jour");
-                navigate({ to: "/espace/marins/$id", params: { id } });
+                try {
+                  saveMarin({ ...v, id: marin.id }, session.nom);
+                  toast.success("Dossier mis à jour");
+                  navigate({ to: "/espace/marins/$id", params: { id } });
+                } catch (error) {
+                  toast.error("Dossier non enregistré", {
+                    description:
+                      error instanceof Error ? error.message : "Le stockage local est indisponible.",
+                  });
+                }
               }}
             />
           </>

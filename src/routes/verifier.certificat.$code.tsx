@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { Ban, CheckCircle2, ShieldAlert, ShieldX } from "lucide-react";
+import { toast } from "sonner";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { Aide } from "@/components/dgmm/Aide";
 import { VerifyShell, validateLang, type Lang } from "@/components/dgmm/VerifyShell";
@@ -14,6 +16,7 @@ import {
   type Verdict,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
+import { enregistrerVerificationPublique } from "@/lib/dgmm/statistiques";
 
 export const Route = createFileRoute("/verifier/certificat/$code")({
   ssr: false,
@@ -98,7 +101,7 @@ const T = {
  */
 function VerifierCertificat() {
   const { code } = Route.useParams();
-  const { lang = "fr" } = Route.useSearch();
+  const { lang = "fr", source } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const t = T[lang];
   const loc = lang === "fr" ? "fr-FR" : "en-GB";
@@ -115,6 +118,24 @@ function VerifierCertificat() {
   const m = marins.find((x) => x.id === v?.marinId);
   const etat = v ? etatCertificat(v) : null;
   const visa = visaDgmm(m);
+  const conforme =
+    !!v && (etat === "valide" || etat === "expire_bientot") && v.signee && !v.revoquee;
+  const logKey = useRef("");
+  useEffect(() => {
+    const key = `${code}:${source ?? "manual"}`;
+    if (logKey.current === key) return;
+    logKey.current = key;
+    try {
+      enregistrerVerificationPublique(
+        source === "qr" ? "qr" : "certificat",
+        conforme ? "conforme" : "anomalie",
+      );
+    } catch (error) {
+      toast.error("Statistique PSC non enregistrée", {
+        description: error instanceof Error ? error.message : "Le compteur local est indisponible.",
+      });
+    }
+  }, [code, conforme, source]);
 
   const banner =
     !v || !etat
@@ -155,7 +176,10 @@ function VerifierCertificat() {
     <VerifyShell
       lang={lang}
       onLang={(l: Lang) =>
-        navigate({ search: { lang: l === "en" ? "en" : undefined }, replace: true })
+        navigate({
+          search: (previous) => ({ ...previous, lang: l === "en" ? "en" : undefined }),
+          replace: true,
+        })
       }
       sousTitre={t.sous}
     >

@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { CheckCircle2, ShieldAlert, ShieldX } from "lucide-react";
+import { toast } from "sonner";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { VerifyShell, validateLang, type Lang } from "@/components/dgmm/VerifyShell";
 import { StatusPill } from "@/components/dgmm/Brand";
@@ -13,6 +15,7 @@ import {
   useVisites,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
+import { enregistrerVerificationPublique } from "@/lib/dgmm/statistiques";
 
 export const Route = createFileRoute("/verifier/$nip")({
   ssr: false,
@@ -63,7 +66,7 @@ const T = {
 /** Page publique ouverte par le QR code du livret maritime. */
 function Verifier() {
   const { nip } = Route.useParams();
-  const { lang = "fr" } = Route.useSearch();
+  const { lang = "fr", source } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const t = T[lang];
   const loc = lang === "fr" ? "fr-FR" : "en-GB";
@@ -77,14 +80,33 @@ function Verifier() {
   const st = m ? marinCertStatus(visites, m.id) : "aucun";
   const cert = m ? lastCertificate(visites, m.id) : undefined;
   const ok = !!m && m.validationAdmin === "validee" && (st === "valide" || st === "expire_bientot");
-  const jours = (m?.embarquements ?? []).reduce((s, e) => s + joursEmbarquement(e), 0);
+  const jours = (m?.embarquements ?? []).reduce(
+    (s, e) => s + (e.statut === "valide_dgmm" ? joursEmbarquement(e) : 0),
+    0,
+  );
   const Icon = !m ? ShieldX : ok ? CheckCircle2 : ShieldAlert;
+  const logKey = useRef("");
+  useEffect(() => {
+    const key = `${nip}:${source ?? "manual"}`;
+    if (logKey.current === key) return;
+    logKey.current = key;
+    try {
+      enregistrerVerificationPublique(source === "qr" ? "qr" : "nip", ok ? "conforme" : "anomalie");
+    } catch (error) {
+      toast.error("Statistique PSC non enregistrée", {
+        description: error instanceof Error ? error.message : "Le compteur local est indisponible.",
+      });
+    }
+  }, [nip, ok, source]);
 
   return (
     <VerifyShell
       lang={lang}
       onLang={(l: Lang) =>
-        navigate({ search: { lang: l === "en" ? "en" : undefined }, replace: true })
+        navigate({
+          search: (previous) => ({ ...previous, lang: l === "en" ? "en" : undefined }),
+          replace: true,
+        })
       }
       sousTitre={t.sous}
     >
@@ -97,7 +119,9 @@ function Verifier() {
               ? "bg-destructive/10 text-destructive"
               : ok
                 ? "bg-success/12 text-success"
-                : "bg-warning/12 text-warning",
+                : st === "expire" || st === "aucun"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-warning/12 text-warning",
           )}
         >
           <Icon className="size-8 shrink-0" />

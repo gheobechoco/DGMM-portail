@@ -1,11 +1,14 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   FileSignature,
   AlertTriangle,
   Building2,
+  Camera,
   CheckCircle2,
+  ChevronDown,
+  FileCheck2,
   Lock,
   Plus,
   Ship,
@@ -47,6 +50,7 @@ import {
   formatDate,
   fullName,
   journaliser,
+  joursEmbarquement,
   lastCertificate,
   niveauConformite,
   saveRole,
@@ -56,8 +60,10 @@ import {
   type Marin,
   type RoleEquipage,
   type Visite,
+  soumettreDebarquementLot,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
+import { SectionStatistiques, TableauArmateur } from "@/components/dgmm/Statistiques";
 
 export const Route = createFileRoute("/armateur/")({
   ssr: false,
@@ -105,7 +111,11 @@ function ConnexionArmateur() {
     journaliser(`Armateur ${a.entreprise}`, "Connexion à l'espace armateur", a.entreprise);
   };
   return (
-    <EcranConnexion profil="armateur" titre="Espace Armateurs" accroche="Votre flotte, vos rôles d'équipage et l'aptitude médicale de vos marins avant chaque appareillage.">
+    <EcranConnexion
+      profil="armateur"
+      titre="Espace Armateurs"
+      accroche="Votre flotte, vos rôles d'équipage et l'aptitude médicale de vos marins avant chaque appareillage."
+    >
       <div>
         <div>
           <div className="mb-5 flex items-center gap-3">
@@ -249,38 +259,50 @@ function Tableau({ a }: { a: ArmateurAccount }) {
           <span className="block text-sm text-muted-foreground">Créer et signer les contrats de vos marins, déclarer les versements mensuels, organiser les rapatriements.</span>
         </span>
       </Link>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Marins rattachés" value={effectif.length} icon={Users} />
-        <StatCard label="Aptes aujourd'hui" value={conformes} icon={CheckCircle2} tone="success" />
-        <StatCard
-          label="Non conformes"
-          value={effectif.length - conformes}
-          icon={AlertTriangle}
-          tone="danger"
-          hint="certificat expiré ou absent"
-        />
-        <StatCard label="Navires" value={flotte.length} icon={Ship} />
-      </div>
-
-      <Panel
-        title="Santé réglementaire de l'effectif"
-        description="Certificats médicaux STCW à ce jour"
-        className="mb-6"
+      <SectionStatistiques
+        titre="Statistiques et performance de la flotte"
+        description="Conformité de l’effectif, alertes d’expiration et indicateurs prédictifs de votre compagnie."
       >
-        <div className="flex flex-col items-center gap-6 sm:flex-row">
-          <CircularGauge
-            value={effectif.length ? (conformes / effectif.length) * 100 : 0}
-            label="Aptitude globale de l'effectif"
-            size={108}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard label="Marins rattachés" value={effectif.length} icon={Users} />
+          <StatCard
+            label="Aptes aujourd'hui"
+            value={conformes}
+            icon={CheckCircle2}
+            tone="success"
           />
-          <div className="w-full flex-1">
-            <ConformityGauge niveaux={effectif.map((m) => niveauConformite(m, visites))} />
-          </div>
+          <StatCard
+            label="Non conformes"
+            value={effectif.length - conformes}
+            icon={AlertTriangle}
+            tone="danger"
+            hint="certificat expiré ou absent"
+          />
+          <StatCard label="Navires" value={flotte.length} icon={Ship} />
         </div>
-      </Panel>
+
+        <Panel
+          title="Santé réglementaire de l'effectif"
+          description="Certificats médicaux STCW à ce jour"
+        >
+          <div className="flex flex-col items-center gap-6 sm:flex-row">
+            <CircularGauge
+              value={effectif.length ? (conformes / effectif.length) * 100 : 0}
+              label="Aptitude globale de l'effectif"
+              size={108}
+            />
+            <div className="w-full flex-1">
+              <ConformityGauge niveaux={effectif.map((m) => niveauConformite(m, visites))} />
+            </div>
+          </div>
+        </Panel>
+
+        <div>
+          <TableauArmateur entreprise={a.entreprise} />
+        </div>
+      </SectionStatistiques>
 
       <ArmateurOutils />
-
 
       <Panel
         title={
@@ -299,14 +321,23 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         {roles.length === 0 ? (
           <EmptyState icon={Ship} title="Aucun rôle d'équipage déclaré" />
         ) : (
-          roles.map((r) => (
-            <RoleCard
-              key={r.id}
-              r={r}
-              marins={marins}
-              visites={visites}
-              onEdit={() => setEdit(r)}
-            />
+          roles.map((r, i) => (
+            <details key={r.id} open={i === 0} className="group/acc rounded-lg border bg-card">
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-muted/40">
+                <Ship className="size-5 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-display font-semibold text-primary">{r.navire}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Appareillage du {formatDate(r.appareillage)} · {r.membres.length} marin(s)
+                  </div>
+                </div>
+                <ChevronDown className="size-4 text-muted-foreground transition-transform group-open/acc:rotate-180" />
+              </summary>
+              <div className="space-y-3 border-t p-3">
+                <RoleCard r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} />
+                <DebarquementLot role={r} armateur={a} marins={marins} />
+              </div>
+            </details>
           ))
         )}
       </Panel>
@@ -319,9 +350,14 @@ function Tableau({ a }: { a: ArmateurAccount }) {
         >
           <ul className="stagger divide-y">
             {flotte.map((n) => {
-              const aBord = marins.filter((m) =>
-                (m.embarquements ?? []).some((e) => e.navire === n.nom && !e.debarquement),
+              const aBordLignes = marins.flatMap((m) =>
+                (m.embarquements ?? [])
+                  .filter(
+                    (e) => e.navire === n.nom && (!e.debarquement || e.statut === "en_attente_validation"),
+                  )
+                  .map((e) => ({ m, e })),
               );
+              const aBord = aBordLignes.map((x) => x.m);
               const dernier = [...roles]
                 .filter((r) => r.navire === n.nom)
                 .sort((x, y) => y.appareillage.localeCompare(x.appareillage))[0];
@@ -334,8 +370,9 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                   })
                 : [];
               return (
-                <li key={n.imo} className="group px-5 py-4">
-                  <div className="flex items-start gap-3">
+                <li key={n.imo} className="group">
+                  <details className="group/nav">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 px-5 py-4 hover:bg-muted/40">
                     <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
                       <Ship className="sway size-5" />
                     </span>
@@ -371,7 +408,38 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                         </div>
                       )}
                     </div>
+                    <ChevronDown className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-open/nav:rotate-180" />
+                  </summary>
+                  <div className="border-t bg-muted/20 px-5 py-3">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary">
+                      Équipage en mer en temps réel ({aBordLignes.length})
+                    </div>
+                    {aBordLignes.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Aucun marin à bord actuellement.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {aBordLignes.map(({ m, e }) => (
+                          <li key={e.id} className="flex items-center gap-3 text-xs">
+                            <MarinPhoto m={m} className="size-8 shrink-0 rounded-full text-[10px]" />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate font-semibold text-primary">{fullName(m)}</div>
+                              <div className="truncate text-muted-foreground">
+                                {e.fonction} · <span className="font-mono">{m.nip}</span> · à bord depuis le{" "}
+                                {formatDate(e.embarquement)}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold">{joursEmbarquement(e)} j</div>
+                              {e.statut === "en_attente_validation" && (
+                                <div className="text-[10px] italic text-muted-foreground">débarquement en attente DGMM</div>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
+                  </details>
                 </li>
               );
             })}
@@ -444,6 +512,222 @@ function Tableau({ a }: { a: ArmateurAccount }) {
   );
 }
 
+function lireJustificatif(file: File, maxBytes = 450_000): Promise<string> {
+  if (file.size > maxBytes) {
+    return Promise.reject(new Error("Fichier trop volumineux (450 Ko maximum)."));
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        reject(new Error("Le fichier n'a pas pu être lu."));
+        return;
+      }
+      resolve(`${file.name}::${reader.result}`);
+    };
+    reader.onerror = () => reject(new Error("Impossible de lire ce fichier."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function DebarquementLot({
+  role,
+  armateur,
+  marins,
+}: {
+  role: RoleEquipage;
+  armateur: ArmateurAccount;
+  marins: Marin[];
+}) {
+  const lignes = role.membres.flatMap((membre) => {
+    const marin = marins.find((m) => m.id === membre.marinId);
+    const embarquement = marin?.embarquements?.find((e) => e.roleId === role.id);
+    return marin && embarquement ? [{ marin, embarquement }] : [];
+  });
+  const aDebarquer = lignes.filter(
+    ({ embarquement }) =>
+      (embarquement.statut === "valide_dgmm" && !embarquement.debarquement) ||
+      embarquement.statut === "rejete",
+  );
+  const attenteVisa = lignes.filter(
+    ({ embarquement }) => embarquement.statut === "en_attente_validation",
+  );
+  const joursAttente = attenteVisa.reduce(
+    (total, { embarquement }) => total + joursEmbarquement(embarquement),
+    0,
+  );
+  const [selectionnes, setSelectionnes] = useState<number[]>([]);
+  const [dateFin, setDateFin] = useState(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  });
+  const [preuves, setPreuves] = useState<Record<number, string>>({});
+  const [preuveRole, setPreuveRole] = useState("");
+  const [erreur, setErreur] = useState("");
+
+  if (!lignes.length) return null;
+
+  const charger = async (event: ChangeEvent<HTMLInputElement>, marinId?: number) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const value = await lireJustificatif(file);
+      if (marinId === undefined) setPreuveRole(value);
+      else setPreuves((current) => ({ ...current, [marinId]: value }));
+      setErreur("");
+    } catch (error) {
+      setErreur(error instanceof Error ? error.message : "Impossible de joindre ce fichier.");
+    }
+  };
+
+  const envoyer = () => {
+    const choisies = aDebarquer.filter(({ marin }) => selectionnes.includes(marin.id));
+    if (!choisies.length) return setErreur("Sélectionnez au moins un marin.");
+    if (!dateFin) return setErreur("Indiquez la date et l'heure de fin de campagne.");
+    if (!preuveRole) return setErreur("Joignez le rôle de désarmement global.");
+    if (choisies.some(({ marin }) => !preuves[marin.id]))
+      return setErreur("Ajoutez une photo du tampon pour chaque marin sélectionné.");
+    try {
+      soumettreDebarquementLot(
+        armateur.entreprise,
+        role.id,
+        choisies.map(({ marin, embarquement }) => ({
+          marinId: marin.id,
+          embId: embarquement.id,
+          dateDebarquement: dateFin,
+          justificatif: preuves[marin.id]!,
+        })),
+        `Armateur ${armateur.entreprise}`,
+        preuveRole,
+      );
+      setSelectionnes([]);
+      setPreuves({});
+      setErreur("");
+      toast.success("Lot transmis à la DGMM", {
+        description: `${choisies.length} marin(s) en attente du visa régalien.`,
+      });
+    } catch (error) {
+      setErreur(error instanceof Error ? error.message : "Le lot n'a pas pu être transmis.");
+    }
+  };
+
+  return (
+    <Panel
+      title="⚓ Débarquement collectif / Fin de campagne"
+      description={`Rôle ${role.id} · ${role.navire}${role.navireImo ? ` · OMI ${role.navireImo}` : ""}. Les marins ne seront libérés qu'après le visa DGMM.`}
+    >
+      {attenteVisa.length > 0 && (
+        <p className="mb-3 rounded-md bg-warning/10 px-3 py-2 text-sm font-medium text-warning">
+          {attenteVisa.length} débarquement(s) en attente de visa DGMM · {joursAttente} jour(s)
+          informatifs non encore crédités.
+        </p>
+      )}
+      <div className="space-y-3">
+        {aDebarquer.map(({ marin, embarquement }) => (
+          <div
+            key={embarquement.id}
+            className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[auto_1fr_auto]"
+          >
+            <input
+              type="checkbox"
+              aria-label={`Sélectionner ${fullName(marin)} pour le débarquement`}
+              checked={selectionnes.includes(marin.id)}
+              onChange={(event) =>
+                setSelectionnes((current) =>
+                  event.target.checked
+                    ? [...current, marin.id]
+                    : current.filter((id) => id !== marin.id),
+                )
+              }
+              className="mt-1 size-4 accent-primary"
+            />
+            <div className="min-w-0">
+              <div className="font-semibold text-primary">{fullName(marin)}</div>
+              <div className="text-xs text-muted-foreground">
+                {marin.nip} · {embarquement.fonction} · embarqué le{" "}
+                {formatDate(embarquement.embarquement)}
+              </div>
+              {embarquement.statut === "rejete" && (
+                <p className="mt-1 text-xs text-destructive">
+                  Rejet DGMM : {embarquement.motifRejet ?? "motif non renseigné"}
+                </p>
+              )}
+              {preuves[marin.id] && (
+                <p className="mt-1 inline-flex items-center gap-1 text-xs text-success">
+                  <FileCheck2 className="size-3.5" /> Justificatif joint
+                </p>
+              )}
+            </div>
+            <label className="inline-flex cursor-pointer items-center justify-center gap-1.5 self-start rounded-md border px-3 py-2 text-xs font-semibold hover:border-gold">
+              <Camera className="size-4" /> Prendre photo / Scan du livret
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(event) => void charger(event, marin.id)}
+              />
+            </label>
+          </div>
+        ))}
+        {aDebarquer.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Aucun marin disponible pour une nouvelle déclaration sur ce rôle.
+          </p>
+        )}
+      </div>
+      {aDebarquer.length > 0 && (
+        <div className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
+          <Field label="Date & heure de fin (pour les marins cochés)" htmlFor={`fin-${role.id}`}>
+            <input
+              id={`fin-${role.id}`}
+              type="datetime-local"
+              value={dateFin}
+              onChange={(event) => setDateFin(event.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Rôle de désarmement global" htmlFor={`role-debarquement-${role.id}`}>
+            <input
+              id={`role-debarquement-${role.id}`}
+              type="file"
+              accept="image/*,application/pdf"
+              className={inputClass}
+              onChange={(event) => void charger(event)}
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {preuveRole
+                ? "Document joint"
+                : role.justificatifDebarquement
+                  ? "Un document antérieur est enregistré; joindre le rôle de cette campagne."
+                  : "Photo ou PDF · 450 Ko maximum"}
+            </span>
+          </Field>
+        </div>
+      )}
+      {erreur && (
+        <p role="alert" className="mt-3 text-sm text-destructive">
+          {erreur}
+        </p>
+      )}
+      {aDebarquer.length > 0 && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            variant="gold"
+            disabled={!selectionnes.length || !preuveRole}
+            onClick={envoyer}
+          >
+            🚀 Transmettre le lot à la DGMM
+          </Button>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 function RoleDialog({
   a,
   role,
@@ -455,7 +739,10 @@ function RoleDialog({
 }) {
   const marins = useMarins();
   const visitesRole = useVisites();
-  const flotte = useMemo(() => getArmateur(a.entreprise)?.navires ?? a.navires ?? [], [a.entreprise, a.navires]);
+  const flotte = useMemo(
+    () => getArmateur(a.entreprise)?.navires ?? a.navires ?? [],
+    [a.entreprise, a.navires],
+  );
   const [navire, setNavire] = useState(role?.navire ?? flotte[0]?.nom ?? "");
   const [date, setDate] = useState(
     role?.appareillage ?? new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
@@ -469,6 +756,7 @@ function RoleDialog({
   const [nip, setNip] = useState("");
   const [fonction, setFonction] = useState("Matelot");
   const [err, setErr] = useState<string | null>(null);
+  const navireRole = flotte.find((n) => n.nom === navire);
 
   const ajouter = () => {
     const m = marins.find((x) => x.nip.toUpperCase() === nip.trim().toUpperCase());
@@ -614,6 +902,9 @@ function RoleDialog({
                   ...(role ? { id: role.id } : {}),
                   armateur: a.entreprise,
                   navire,
+                  navireImo: navireRole?.imo,
+                  typeNavire: navireRole?.type,
+                  jauge: navireRole?.jauge,
                   appareillage: date,
                   membres,
                 },

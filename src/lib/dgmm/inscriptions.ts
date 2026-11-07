@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { Navire, TypeFlotte } from "@/lib/dgmm/maritime";
 import type { NavireDeclare } from "@/lib/dgmm/registre";
+import type { DocKey } from "@/lib/dgmm/store";
 
 /**
  * Demandes déposées depuis les pages publiques :
@@ -33,6 +34,7 @@ export interface PreInscription {
   urgenceTel?: string;
   experience?: string;
   pieces?: string[];
+  documents?: Partial<Record<DocKey, string>>;
   marinId?: number | undefined;
   motif?: string | undefined;
   traitePar?: string | undefined;
@@ -70,9 +72,10 @@ export interface DemandeArmateur {
   traitePar?: string | undefined;
 }
 
-export type PieceSociete = "rccm" | "nif" | "agrement" | "assurance" | "mandat";
+export type PieceSociete = "rccm" | "statuts" | "nif" | "agrement" | "assurance" | "mandat";
 export const PIECES_SOCIETE: Record<PieceSociete, { titre: string; detail: string; obligatoire: boolean }> = {
   rccm: { titre: "Extrait RCCM", detail: "Immatriculation au registre du commerce", obligatoire: true },
+  statuts: { titre: "Statuts de la société", detail: "Statuts à jour de la compagnie armatrice", obligatoire: true },
   nif: { titre: "Attestation NIF", detail: "Numéro d'identification fiscale (DGI)", obligatoire: true },
   assurance: { titre: "Assurance P&I ou corps et machines", detail: "Attestation en cours de validité", obligatoire: true },
   mandat: { titre: "Pouvoir du représentant", detail: "Autorise le signataire à ouvrir le compte de la compagnie", obligatoire: true },
@@ -93,7 +96,10 @@ function lire(): Etat {
   if (typeof window === "undefined") return VIDE;
   if (!cache) {
     try {
-      cache = { ...VIDE, ...(JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Etat>) };
+      cache = {
+        ...VIDE,
+        ...(JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Etat>),
+      };
     } catch {
       cache = VIDE;
     }
@@ -101,12 +107,15 @@ function lire(): Etat {
   return cache;
 }
 function ecrire(e: Etat) {
-  cache = e;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(e));
-  } catch {
-    /* stockage plein ou indisponible */
+  } catch (error) {
+    throw new Error(
+      "Impossible d'enregistrer la demande : le stockage local est plein ou indisponible. Réduisez la taille des pièces jointes et réessayez.",
+      { cause: error },
+    );
   }
+  cache = e;
   listeners.forEach((l) => l());
 }
 if (typeof window !== "undefined") {
@@ -140,9 +149,68 @@ export function deposerPreInscription(
 ): PreInscription {
   const e = lire();
   const id = Math.max(0, ...e.pre.map((x) => x.id)) + 1;
-  const p: PreInscription = { ...d, id, numero: numero("PRE", id), creeLe: new Date().toISOString(), statut: "en_attente" };
+  const p: PreInscription = {
+    ...d,
+    id,
+    numero: numero("PRE", id),
+    creeLe: new Date().toISOString(),
+    statut: "en_attente",
+  };
   ecrire({ ...e, pre: [p, ...e.pre] });
   return p;
+}
+
+/** Ajoute une fois deux demandes fictives pour essayer le parcours guichet et le scan QR. */
+export function chargerDemosPreInscription(marinId: number): PreInscription[] {
+  const e = lire();
+  const now = Date.now();
+  const exemples: Omit<PreInscription, "id" | "creeLe">[] = [
+    {
+      numero: "PRE-DEMO-CREE",
+      statut: "convertie",
+      nom: "HAPPI",
+      prenom: "Éric",
+      sexe: "M",
+      dateNaissance: "2004-06-14",
+      nationalite: "Gabonaise",
+      tel: "070000000",
+      email: "demo.happi@example.ga",
+      profession: "Matelot",
+      station: "ST-OWE",
+      entreprise: "",
+      rdv: "",
+      documents: { piece: "cni-demo.jpg", photo: "photo-demo.jpg" },
+      pieces: ["cni-demo.jpg", "photo-demo.jpg"],
+      marinId,
+      traitePar: "Démonstration DGMM",
+    },
+    {
+      numero: "PRE-DEMO-ATTENTE",
+      statut: "en_attente",
+      nom: "MABIKA",
+      prenom: "Laure",
+      sexe: "F",
+      dateNaissance: "2006-02-18",
+      nationalite: "Gabonaise",
+      tel: "070000001",
+      email: "demo.mabika@example.ga",
+      profession: "Élève officier",
+      station: "ST-OWE",
+      entreprise: "",
+      rdv: "",
+      documents: { piece: "cni-demo.jpg", photo: "photo-demo.jpg" },
+      pieces: ["cni-demo.jpg", "photo-demo.jpg"],
+    },
+  ];
+  const ajoutes = exemples
+    .filter((exemple) => !e.pre.some((p) => p.numero === exemple.numero))
+    .map((exemple, index) => ({
+      ...exemple,
+      id: Math.max(0, ...e.pre.map((p) => p.id)) + index + 1,
+      creeLe: new Date(now - (index + 1) * 86400000).toISOString(),
+    }));
+  if (ajoutes.length) ecrire({ ...e, pre: [...ajoutes, ...e.pre] });
+  return [...ajoutes, ...e.pre.filter((p) => exemples.some((x) => x.numero === p.numero))];
 }
 
 export function traiterPreInscription(id: number, patch: Partial<PreInscription>) {
@@ -155,7 +223,13 @@ export function deposerDemandeArmateur(
 ): DemandeArmateur {
   const e = lire();
   const id = Math.max(0, ...e.armateurs.map((x) => x.id)) + 1;
-  const a: DemandeArmateur = { ...d, id, numero: numero("ARM", id), creeLe: new Date().toISOString(), statut: "en_attente" };
+  const a: DemandeArmateur = {
+    ...d,
+    id,
+    numero: numero("ARM", id),
+    creeLe: new Date().toISOString(),
+    statut: "en_attente",
+  };
   ecrire({ ...e, armateurs: [a, ...e.armateurs] });
   return a;
 }

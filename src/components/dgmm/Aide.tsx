@@ -59,6 +59,11 @@ export const GLOSSAIRE = {
     texte:
       "La photo d'identité est recadrée au format passeport (35 × 45 mm) et la signature du marin est tracée à l'écran lors de l'enrôlement ; toutes deux sont reportées sur le livret maritime.",
   },
+  televersement: {
+    titre: "Joindre un document scanné",
+    texte:
+      "Pour l'agent RH : numérisez d'abord le document papier avec un scanner ou prenez une photo nette, puis cliquez sur « Joindre » et sélectionnez le fichier (PDF, JPG ou PNG). Le portail ne commande pas le scanner. Vérifiez que toutes les pages sont lisibles et correspondent au marin ; les originaux papier restent à contrôler au guichet. Le certificat médical d'aptitude est établi par le médecin et ne doit pas être téléversé ici.",
+  },
 } as const;
 
 export type Terme = keyof typeof GLOSSAIRE;
