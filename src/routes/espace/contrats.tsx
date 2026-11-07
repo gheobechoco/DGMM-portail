@@ -64,7 +64,7 @@ function Contrats({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Tiers de confiance"
         title="Contrats d'engagement maritime"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Modèle unique de la DGMM, signé par l'armateur, le marin puis l'inspecteur. Une fois validé, le contrat est scellé et ne peut plus être modifié. <Aide terme="cem" /> <Aide terme="mlc" /></span>}
+        aides={["cem", "mlc"]}
       />
       <div className="mb-6"><LienStatistiques theme="contrats" texte="Contrats par étape, retards de versement et rapatriements" /></div>
       <BarreFiltres>

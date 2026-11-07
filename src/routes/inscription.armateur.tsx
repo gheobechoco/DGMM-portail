@@ -227,7 +227,7 @@ function InscriptionArmateur() {
                 <Field label="E-mail professionnel" htmlFor="email" required error={err1("email")} valid={!e1.email}><input id="email" type="email" className={inputClass} value={f.email} onChange={(x) => up("email", x.target.value)} autoComplete="email" /></Field>
               </div>
             </Panel>
-            <Panel title={<span className="inline-flex items-center gap-1.5">Personne désignée à terre (DPA) <Aide terme="dpa" /></span>} description="Exigée par le code ISM : contact joignable 24 h/24 en cas d'accident ou de détresse en mer.">
+            <Panel title={<span className="inline-flex items-center gap-1.5">Personne désignée à terre (DPA) <Aide terme="dpa" /></span>}>
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="Nom et prénom" htmlFor="dpaNom" required error={err1("dpaNom")}><input id="dpaNom" className={inputClass} value={f.dpaNom} onChange={(x) => up("dpaNom", x.target.value)} /></Field>
                 <Field label="Ligne directe 24 h/24" htmlFor="dpaTel" required error={err1("dpaTel")} valid={!e1.dpaTel}><input id="dpaTel" type="tel" className={inputClass} value={f.dpaTel} onChange={(x) => up("dpaTel", x.target.value)} placeholder="066 00 00 00 ou +870…" /></Field>

@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { TexteTape } from "@/components/dgmm/TexteTape";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
@@ -96,7 +97,6 @@ function EspaceArmateur() {
         </>
       }
       onLogout={() => armateurSession.write(null)}
-      salutation={{ cle: `armateur-${a.username}`, nom: a.entreprise, sous: a.contact }}
     >
       <Tableau a={a} />
     </PublicShell>
@@ -214,7 +214,16 @@ function ConnexionArmateur() {
 function Tableau({ a }: { a: ArmateurAccount }) {
   const marins = useMarins();
   const visites = useVisites();
-  const roles = useRoles().filter((r) => r.armateur === a.entreprise);
+  const ajd = new Date().toISOString().slice(0, 10);
+  // À venir d'abord (le plus proche en tête), puis les appareillages passés (le plus récent en tête).
+  const roles = useRoles()
+    .filter((r) => r.armateur === a.entreprise)
+    .sort((p, q) => {
+      const fp = p.appareillage >= ajd;
+      const fq = q.appareillage >= ajd;
+      if (fp !== fq) return fp ? -1 : 1;
+      return fp ? p.appareillage.localeCompare(q.appareillage) : q.appareillage.localeCompare(p.appareillage);
+    });
   const flotte = getArmateur(a.entreprise)?.navires ?? a.navires ?? [];
   const effectif = marins.filter((m) => m.entreprise === a.entreprise);
   const today = new Date().toISOString().slice(0, 10);
@@ -251,7 +260,7 @@ function Tableau({ a }: { a: ArmateurAccount }) {
           Espace armateur
         </div>
         <h1 className="font-display text-2xl font-bold text-primary sm:text-[28px]">
-          {a.entreprise}
+          <TexteTape texte={a.entreprise} />
         </h1>
         <p className="text-sm text-muted-foreground">
           Rôles d'équipage et conformité médicale STCW de vos équipages avant appareillage.
@@ -343,22 +352,9 @@ function Tableau({ a }: { a: ArmateurAccount }) {
           <EmptyState icon={Ship} title="Aucun rôle d'équipage déclaré" />
         ) : (
           roles.map((r, i) => (
-            <details key={r.id} open={i === 0} className="group/acc rounded-lg border bg-card">
-              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-muted/40">
-                <Ship className="size-5 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-display font-semibold text-primary">{r.navire}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Appareillage du {formatDate(r.appareillage)} · {r.membres.length} marin(s)
-                  </div>
-                </div>
-                <ChevronDown className="size-4 text-muted-foreground transition-transform group-open/acc:rotate-180" />
-              </summary>
-              <div className="space-y-3 border-t p-3">
-                <RoleCard r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} defautOuvert />
-                <DebarquementLot role={r} armateur={a} marins={marins} />
-              </div>
-            </details>
+            <RoleCard key={r.id} r={r} marins={marins} visites={visites} onEdit={() => setEdit(r)} defautOuvert={i === 0}>
+              <DebarquementLot role={r} armateur={a} marins={marins} />
+            </RoleCard>
           ))
         )}
       </Panel>

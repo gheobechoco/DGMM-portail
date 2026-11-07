@@ -65,7 +65,7 @@ function Medecins({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Santé des gens de mer"
         title="Médecins des gens de mer"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Médecins assermentés par la DGMM, structures de rattachement, marins examinés et demandes d'agrément. <Aide terme="agrement" /></span>}
+        aides={["agrement"]}
       />
       <div className="mb-6"><LienStatistiques theme="medecins" texte="Médecins agréés, échéances, demandes et visites par structure" /></div>
       <Tabs defaultValue={enCours.length && (can(session.role, "medecins.assermenter") || can(session.role, "medecins.instruire")) ? "demandes" : "medecins"}>

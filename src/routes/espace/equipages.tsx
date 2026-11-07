@@ -51,7 +51,14 @@ function Equipages({ session }: { session: Account }) {
     () =>
       [...roles]
         .filter((r) => !armateur || r.armateur === armateur)
-        .sort((a, b) => a.appareillage.localeCompare(b.appareillage)),
+        // Appareillages à venir d'abord (le plus proche en tête), puis les passés (le plus récent en tête).
+        .sort((a, b) => {
+          const ajd = new Date().toISOString().slice(0, 10);
+          const fa = a.appareillage >= ajd;
+          const fb = b.appareillage >= ajd;
+          if (fa !== fb) return fa ? -1 : 1;
+          return fa ? a.appareillage.localeCompare(b.appareillage) : b.appareillage.localeCompare(a.appareillage);
+        }),
     [roles, armateur],
   );
   const conforme = (r: (typeof roles)[number]) =>
@@ -72,12 +79,7 @@ function Equipages({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Contrôle des armements"
         title="Rôles d'équipage"
-        subtitle={
-          <span className="inline-flex items-center gap-1.5">
-            Rôles déclarés par les armateurs, avec la conformité médicale à la date d'appareillage{" "}
-            <Aide terme="role" />
-          </span>
-        }
+        aides={["role"]}
         actions={
           <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
             {can(session.role, "embarquements.valider") ? (

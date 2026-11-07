@@ -1,6 +1,6 @@
 import { Aide } from "@/components/dgmm/Aide";
 import { CheckCircle2, ChevronDown, Ship, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { StatusPill } from "@/components/dgmm/Brand";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
 import { CircularGauge, CountUp } from "@/components/dgmm/Anim";
@@ -41,7 +41,10 @@ export function RoleCard({
   visites,
   onEdit,
   defautOuvert = false,
+  children,
 }: {
+  /** Contenu supplémentaire affiché quand la carte est dépliée (ex. débarquement). */
+  children?: ReactNode;
   r: RoleEquipage;
   marins: Marin[];
   visites: Visite[];
@@ -65,6 +68,18 @@ export function RoleCard({
   const securite = fiche ? etatNavire(inspections, fiche.id) : null;
   const navireBloque = !passe && !!securite && !peutAppareiller(securite.etat);
   const ok = bloquants.length === 0 && rows.length > 0 && !sousEffectif && !navireBloque;
+  const aRenouveler = rows.filter((x) => x.st === "expire_bientot").length;
+  // Une seule phrase de verdict, qui donne tous les motifs sans rien répéter ailleurs.
+  const motifs = [
+    navireBloque && "certificats du navire non valides",
+    rows.length === 0 && "aucun marin déclaré",
+    sousEffectif && rows.length > 0 && `${rows.length} marin${rows.length > 1 ? "s" : ""} sur ${minimum} requis`,
+    bloquants.length > 0 &&
+      `${bloquants.length} marin${bloquants.length > 1 ? "s" : ""} sans certificat médical valide`,
+  ].filter(Boolean) as string[];
+  const verdict = ok
+    ? `Conforme — appareillage autorisé${aRenouveler ? ` · ${aRenouveler} certificat${aRenouveler > 1 ? "s" : ""} à renouveler sous 30 j` : ""}`
+    : `Non conforme — ${motifs.join(" · ")}`;
   // Carte repliée par défaut : l'en-tête suffit pour juger la conformité ; l'équipage se déplie.
   const [ouvert, setOuvert] = useState(defautOuvert);
   return (
@@ -84,36 +99,29 @@ export function RoleCard({
         <div className="min-w-0 flex-1">
           <div className="font-display font-semibold text-primary">{r.navire}</div>
           <div className="text-xs text-muted-foreground">
-            Appareillage {passe ? "effectué le" : "prévu le"} {formatDate(r.appareillage)} ·{" "}
-            {rows.length} marin(s)
-            {minimum > 0 && (
-              <span className={cn("ml-1", sousEffectif && "font-semibold text-destructive")}>
-                · effectif minimal de sécurité {minimum} (indicatif) <Aide terme="effectifMinimal" className="align-text-bottom" />
-              </span>
-            )}
+            Appareillage {passe ? "effectué le" : "prévu le"} {formatDate(r.appareillage)}
+            {!sousEffectif && rows.length > 0 && ` · ${rows.length} marin${rows.length > 1 ? "s" : ""}`}
           </div>
-          {securite && !passe && (
+          {/* Certificats du navire : seulement s'ils ajoutent une information (renouvellement proche). */}
+          {securite && !passe && securite.etat === "a_surveiller" && (
             <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               Certificats du navire : <PastilleEtat etat={securite.etat} jours={securite.jours} />
             </div>
           )}
         </div>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
-            ok
-              ? "bg-success text-success-foreground"
-              : "bg-destructive text-destructive-foreground",
-          )}
-        >
-          {ok ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
-          {ok
-            ? "Conforme — appareillage autorisé"
-            : navireBloque && !bloquants.length
-              ? "Non conforme — certificats du navire"
-              : sousEffectif && !bloquants.length
-              ? `Non conforme — effectif minimal ${minimum} non atteint`
-              : `Non conforme — ${bloquants.length} marin(s) bloquant(s)`}
+        <span className="inline-flex items-center gap-1">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
+              ok
+                ? "bg-success text-success-foreground"
+                : "bg-destructive text-destructive-foreground",
+            )}
+          >
+            {ok ? <CheckCircle2 className="size-3.5 shrink-0" /> : <XCircle className="size-3.5 shrink-0" />}
+            {verdict}
+          </span>
+          {sousEffectif && <Aide terme="effectifMinimal" />}
         </span>
         <button
           type="button"
@@ -193,6 +201,7 @@ export function RoleCard({
           </tbody>
         </table>
       </div>
+      {children && <div className="border-t p-3">{children}</div>}
       </div>
       )}
     </article>

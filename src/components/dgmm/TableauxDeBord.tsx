@@ -1,5 +1,6 @@
 /* Tableaux de bord de l'espace DGMM (pilotage et médical) et leurs statistiques. */
 import { etatAgrement, medecinDuCompte, useMedecins } from "@/lib/dgmm/medecins";
+import { TexteTape } from "@/components/dgmm/TexteTape";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -257,7 +258,7 @@ function Bienvenue({
             {eyebrow}
           </div>
           <h1 className="mt-1 font-display text-2xl font-bold sm:text-[28px]">
-            {salutation()}, {nom}
+            {salutation()}, <TexteTape texte={nom} />
           </h1>
           <p className="mt-1 text-sm text-primary-foreground/80">{message}</p>
           <p className="mt-0.5 text-xs capitalize text-primary-foreground/55">{today()}</p>

@@ -55,8 +55,7 @@ function ContratsArmateur() {
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary">Contrats d'engagement maritime</div>
-          <h1 className="font-display text-2xl font-bold text-primary">{a.entreprise}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Le contrat suit le modèle officiel de la DGMM : vous renseignez les conditions, le marin signe sur son espace, puis l'inspecteur valide. <Aide terme="cem" /> <Aide terme="mlc" /></p>
+          <h1 className="font-display text-2xl font-bold text-primary">{a.entreprise} <Aide terme="cem" className="align-middle" /> <Aide terme="mlc" className="align-middle" /></h1>
         </div>
         <Button variant="gold" onClick={() => { setCreer(true); setOuvert(null); }}><Plus /> Nouveau contrat</Button>
       </div>

@@ -82,7 +82,7 @@ function VisitesList({ canSaisir }: { canSaisir: boolean }) {
       <PageHeader
         eyebrow="Médecine des gens de mer"
         title="Visites médicales"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Examens d'aptitude et certificats médicaux conformes à la convention STCW. <Aide terme="stcw" /> <Aide terme="aptitude" /> <Aide terme="agrement" /></span>}
+        aides={["stcw", "aptitude", "agrement"]}
         actions={
           canSaisir && (
             <Button asChild variant="gold">

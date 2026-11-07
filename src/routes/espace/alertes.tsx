@@ -51,7 +51,7 @@ function Alertes({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Sécurité et droits des marins"
         title="Alertes des gens de mer"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Signalements reçus directement des marins, sans passer par les stations locales. Les alertes rouges appellent une inspection d'urgence au prochain port. <Aide terme="feux" /> <Aide terme="anonymat" /></span>}
+        aides={["feux", "anonymat"]}
       />
       <div className="mb-6"><LienStatistiques theme="alertes" texte="Alertes par gravité, délais de réponse et anonymat" /></div>
       <BarreFiltres>

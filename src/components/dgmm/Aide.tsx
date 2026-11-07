@@ -107,7 +107,7 @@ export const GLOSSAIRE = {
   anonymat: {
     titre: "Signalement anonyme et code de suivi",
     texte:
-      "En mode anonyme, ni le nom ni le poste utilisé ne sont enregistrés. Le marin reçoit un code personnel qui est le seul moyen de suivre son dossier et de lire les réponses : il faut le noter. L'alerte part en même temps à la Direction générale et à l'inspecteur de la sécurité des navires.",
+      "En mode anonyme, ni le nom ni le poste utilisé ne sont enregistrés. Le marin reçoit un code personnel qui est le seul moyen de suivre son dossier et de lire les réponses : il faut le noter. L'alerte part directement, sans passer par la station locale, à la Direction générale et à l'inspecteur de la sécurité des navires.",
   },
   agrement: {
     titre: "Agrément de médecin des gens de mer",

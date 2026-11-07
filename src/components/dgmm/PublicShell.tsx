@@ -6,7 +6,6 @@ import { LogOut } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { AmbianceLayer } from "@/components/dgmm/Ambiance";
-import { Salutation } from "@/components/dgmm/Salutation";
 
 /** Cadre des espaces externes (marins, armateurs). */
 export function PublicShell({
@@ -16,10 +15,7 @@ export function PublicShell({
   children,
   fond,
   actions,
-  salutation,
 }: {
-  /** Message d'accueil animé à l'arrivée (une fois par session). */
-  salutation?: { cle: string; nom: string; sous?: string | undefined } | undefined;
   titre: string;
   /** Boutons supplémentaires dans l'en-tête (ex. cloche des alertes). */
   actions?: ReactNode;
@@ -50,7 +46,6 @@ export function PublicShell({
         opacite={0.05}
       />
       <AmbianceLayer />
-      {salutation && <Salutation {...salutation} />}
       <Tricolor className="no-print" />
       <header className="no-print bg-sidebar text-primary-foreground">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6">

@@ -207,7 +207,7 @@ interface State {
   audit: AuditEntry[];
 }
 
-const KEY = "dgmm-gdm-v7";
+const KEY = "dgmm-gdm-v8";
 
 /** Empreinte 64 bits (deux FNV-1a) — démonstration ; en production : SHA-256 côté serveur. */
 export function empreinte(src: string): string {
@@ -829,6 +829,36 @@ function seed(): State {
       }
     });
   }
+  // Appareillages à venir : un cas par situation de conformité, pour que la démonstration
+  // montre tout ce que le contrôle peut produire (équipage, certificats médicaux, navire).
+  const AVENIR: { navire: string; dans: number; membres: number[] }[] = [
+    { navire: "RB Nyanga", dans: 3, membres: [1, 2, 9, 15, 24] }, // conforme
+    { navire: "RB Ngounié", dans: 6, membres: [7, 13, 9, 1, 3] }, // conforme, 1 certificat à renouveler
+    { navire: "MV Komo", dans: 9, membres: [1, 7, 13, 24, 2, 9, 15, 8] }, // conforme, certificats du navire à surveiller
+    { navire: "Perenco Ozouri", dans: 12, membres: [9, 15, 5, 1, 2, 7, 13, 24] }, // 1 marin au certificat expiré
+    { navire: "Bourbon Explorer 512", dans: 14, membres: [2, 8] }, // effectif insuffisant
+    { navire: "FV Banio", dans: 16, membres: [1, 2, 7, 13, 15] }, // navire jamais inspecté
+    { navire: "FV Mayumba Star", dans: 18, membres: [9, 12, 10] }, // plusieurs motifs à la fois
+  ];
+  for (const r of AVENIR) {
+    const nav = TOUS_NAVIRES.find((n) => n.nom === r.navire);
+    if (!nav) continue;
+    roles.push({
+      id: roles.length + 1,
+      armateur: nav.armateur,
+      navire: nav.nom,
+      navireImo: nav.imo,
+      typeNavire: nav.type,
+      jauge: nav.jauge,
+      appareillage: iso(new Date(Date.now() + r.dans * DAY)),
+      membres: r.membres.flatMap((id) => {
+        const m = marins.find((x) => x.id === id);
+        return m ? [{ marinId: id, fonction: m.profession }] : [];
+      }),
+      creeLe: daysAgo(2),
+      modifieLe: daysAgo(1),
+    });
+  }
   // Journal d'audit initial reconstitué à partir des historiques.
   const evts = marins
     .flatMap((m) =>
@@ -847,6 +877,8 @@ const listeners = new Set<() => void>();
 function load(): State {
   if (typeof window === "undefined") return seed();
   try {
+    // Ancienne version du jeu de démonstration : libérer la place.
+    window.localStorage.removeItem("dgmm-gdm-v7");
     const raw = window.localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<State>;

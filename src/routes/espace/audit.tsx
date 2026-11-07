@@ -85,7 +85,7 @@ function Journal() {
       <PageHeader
         eyebrow="Sécurité & traçabilité"
         title="Journal d'audit"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Historique chaîné des actions sensibles : chaque entrée scelle la précédente, toute altération est détectée. <Aide terme="journal" /></span>}
+        aides={["journal"]}
         actions={
           <>
             <Button variant="outline" onClick={exportCsv}>

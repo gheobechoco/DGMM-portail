@@ -43,8 +43,7 @@ function MonContrat() {
       <Link to="/mon-espace" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" /> Mon espace</Link>
       <div className="mb-5">
         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary">Mon contrat d'engagement</div>
-        <h1 className="font-display text-2xl font-bold text-primary">Mes contrats et ma paie</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Votre contrat suit le modèle officiel de la DGMM. Il n'est valable qu'avec votre signature et celle de l'inspecteur, et il ne peut plus être modifié ensuite. <Aide terme="cem" /> <Aide terme="mlc" /></p>
+        <h1 className="font-display text-2xl font-bold text-primary">Mes contrats et ma paie <Aide terme="cem" className="align-middle" /> <Aide terme="mlc" className="align-middle" /></h1>
       </div>
 
       {contrats.length === 0 ? (

@@ -47,7 +47,7 @@ function Livrets({ auteur }: { auteur: string }) {
       <PageHeader
         eyebrow="Titres maritimes"
         title="Fascicules de marin"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-1">Génération du fascicule (livret maritime) après validation du Directeur des Gens de Mer — sécurisé par QR code. <Aide terme="visa" /> <Aide terme="seaService" /></span>}
+        aides={["visa", "seaService"]}
       />
       <LienStatistiques theme="livrets" texte="Livrets prêts, dossiers à compléter et livrets délivrés" />
 

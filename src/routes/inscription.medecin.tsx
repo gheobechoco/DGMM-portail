@@ -94,10 +94,8 @@ function DemandeMedecin() {
     <EcranConnexion profil="medical" titre="Agrément médecin des gens de mer" accroche={ACCROCHE} large>
       <div className="mb-6 max-w-3xl">
         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary">Médecins</div>
-        <h1 className="mt-1 font-display text-3xl font-bold text-primary">Demande d'agrément et d'assermentation</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Première demande ou renouvellement de votre agrément de médecin des gens de mer (<Sigle s="STCW" />). L'agrément est délivré par la <Sigle s="DGMM" /> pour {DUREE_AGREMENT_ANS} ans. <Aide terme="agrement" />
-        </p>
+        <h1 className="mt-1 font-display text-3xl font-bold text-primary">Demande d'agrément et d'assermentation <Aide terme="agrement" className="align-middle" /></h1>
+        <p className="mt-2 text-sm text-muted-foreground">Première demande ou renouvellement, valable {DUREE_AGREMENT_ANS} ans.</p>
       </div>
       <form onSubmit={envoyer} noValidate className="space-y-6">
         <Panel title="1. Nature de la demande">

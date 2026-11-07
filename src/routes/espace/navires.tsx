@@ -61,7 +61,7 @@ function Navires({ session }: { session: Account }) {
       <PageHeader
         eyebrow="Sécurité de la navigation"
         title="Navires et certificats de sécurité"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-1">L'inspecteur contrôle à bord et scelle les certificats ; le responsable RH vise. Un navire n'est autorisé à appareiller qu'après ce double verrouillage. <Aide terme="doubleVerrou" /></span>}
+        aides={["doubleVerrou"]}
       />
       <div className="mb-6"><LienStatistiques theme="navires" texte="États des navires, renouvellements et certificats les plus courts" /></div>
       <BarreFiltres>

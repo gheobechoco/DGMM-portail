@@ -1,4 +1,5 @@
 import { useId, useMemo, type ReactNode } from "react";
+import { Aide, type Terme } from "@/components/dgmm/Aide";
 import { Link } from "@tanstack/react-router";
 import type { ThemeStats } from "@/lib/dgmm/themesStats";
 import { ArrowRight, ChartNoAxesCombined as IconeStats } from "lucide-react";
@@ -114,10 +115,13 @@ function BarresComparees({
 export function SectionStatistiques({
   titre,
   description,
+  aide,
   children,
 }: {
   titre: string;
   description: string;
+  /** Point « ? » à côté du titre. */
+  aide?: Terme | undefined;
   children: ReactNode;
 }) {
   const titreId = useId();
@@ -133,6 +137,7 @@ export function SectionStatistiques({
             className="font-display text-sm font-bold uppercase tracking-[0.14em] text-primary"
           >
             {titre}
+            {aide && <Aide terme={aide} className="ml-1 align-middle" />}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         </div>

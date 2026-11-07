@@ -9,8 +9,11 @@ export function PageHeader({
   subtitle,
   actions,
   eyebrow,
+  aides,
 }: {
   title: string;
+  /** Points « ? » placés à côté du titre : ils remplacent une phrase d'explication. */
+  aides?: Terme[] | undefined;
   subtitle?: ReactNode | undefined;
   actions?: ReactNode | undefined;
   eyebrow?: ReactNode | undefined;
@@ -23,7 +26,10 @@ export function PageHeader({
             {eyebrow}
           </div>
         )}
-        <h1 className="font-display text-2xl font-bold text-primary sm:text-[28px]">{title}</h1>
+        <h1 className="font-display text-2xl font-bold text-primary sm:text-[28px]">
+          {title}
+          {aides?.map((t) => <Aide key={t} terme={t} className="ml-1.5 align-middle" />)}
+        </h1>
         {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}

@@ -46,8 +46,7 @@ function Barres({ lignes, couleur = "bg-primary" }: { lignes: { nom: string; n: 
 
 function Theme({ titre, description, aide, children }: { titre: string; description: string; aide?: Terme | undefined; children: ReactNode }) {
   return (
-    <SectionStatistiques titre={titre} description={description}>
-      {aide && <p className="-mt-3 flex items-center gap-1.5 text-xs text-muted-foreground"><Aide terme={aide} /> Comment lire ces chiffres ?</p>}
+    <SectionStatistiques titre={titre} description={description} aide={aide}>
       {children}
     </SectionStatistiques>
   );

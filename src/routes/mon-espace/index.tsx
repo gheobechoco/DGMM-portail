@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { TexteTape } from "@/components/dgmm/TexteTape";
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { useState, type FormEvent } from "react";
 import {
@@ -77,7 +78,6 @@ function EspaceMarin() {
       }
       onLogout={() => marinSession.write(null)}
       actions={<AlertesExpirationMarin m={m} />}
-      salutation={{ cle: `marin-${m.id}`, nom: `${m.prenom} ${m.nom}`, sous: m.profession || "Gens de mer" }}
     >
       <Tableau m={m} />
     </PublicShell>
@@ -233,7 +233,7 @@ function Tableau({ m }: { m: Marin }) {
           />
           <div className="min-w-0 flex-1">
             <div className="text-xs uppercase tracking-wider text-gold">Bienvenue</div>
-            <h1 className="font-display text-2xl font-bold">{fullName(m)}</h1>
+            <h1 className="font-display text-2xl font-bold"><TexteTape texte={fullName(m)} /></h1>
             <p className="text-sm text-primary-foreground/75">
               {m.profession}
               {m.entreprise && ` · ${m.entreprise}`}

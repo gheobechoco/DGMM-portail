@@ -31,7 +31,6 @@ import { useSysteme } from "@/lib/dgmm/systeme";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
 import { Omnibar } from "@/components/dgmm/Omnibar";
-import { Salutation } from "@/components/dgmm/Salutation";
 import { Tour, type TourStep } from "@/components/dgmm/Tour";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -415,7 +414,6 @@ export function AppShell({ session, children }: { session: Account; children: Re
         opacite={0.045}
       />
       <AmbianceLayer />
-      <Salutation cle={session.username} nom={session.nom} sous={session.roleLabel} />
       <aside
         data-ambiance-zone
         className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block"
