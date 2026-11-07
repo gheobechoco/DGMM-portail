@@ -8,12 +8,9 @@ import {
   MapPinned,
   Siren,
   Anchor,
-  BellRing,
   BookOpenCheck,
   Download,
   Lock,
-  Mail,
-  MessageSquare,
   ShieldCheck,
   Stethoscope,
   User,
@@ -30,7 +27,6 @@ import {
   VerdictPill,
 } from "@/components/dgmm/MarinBits";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { marinSession } from "@/lib/dgmm/auth";
 import {
   etatCertificat,
@@ -39,13 +35,15 @@ import {
   joursEmbarquement,
   journaliser,
   lastCertificate,
-  setAlertes,
   useMarins,
   useVisites,
   type Marin,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
 import { JaugeCarriere, SectionStatistiques } from "@/components/dgmm/Statistiques";
+import { AlertesExpirationMarin } from "@/components/dgmm/AlertesExpiration";
+import { Pagination, usePagination } from "@/components/dgmm/Listes";
+import { ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/mon-espace/")({
   ssr: false,
@@ -78,6 +76,7 @@ function EspaceMarin() {
         </>
       }
       onLogout={() => marinSession.write(null)}
+      actions={<AlertesExpirationMarin m={m} />}
     >
       <Tableau m={m} />
     </PublicShell>
@@ -222,9 +221,6 @@ function Tableau({ m }: { m: Marin }) {
     (s, e) => s + (e.statut === "valide_dgmm" ? joursEmbarquement(e) : 0),
     0,
   );
-  const alertes = m.alertes ?? { sms: true, email: !!m.email };
-  const j60 = cert ? new Date(new Date(cert.stcw.validJusquau).getTime() - 60 * DAY) : null;
-  const j30 = cert ? new Date(new Date(cert.stcw.validJusquau).getTime() - 30 * DAY) : null;
 
   return (
     <>
@@ -347,7 +343,7 @@ function Tableau({ m }: { m: Marin }) {
       </SectionStatistiques>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Panel title="Mes certificats d'aptitude" className="lg:col-span-2" bodyClassName="p-0">
+        <Panel title="Mes certificats d'aptitude" className="lg:col-span-3" bodyClassName="p-0">
           {visites.length === 0 ? (
             <EmptyState icon={Stethoscope} title="Aucun certificat">
               Votre visite médicale d'aptitude n'a pas encore été réalisée.
@@ -377,126 +373,95 @@ function Tableau({ m }: { m: Marin }) {
           )}
         </Panel>
 
-        <Panel
-          title="Alertes d'expiration"
-          description="Rappels avant l'échéance de votre certificat."
-        >
-          <div className="space-y-4">
-            <label
-              className="choix flex cursor-pointer items-center justify-between gap-3"
-              data-actif={alertes.sms}
-            >
-              <span className="flex items-center gap-2 text-sm">
-                <MessageSquare className="choix-icone size-4 text-muted-foreground" />
-                <span>
-                  SMS
-                  <span className="block text-xs text-muted-foreground">
-                    {m.tel1 || "aucun numéro"}
-                  </span>
-                </span>
-              </span>
-              <Switch
-                checked={alertes.sms}
-                disabled={!m.tel1}
-                onCheckedChange={(c) => {
-                  setAlertes(m.id, { ...alertes, sms: c });
-                  toast.success(c ? "Alertes SMS activées" : "Alertes SMS désactivées");
-                }}
-              />
-            </label>
-            <label
-              className="choix flex cursor-pointer items-center justify-between gap-3"
-              data-actif={alertes.email}
-            >
-              <span className="flex items-center gap-2 text-sm">
-                <Mail className="choix-icone size-4 text-muted-foreground" />
-                <span>
-                  E-mail
-                  <span className="block text-xs text-muted-foreground">
-                    {m.email || "aucune adresse"}
-                  </span>
-                </span>
-              </span>
-              <Switch
-                checked={alertes.email}
-                disabled={!m.email}
-                onCheckedChange={(c) => {
-                  setAlertes(m.id, { ...alertes, email: c });
-                  toast.success(c ? "Alertes e-mail activées" : "Alertes e-mail désactivées");
-                }}
-              />
-            </label>
-            <div className="rounded-lg bg-muted p-3 text-xs">
-              <div className="mb-1.5 flex items-center gap-1.5 font-semibold text-primary">
-                <BellRing className="size-3.5" /> Rappels programmés
-              </div>
-              {cert && j60 && j30 ? (
-                <ul className="space-y-1 text-muted-foreground">
-                  {[
-                    ["J-60", j60],
-                    ["J-30", j30],
-                  ].map(([l, d]) => (
-                    <li key={l as string} className="flex justify-between gap-2">
-                      <span>{l as string}</span>
-                      <span className="tabular-nums">
-                        {(d as Date).toLocaleDateString("fr-FR")}
-                        {(d as Date).getTime() < Date.now() ? " · envoyé" : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted-foreground">
-                  Aucun certificat en cours : pas de rappel programmé.
-                </p>
-              )}
-            </div>
-          </div>
-        </Panel>
       </div>
 
-      <Panel title="Mes services en mer" className="mt-6" bodyClassName="p-0">
-        {emb.length === 0 ? (
-          <EmptyState icon={Anchor} title="Aucun embarquement inscrit" />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr>
-                  <th className="px-5 py-2.5 font-semibold">Navire</th>
-                  <th className="px-3 py-2.5 font-semibold">Fonction</th>
-                  <th className="px-3 py-2.5 font-semibold">Période</th>
-                  <th className="px-5 py-2.5 text-right font-semibold">Durée</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {emb.map((e) => (
-                  <tr key={e.id}>
-                    <td className="px-5 py-2.5">
-                      <div className="font-semibold text-primary">{e.navire}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {e.typeNavire} · {e.jauge.toLocaleString("fr-FR")} GT
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5">{e.fonction}</td>
-                    <td className="px-3 py-2.5 tabular-nums">
-                      {formatDate(e.embarquement)} →{" "}
-                      {e.debarquement ? (
-                        formatDate(e.debarquement)
-                      ) : (
-                        <StatusPill status="valide" label="À bord" />
-                      )}
-                    </td>
-                    <td className="px-5 py-2.5 text-right font-semibold tabular-nums">
-                      {joursEmbarquement(e)} j
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Panel>
+      <ServicesEnMer emb={emb} totalMer={totalMer} />
     </>
+  );
+}
+
+type Embarquement = NonNullable<Marin["embarquements"]>[number];
+
+/** « Mes services en mer » : liste dépliable et paginée (5 lignes par page). */
+function ServicesEnMer({ emb, totalMer }: { emb: Embarquement[]; totalMer: number }) {
+  const [ouvert, setOuvert] = useState(false);
+  const { visibles, ...pagination } = usePagination(emb, 5);
+  const aBord = emb.find((e) => !e.debarquement);
+  return (
+    <section className="mt-6 overflow-hidden rounded-xl border bg-card shadow-card">
+      <button
+        type="button"
+        onClick={() => setOuvert((o) => !o)}
+        aria-expanded={ouvert}
+        aria-controls="liste-services-mer"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/8 text-primary">
+          <Anchor className="size-4" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display font-semibold text-primary">Mes services en mer</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {emb.length === 0
+              ? "Aucun embarquement inscrit"
+              : `${emb.length} embarquement(s) · ${totalMer} j validés DGMM${aBord ? ` · actuellement à bord du ${aBord.navire}` : ""}`}
+          </span>
+        </span>
+        <span className="hidden text-xs font-semibold text-muted-foreground sm:inline">
+          {ouvert ? "Masquer" : "Afficher"}
+        </span>
+        <ChevronDown
+          className={cn("size-4 text-muted-foreground transition-transform", ouvert && "rotate-180")}
+          aria-hidden
+        />
+      </button>
+      {ouvert && (
+        <div id="liste-services-mer" className="border-t">
+          {emb.length === 0 ? (
+            <EmptyState icon={Anchor} title="Aucun embarquement inscrit" />
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-5 py-2.5 font-semibold">Navire</th>
+                      <th className="px-3 py-2.5 font-semibold">Fonction</th>
+                      <th className="px-3 py-2.5 font-semibold">Période</th>
+                      <th className="px-5 py-2.5 text-right font-semibold">Durée</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {visibles.map((e) => (
+                      <tr key={e.id}>
+                        <td className="px-5 py-2.5">
+                          <div className="font-semibold text-primary">{e.navire}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {e.typeNavire} · {e.jauge.toLocaleString("fr-FR")} GT
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">{e.fonction}</td>
+                        <td className="px-3 py-2.5 tabular-nums">
+                          {formatDate(e.embarquement)} →{" "}
+                          {e.debarquement ? (
+                            formatDate(e.debarquement)
+                          ) : (
+                            <StatusPill status="valide" label="À bord" />
+                          )}
+                        </td>
+                        <td className="px-5 py-2.5 text-right font-semibold tabular-nums">
+                          {joursEmbarquement(e)} j
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination {...pagination} className="border-t px-5 py-3" />
+            </>
+          )}
+        </div>
+      )}
+    </section>
   );
 }

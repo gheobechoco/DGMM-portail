@@ -14,8 +14,11 @@ export function PublicShell({
   onLogout,
   children,
   fond,
+  actions,
 }: {
   titre: string;
+  /** Boutons supplémentaires dans l'en-tête (ex. cloche des alertes). */
+  actions?: ReactNode;
   /** Photographie de fond (pages de connexion des espaces externes). */
   fond?: string | undefined;
   utilisateur?: ReactNode;
@@ -61,6 +64,7 @@ export function PublicShell({
           </Link>
           <div className="ml-auto flex items-center gap-3">
             {utilisateur && <div className="hidden text-right text-xs sm:block">{utilisateur}</div>}
+            {actions}
             <ThemeToggle light />
             {onLogout ? (
               <button
