@@ -7,6 +7,9 @@ import type { StyleSpecification } from "maplibre-gl";
  * - PLAN : rendu proche de Google Maps (mer bleu clair, routes blanches, grands axes
  *   jaunes, parcs verts, bâtiments gris en relief au zoom rapproché, noms lisibles).
  * - SATELLITE : imagerie aérienne avec les routes, les bâtiments et les noms par-dessus.
+ * - MAQUETTE : maquette blanche minimaliste (style « clay ») : sol gris très clair,
+ *   tous les bâtiments en relief blanc uniforme, eau bleu pâle, parcs verts ; le tracé
+ *   bleu du trajet ressort nettement.
  */
 
 const OFM = "https://tiles.openfreemap.org";
@@ -107,5 +110,40 @@ export const STYLE_SATELLITE = {
     { id: "batiments-3d", type: "fill-extrusion", source: "osm", "source-layer": "building", minzoom: 14, paint: { "fill-extrusion-color": "#f3ead8", "fill-extrusion-opacity": 0.6, "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0] } },
     { id: "noms-rues", type: "symbol", source: "osm", "source-layer": "transportation_name", minzoom: 14, layout: { "symbol-placement": "line", "text-field": NOM, "text-font": POLICE, "text-size": 11 }, paint: { "text-color": "#ffffff", "text-halo-color": "rgba(0,0,0,0.7)", "text-halo-width": 1.2 } },
     { id: "noms", type: "symbol", source: "osm", "source-layer": "place", layout: { "text-field": NOM, "text-font": POLICE, "text-size": ["interpolate", ["linear"], ["zoom"], 8, 11, 15, 15] }, paint: { "text-color": "#ffffff", "text-halo-color": "rgba(0,0,0,0.75)", "text-halo-width": 1.4 } },
+  ],
+} as unknown as StyleSpecification;
+
+/** Couleur du tracé sur la maquette blanche (bleu électrique). */
+export const BLEU_TRACE = "#1673ff";
+
+export const STYLE_MAQUETTE = {
+  version: 8,
+  glyphs: `${OFM}/fonts/{fontstack}/{range}.pbf`,
+  // Lumière rasante venant du sud-ouest : les façades se dessinent en gris doux.
+  light: { anchor: "viewport", color: "#ffffff", intensity: 0.42, position: [1.4, 215, 35] },
+  sources: { osm: { type: "vector", url: `${OFM}/planet` } },
+  layers: [
+    { id: "sol", type: "background", paint: { "background-color": "#eceef1" } },
+    { id: "verdure", type: "fill", source: "osm", "source-layer": "landcover", filter: filtreClasse("wood", "forest", "grass", "wetland", "farmland"), paint: { "fill-color": "#d5e6cc", "fill-opacity": 0.85 } },
+    { id: "parcs", type: "fill", source: "osm", "source-layer": "park", paint: { "fill-color": "#cfe3c3" } },
+    { id: "sable", type: "fill", source: "osm", "source-layer": "landcover", filter: filtreClasse("sand", "beach"), paint: { "fill-color": "#f1ead6" } },
+    { id: "eau", type: "fill", source: "osm", "source-layer": "water", paint: { "fill-color": "#bcd8f0" } },
+    { id: "cours-eau", type: "line", source: "osm", "source-layer": "waterway", paint: { "line-color": "#bcd8f0", "line-width": largeur([8, 0.5, 18, 6]) } },
+    // Rues : rubans clairs, à peine marqués ; les grands axes légèrement crème.
+    { id: "rues", type: "line", source: "osm", "source-layer": "transportation", minzoom: 12, filter: filtreClasse("minor", "service", "tertiary", "secondary", "primary"), layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#f8f8f9", "line-width": largeur([12, 0.8, 18, 18]) } },
+    { id: "axes", type: "line", source: "osm", "source-layer": "transportation", minzoom: 6, filter: filtreClasse("motorway", "trunk", "primary"), layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#f3e6c2", "line-width": largeur([6, 0.6, 18, 20]) } },
+    // Tous les bâtiments en relief blanc, hauteur par défaut pour un effet « blocs ».
+    {
+      id: "batiments-3d", type: "fill-extrusion", source: "osm", "source-layer": "building", minzoom: 13,
+      paint: {
+        "fill-extrusion-color": "#ffffff",
+        "fill-extrusion-opacity": 0.96,
+        "fill-extrusion-height": ["max", ["coalesce", ["get", "render_height"], 0], 9],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+        "fill-extrusion-vertical-gradient": true,
+      },
+    },
+    { id: "noms-quartiers", type: "symbol", source: "osm", "source-layer": "place", minzoom: 11, filter: filtreClasse("suburb", "neighbourhood", "quarter", "hamlet", "village", "town"), layout: { "text-field": NOM, "text-font": POLICE, "text-size": ["interpolate", ["linear"], ["zoom"], 11, 11, 16, 14] }, paint: { "text-color": "#4b5058", "text-halo-color": "rgba(255,255,255,0.9)", "text-halo-width": 1.6 } },
+    { id: "noms-villes", type: "symbol", source: "osm", "source-layer": "place", filter: filtreClasse("city"), layout: { "text-field": NOM, "text-font": POLICE_GRAS, "text-size": ["interpolate", ["linear"], ["zoom"], 5, 12, 12, 17] }, paint: { "text-color": "#3a3f47", "text-halo-color": "rgba(255,255,255,0.9)", "text-halo-width": 1.8 } },
   ],
 } as unknown as StyleSpecification;

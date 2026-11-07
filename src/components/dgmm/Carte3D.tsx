@@ -1,11 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Map as CarteML, Marker, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { STYLE_PLAN, STYLE_SATELLITE } from "@/lib/dgmm/styleCarte";
+import { BLEU_TRACE, STYLE_MAQUETTE, STYLE_PLAN, STYLE_SATELLITE } from "@/lib/dgmm/styleCarte";
 
 /**
- * Carte 3D (MapLibre) : fond « Plan » façon Google Maps ou « Satellite », données
- * OpenStreetMap (OpenFreeMap), bâtiments en relief au zoom rapproché.
+ * Carte 3D (MapLibre) : fond « Maquette 3D » (blanc minimaliste, par défaut), « Plan »
+ * façon Google Maps ou « Satellite » ; données OpenStreetMap (OpenFreeMap).
  * Elle place des points (domicile, lieu de travail, station, entreprise) et peut
  * « raconter » un trajet : la caméra survole chaque étape pendant que le tracé se dessine.
  */
@@ -33,7 +33,17 @@ export interface Carte3DRef {
   vueGenerale: () => void;
 }
 
-export type FondCarte = "plan" | "satellite";
+export type FondCarte = "maquette" | "plan" | "satellite";
+const STYLE_DE: Record<FondCarte, StyleSpecification> = { maquette: STYLE_MAQUETTE, plan: STYLE_PLAN, satellite: STYLE_SATELLITE };
+const LIBELLE_FOND: Record<FondCarte, string> = { maquette: "Maquette 3D", plan: "Plan", satellite: "Satellite" };
+
+/** Distance approximative en kilomètres entre deux points [lng, lat]. */
+function km(a: [number, number], b: [number, number]): number {
+  const r = Math.PI / 180;
+  const dLat = (b[1] - a[1]) * r, dLng = (b[0] - a[0]) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLng / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
 const STYLE_SECOURS: StyleSpecification = {
   version: 8,
   sources: {},
@@ -107,7 +117,9 @@ export const Carte3D = forwardRef<
   const anim = useRef(0);
   const [pret, setPret] = useState(false);
   const [secours, setSecours] = useState(false);
-  const [fond, setFond] = useState<FondCarte>("plan");
+  const [fond, setFond] = useState<FondCarte>("maquette");
+  const fondRef = useRef<FondCarte>("maquette");
+  fondRef.current = fond;
   /** Vrai dès qu'un fond réel a fini de charger son style (les tuiles peuvent encore arriver). */
   const fondCharge = useRef(false);
   const etat = useRef({ points, traces, recit, onCarteClic, onPointClic });
@@ -144,6 +156,11 @@ export const Carte3D = forwardRef<
     });
     void ordre;
     src.setData({ type: "FeatureCollection", features });
+    // Point mobile en tête du tracé pendant l'animation (masqué au repos).
+    const tete = m.getSource("tete") as { setData?: (d: unknown) => void } | undefined;
+    const enCoursF = t !== null && enCours ? features[traces.findIndex((x) => x.id === enCours)] : undefined;
+    const c = enCoursF?.geometry.coordinates as [number, number][] | undefined;
+    tete?.setData?.({ type: "FeatureCollection", features: c && c.length ? [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c[c.length - 1] } }] : [] });
   };
 
   const rejouer = () => {
@@ -167,16 +184,29 @@ export const Carte3D = forwardRef<
     const tracer = (tr: TraceCarte | undefined, ensuite: () => void) => {
       if (!tr) return ensuite();
       const L = lib.current!;
-      const b = new L.LngLatBounds();
-      tr.coords.forEach((c) => b.extend(c));
-      m.fitBounds(b, { padding: 110, pitch: 55, bearing: -10, duration: 1600, maxZoom: 16 });
-      const debut = performance.now() + 900;
-      const D = 2600;
+      const cumul = longueurs(tr.coords);
+      const long = tr.coords.length > 1 ? km(tr.coords[0]!, tr.coords[tr.coords.length - 1]!) : 0;
+      // Trajet urbain : la caméra suit le point bleu au ras des bâtiments.
+      // Long trajet (interurbain) : vue d'ensemble du segment, sinon le survol serait illisible.
+      const suivre = long > 0 && long < 12;
+      if (suivre) {
+        m.easeTo({ center: tr.coords[0]!, zoom: 16.4, pitch: 60, bearing: -20, duration: 1200 });
+      } else {
+        const b = new L.LngLatBounds();
+        tr.coords.forEach((c) => b.extend(c));
+        m.fitBounds(b, { padding: 110, pitch: 55, bearing: -10, duration: 1600, maxZoom: 16 });
+      }
+      const debut = performance.now() + (suivre ? 1300 : 900);
+      const D = suivre ? Math.min(9000, Math.max(3500, long * 1800)) : 2600;
       const pas = (now: number) => {
         const t = Math.min(1, Math.max(0, (now - debut) / D));
         dessinerTraces(t, tr.id);
+        if (suivre && t > 0) {
+          const p = portion(tr.coords, cumul, t);
+          m.jumpTo({ center: p[p.length - 1]! });
+        }
         if (t < 1) anim.current = requestAnimationFrame(pas);
-        else window.setTimeout(ensuite, 400);
+        else window.setTimeout(ensuite, 500);
       };
       anim.current = requestAnimationFrame(pas);
     };
@@ -216,7 +246,7 @@ export const Carte3D = forwardRef<
       lib.current = L;
       const m = new L.Map({
         container: boite.current,
-        style: STYLE_PLAN,
+        style: STYLE_MAQUETTE,
         center: [9.45, 0.39],
         zoom: 10,
         pitch: 45,
@@ -227,8 +257,14 @@ export const Carte3D = forwardRef<
       const preparer = () => {
         if (!m.getSource("traces")) {
           m.addSource("traces", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-          m.addLayer({ id: "traces-halo", type: "line", source: "traces", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": 9, "line-opacity": 0.85 } });
-          m.addLayer({ id: "traces", type: "line", source: "traces", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["get", "couleur"], "line-width": 5 } });
+          const maquette = fondRef.current === "maquette";
+          const epaisseur = ["interpolate", ["exponential", 1.5], ["zoom"], 10, 4, 14, 7, 17, 13];
+          m.addLayer({ id: "traces-halo", type: "line", source: "traces", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": maquette ? ["interpolate", ["exponential", 1.5], ["zoom"], 10, 7, 14, 11, 17, 18] : 9, "line-opacity": maquette ? 0.7 : 0.85 } } as never);
+          // Maquette blanche : un seul bleu électrique, épais, comme un itinéraire de navigation.
+          m.addLayer({ id: "traces", type: "line", source: "traces", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": maquette ? BLEU_TRACE : ["get", "couleur"], "line-width": maquette ? epaisseur : 5 } } as never);
+          m.addSource("tete", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+          m.addLayer({ id: "tete-halo", type: "circle", source: "tete", paint: { "circle-radius": 20, "circle-color": BLEU_TRACE, "circle-opacity": 0.18, "circle-pitch-alignment": "map" } });
+          m.addLayer({ id: "tete", type: "circle", source: "tete", paint: { "circle-radius": 8, "circle-color": BLEU_TRACE, "circle-stroke-color": "#ffffff", "circle-stroke-width": 3.5, "circle-pitch-alignment": "map" } });
         }
         dessinerTraces(null);
         setPret(true);
@@ -290,16 +326,22 @@ export const Carte3D = forwardRef<
     const m = carte.current;
     if (premierFond.current) { premierFond.current = false; return; }
     if (!m || secoursActif.current) return;
-    m.setStyle(fond === "satellite" ? STYLE_SATELLITE : STYLE_PLAN);
+    m.setStyle(STYLE_DE[fond]);
   }, [fond]);
 
-  // Premier affichage : récit animé, ou vue d'ensemble.
+  // Premier affichage : vue d'ensemble, puis récit animé dès que les itinéraires sont prêts
+  // (ils arrivent souvent après le chargement de la carte : on attend le récit au lieu d'y renoncer).
   const lance = useRef(false);
+  const vueInitiale = useRef(false);
   useEffect(() => {
     if (!pret || lance.current || !points.length) return;
-    lance.current = true;
-    if (recit?.length) rejouer();
-    else vueGenerale(0);
+    if (recit?.length) {
+      lance.current = true;
+      rejouer();
+    } else if (!vueInitiale.current) {
+      vueInitiale.current = true;
+      vueGenerale(0);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pret, points.length, recit?.length, traces.length]);
 
@@ -312,7 +354,7 @@ export const Carte3D = forwardRef<
       )}
       {pret && !secours && (
         <div role="radiogroup" aria-label="Fond de carte" className="absolute left-3 top-3 flex overflow-hidden rounded-md border bg-card/95 text-xs font-semibold shadow-card">
-          {(["plan", "satellite"] as const).map((f) => (
+          {(["maquette", "plan", "satellite"] as const).map((f) => (
             <button
               key={f}
               type="button"
@@ -321,7 +363,7 @@ export const Carte3D = forwardRef<
               onClick={() => setFond(f)}
               className={fond === f ? "bg-primary px-3 py-1.5 text-primary-foreground" : "px-3 py-1.5 text-foreground hover:bg-muted"}
             >
-              {f === "plan" ? "Plan" : "Satellite"}
+              {LIBELLE_FOND[f]}
             </button>
           ))}
         </div>
