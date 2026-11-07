@@ -22,10 +22,12 @@ import { Route as EspaceAuditRouteImport } from './routes/espace/audit'
 import { Route as EspaceContratsRouteImport } from './routes/espace/contrats'
 import { Route as EspaceDemandesRouteImport } from './routes/espace/demandes'
 import { Route as EspaceEquipagesRouteImport } from './routes/espace/equipages'
+import { Route as EspaceMedecinsRouteImport } from './routes/espace/medecins'
 import { Route as EspaceNaviresRouteImport } from './routes/espace/navires'
 import { Route as EspaceSystemeRouteImport } from './routes/espace/systeme'
 import { Route as InscriptionArmateurRouteImport } from './routes/inscription.armateur'
 import { Route as InscriptionMarinRouteImport } from './routes/inscription.marin'
+import { Route as InscriptionMedecinRouteImport } from './routes/inscription.medecin'
 import { Route as MonEspaceIndexRouteImport } from './routes/mon-espace/index'
 import { Route as MonEspaceContratRouteImport } from './routes/mon-espace/contrat'
 import { Route as MonEspaceTrajetRouteImport } from './routes/mon-espace/trajet'
@@ -111,6 +113,11 @@ const EspaceEquipagesRoute = EspaceEquipagesRouteImport.update({
   path: '/equipages',
   getParentRoute: () => EspaceRoute,
 } as any)
+const EspaceMedecinsRoute = EspaceMedecinsRouteImport.update({
+  id: '/medecins',
+  path: '/medecins',
+  getParentRoute: () => EspaceRoute,
+} as any)
 const EspaceNaviresRoute = EspaceNaviresRouteImport.update({
   id: '/navires',
   path: '/navires',
@@ -129,6 +136,11 @@ const InscriptionArmateurRoute = InscriptionArmateurRouteImport.update({
 const InscriptionMarinRoute = InscriptionMarinRouteImport.update({
   id: '/inscription/marin',
   path: '/inscription/marin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InscriptionMedecinRoute = InscriptionMedecinRouteImport.update({
+  id: '/inscription/medecin',
+  path: '/inscription/medecin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MonEspaceIndexRoute = MonEspaceIndexRouteImport.update({
@@ -239,10 +251,12 @@ export interface FileRoutesByFullPath {
   '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/medecins': typeof EspaceMedecinsRoute
   '/espace/navires': typeof EspaceNaviresRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/inscription/medecin': typeof InscriptionMedecinRoute
   '/mon-espace/contrat': typeof MonEspaceContratRoute
   '/mon-espace/trajet': typeof MonEspaceTrajetRoute
   '/signaler/suivi': typeof SignalerSuiviRoute
@@ -276,10 +290,12 @@ export interface FileRoutesByTo {
   '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/medecins': typeof EspaceMedecinsRoute
   '/espace/navires': typeof EspaceNaviresRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/inscription/medecin': typeof InscriptionMedecinRoute
   '/mon-espace/contrat': typeof MonEspaceContratRoute
   '/mon-espace/trajet': typeof MonEspaceTrajetRoute
   '/signaler/suivi': typeof SignalerSuiviRoute
@@ -315,10 +331,12 @@ export interface FileRoutesById {
   '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/medecins': typeof EspaceMedecinsRoute
   '/espace/navires': typeof EspaceNaviresRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
+  '/inscription/medecin': typeof InscriptionMedecinRoute
   '/mon-espace/contrat': typeof MonEspaceContratRoute
   '/mon-espace/trajet': typeof MonEspaceTrajetRoute
   '/signaler/suivi': typeof SignalerSuiviRoute
@@ -355,10 +373,12 @@ export interface FileRouteTypes {
     | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
+    | '/espace/medecins'
     | '/espace/navires'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/inscription/medecin'
     | '/mon-espace/contrat'
     | '/mon-espace/trajet'
     | '/signaler/suivi'
@@ -392,10 +412,12 @@ export interface FileRouteTypes {
     | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
+    | '/espace/medecins'
     | '/espace/navires'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/inscription/medecin'
     | '/mon-espace/contrat'
     | '/mon-espace/trajet'
     | '/signaler/suivi'
@@ -430,10 +452,12 @@ export interface FileRouteTypes {
     | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
+    | '/espace/medecins'
     | '/espace/navires'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
+    | '/inscription/medecin'
     | '/mon-espace/contrat'
     | '/mon-espace/trajet'
     | '/signaler/suivi'
@@ -466,6 +490,7 @@ export interface RootRouteChildren {
   ArmateurContratsRoute: typeof ArmateurContratsRoute
   InscriptionArmateurRoute: typeof InscriptionArmateurRoute
   InscriptionMarinRoute: typeof InscriptionMarinRoute
+  InscriptionMedecinRoute: typeof InscriptionMedecinRoute
   MonEspaceContratRoute: typeof MonEspaceContratRoute
   MonEspaceTrajetRoute: typeof MonEspaceTrajetRoute
   SignalerSuiviRoute: typeof SignalerSuiviRoute
@@ -571,6 +596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceEquipagesRouteImport
       parentRoute: typeof EspaceRoute
     }
+    '/espace/medecins': {
+      id: '/espace/medecins'
+      path: '/medecins'
+      fullPath: '/espace/medecins'
+      preLoaderRoute: typeof EspaceMedecinsRouteImport
+      parentRoute: typeof EspaceRoute
+    }
     '/espace/navires': {
       id: '/espace/navires'
       path: '/navires'
@@ -597,6 +629,13 @@ declare module '@tanstack/react-router' {
       path: '/inscription/marin'
       fullPath: '/inscription/marin'
       preLoaderRoute: typeof InscriptionMarinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inscription/medecin': {
+      id: '/inscription/medecin'
+      path: '/inscription/medecin'
+      fullPath: '/inscription/medecin'
+      preLoaderRoute: typeof InscriptionMedecinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mon-espace/': {
@@ -741,6 +780,7 @@ interface EspaceRouteChildren {
   EspaceContratsRoute: typeof EspaceContratsRoute
   EspaceDemandesRoute: typeof EspaceDemandesRoute
   EspaceEquipagesRoute: typeof EspaceEquipagesRoute
+  EspaceMedecinsRoute: typeof EspaceMedecinsRoute
   EspaceNaviresRoute: typeof EspaceNaviresRoute
   EspaceSystemeRoute: typeof EspaceSystemeRoute
   EspaceIndexRoute: typeof EspaceIndexRoute
@@ -762,6 +802,7 @@ const EspaceRouteChildren: EspaceRouteChildren = {
   EspaceContratsRoute: EspaceContratsRoute,
   EspaceDemandesRoute: EspaceDemandesRoute,
   EspaceEquipagesRoute: EspaceEquipagesRoute,
+  EspaceMedecinsRoute: EspaceMedecinsRoute,
   EspaceNaviresRoute: EspaceNaviresRoute,
   EspaceSystemeRoute: EspaceSystemeRoute,
   EspaceIndexRoute: EspaceIndexRoute,
@@ -789,6 +830,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArmateurContratsRoute: ArmateurContratsRoute,
   InscriptionArmateurRoute: InscriptionArmateurRoute,
   InscriptionMarinRoute: InscriptionMarinRoute,
+  InscriptionMedecinRoute: InscriptionMedecinRoute,
   MonEspaceContratRoute: MonEspaceContratRoute,
   MonEspaceTrajetRoute: MonEspaceTrajetRoute,
   SignalerSuiviRoute: SignalerSuiviRoute,

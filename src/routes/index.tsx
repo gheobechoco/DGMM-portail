@@ -25,7 +25,7 @@ import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { AmbianceLayer } from "@/components/dgmm/Ambiance";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ACCOUNTS, getSession, login } from "@/lib/dgmm/auth";
+import { ACCOUNTS, comptesPersonnel, getSession, login } from "@/lib/dgmm/auth";
 import type { Role } from "@/lib/dgmm/rules";
 
 const ROLES_MEDICAUX: Role[] = ["medecin", "gestionnaire_medical"];
@@ -136,7 +136,8 @@ function LoginPage({ profil, role }: { profil: "gestion" | "medical"; role?: Rol
     if (!username.trim() || !password) return;
     setLoading(true);
     setTimeout(() => {
-      const compteAutorise = comptes.some(
+      // Contrôle sur tous les comptes de l'espace, y compris les médecins assermentés en ligne.
+      const compteAutorise = comptesPersonnel().filter((a) => (medical ? ROLES_MEDICAUX.includes(a.role) : !ROLES_MEDICAUX.includes(a.role))).some(
         (a) => a.username === username.trim().toLowerCase() && a.password === password,
       );
       if (!compteAutorise) {

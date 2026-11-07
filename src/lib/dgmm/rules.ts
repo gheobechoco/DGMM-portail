@@ -32,7 +32,10 @@ export type Permission =
   | "alertes.traiter"
   | "navires"
   | "navires.inspection"
-  | "navires.viser";
+  | "navires.viser"
+  | "medecins"
+  | "medecins.instruire"
+  | "medecins.assermenter";
 
 /**
  * Matrice des droits (RBAC) :
@@ -60,6 +63,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "alertes.traiter",
     "navires",
     "navires.viser",
+    "medecins",
+    "medecins.assermenter",
   ],
   rh_marine: [
     "dashboard",
@@ -73,6 +78,8 @@ const PERMISSIONS: Record<Role, Permission[]> = {
     "contrats.valider",
     "navires",
     "navires.viser",
+    "medecins",
+    "medecins.instruire",
   ],
   medecin: [
     "dashboard",

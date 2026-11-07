@@ -172,6 +172,9 @@ export interface Visite {
   numero: string;
   marinId: number;
   praticien: string;
+  /** Numéro d'agrément du médecin examinateur et structure de rattachement au moment de la visite. */
+  agrement?: string | undefined;
+  structure?: string | undefined;
   creeLe: string;
   traiteLe: string;
   examens: {

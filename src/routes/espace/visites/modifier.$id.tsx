@@ -6,6 +6,7 @@ import { EmptyState, PageHeader } from "@/components/dgmm/Page";
 import { VisiteForm } from "@/components/dgmm/VisiteForm";
 import { can } from "@/lib/dgmm/rules";
 import { saveVisite, useMarins, useVisites } from "@/lib/dgmm/store";
+import { agrementExpire, lienMedecin } from "@/lib/dgmm/medecins";
 
 export const Route = createFileRoute("/espace/visites/modifier/$id")({
   head: () => ({ meta: [{ title: "Modifier la visite — GDM | DGMM" }] }),
@@ -36,16 +37,21 @@ function Modifier() {
               <ArrowLeft className="size-4" /> Visite {visite.numero}
             </Link>
             <PageHeader eyebrow={`Visite ${visite.numero}`} title="Compléter la visite médicale" />
+            {can(session.role, "visites.signer") && agrementExpire(session.username) && (
+              <p className="mb-4 rounded-lg border border-destructive/40 bg-destructive/8 px-4 py-3 text-sm font-medium text-destructive">
+                Votre agrément de médecin des gens de mer a expiré : vous ne pouvez plus signer de certificat. Déposez une demande de renouvellement sur le portail.
+              </p>
+            )}
             <VisiteForm
               key={visite.id}
               initial={visite}
               marins={marins}
-              canSign={can(session.role, "visites.signer")}
+              canSign={can(session.role, "visites.signer") && !agrementExpire(session.username)}
               brouillonCree={!visite.signee}
               signataire={session.nom}
               onCancel={() => navigate({ to: "/espace/visites/$id", params: { id } })}
               onSubmit={(v) => {
-                const saved = saveVisite({ ...v, id: visite.id });
+                const saved = saveVisite({ ...v, ...lienMedecin(v.praticien), id: visite.id });
                 toast.success(
                   saved.signee ? `Certificat ${saved.numero} signé` : "Brouillon mis à jour",
                 );

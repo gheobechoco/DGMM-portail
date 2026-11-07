@@ -39,10 +39,13 @@ export function JaugeMdp({ value }: { value: string }) {
 const MAX = 5 * 1024 * 1024;
 
 /** Sélecteur de justificatif (démo : seul le nom du fichier est conservé). */
-export function PieceJointe({ id, label, required, fichier, onChange, error, accept = "image/*,application/pdf", conserverContenu = false }: {
+export function PieceJointe({ id, label, required, fichier, onChange, error, accept = "image/*,application/pdf", conserverContenu = false, maxKo }: {
   id: string; label: string; required?: boolean; fichier: string; onChange: (nom: string) => void; error?: string | undefined; accept?: string; conserverContenu?: boolean;
+  /** Taille maximale propre à ce justificatif (Ko). */
+  maxKo?: number | undefined;
 }) {
   const [msg, setMsg] = useState("");
+  const libelleMax = maxKo ? `${maxKo} Ko` : conserverContenu ? "700 Ko" : "5 Mo";
   return (
     <div>
       <div className="mb-1 text-sm font-medium">{label}{required && <span className="text-destructive"> *</span>}</div>
@@ -53,13 +56,13 @@ export function PieceJointe({ id, label, required, fichier, onChange, error, acc
         </div>
       ) : (
         <label htmlFor={id} className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground hover:border-primary hover:text-primary">
-          <Paperclip className="size-4" /> Joindre (PDF ou photo,{" "}
-          {conserverContenu ? "700 Ko" : "5 Mo"} max)
+          <Paperclip className="size-4" /> Joindre ({accept === "application/pdf" ? "PDF" : "PDF ou photo"},{" "}
+          {libelleMax} max)
           <input id={id} type="file" accept={accept} className="sr-only" onChange={(e) => {
             const f = e.target.files?.[0];
             if (!f) return;
-            const limite = conserverContenu ? 700_000 : MAX;
-            if (f.size > limite) { setMsg(`Fichier trop lourd (${conserverContenu ? "700 Ko" : "5 Mo"} max).`); return; }
+            const limite = maxKo ? maxKo * 1024 : conserverContenu ? 700_000 : MAX;
+            if (f.size > limite) { setMsg(`Fichier trop lourd (${libelleMax} max).`); return; }
             if (!conserverContenu) { setMsg(""); onChange(f.name); return; }
             const lecteur = new FileReader();
             lecteur.onload = () => {

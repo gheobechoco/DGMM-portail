@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/dgmm/Page";
 import { VisiteForm, emptyVisite } from "@/components/dgmm/VisiteForm";
 import { can } from "@/lib/dgmm/rules";
 import { saveVisite, useMarins } from "@/lib/dgmm/store";
+import { lienMedecin } from "@/lib/dgmm/medecins";
 
 export const Route = createFileRoute("/espace/visites/nouvelle")({
   validateSearch: (s: Record<string, unknown>): { marin?: number | undefined } => ({
@@ -37,7 +38,7 @@ function Nouvelle() {
             signataire={session.nom}
             onCancel={() => navigate({ to: "/espace/visites" })}
             onSubmit={(v) => {
-              const saved = saveVisite({ ...v, signee: false });
+              const saved = saveVisite({ ...v, ...lienMedecin(v.praticien), signee: false });
               toast.success(`Brouillon ${saved.numero} enregistré`, {
                 description: can(session.role, "visites.signer")
                   ? "Vérifiez la saisie, puis signez le certificat pour terminer la visite."

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { nomsMedecinsActifs } from "@/lib/dgmm/medecins";
 import { toast } from "sonner";
 import {
   History,
@@ -122,11 +123,17 @@ export function imc(
   return { valeur, categorie: "Obésité", tone: "text-destructive" };
 }
 
+/** Médecins examinateurs proposés : liste de démonstration + médecins agréés en cours de validité. */
+export function praticiensDisponibles(): string[] {
+  return [...new Set([...PRATICIENS, ...nomsMedecinsActifs()])];
+}
+
 export function emptyVisite(marinId: number, praticien: string): VisiteInput {
   const today = new Date().toISOString().slice(0, 10);
+  const liste = praticiensDisponibles();
   return {
     marinId,
-    praticien: PRATICIENS.includes(praticien) ? praticien : PRATICIENS[0]!,
+    praticien: liste.includes(praticien) ? praticien : liste[0]!,
     examens: {
       taille: "",
       poids: "",
@@ -491,7 +498,7 @@ export function VisiteForm({
               value={v.praticien}
               onChange={(e) => setV((s) => ({ ...s, praticien: e.target.value }))}
             >
-              {PRATICIENS.map((p) => (
+              {praticiensDisponibles().map((p) => (
                 <option key={p}>{p}</option>
               ))}
             </select>

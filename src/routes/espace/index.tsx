@@ -1,3 +1,4 @@
+import { etatAgrement, medecinDuCompte, useMedecins } from "@/lib/dgmm/medecins";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -847,6 +848,7 @@ function MedicalDashboard({ session }: { session: Account }) {
         }
       />
 
+      <RappelAgrement username={session.username} />
       <div className="mb-6 rounded-lg border border-l-4 border-l-secondary bg-card p-4 text-sm">
         {can(session.role, "visites.signer") ? (
           <>
@@ -1047,5 +1049,21 @@ function MedicalDashboard({ session }: { session: Account }) {
         </Panel>
       </div>
     </>
+  );
+}
+
+/** Médecin agréé : rappel du renouvellement 90 jours avant l'échéance (et blocage une fois expiré). */
+function RappelAgrement({ username }: { username: string }) {
+  useMedecins();
+  const m = medecinDuCompte(username);
+  if (!m) return null;
+  const { etat, jours } = etatAgrement(m);
+  if (etat === "valide") return null;
+  return (
+    <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${etat === "expire" ? "border-destructive/40 bg-destructive/8 text-destructive" : "border-warning/40 bg-warning/10"}`}>
+      <strong>Agrément {m.numero} : </strong>
+      {etat === "expire" ? "expiré, vous ne pouvez plus signer de certificat." : `expire dans ${jours} jour(s), le ${new Date(m.expireLe + "T12:00:00").toLocaleDateString("fr-FR")}.`}{" "}
+      <Link to="/inscription/medecin" className="font-semibold underline">Demander le renouvellement</Link>
+    </div>
   );
 }

@@ -232,6 +232,9 @@ export function ChoixProfil({ onRole, onChoix }: { onRole: (r: Role) => void; on
           <Link to="/carte" className="font-semibold text-primary-foreground/85 hover:text-gold">
             Carte des stations & entreprises
           </Link>
+          <Link to="/inscription/medecin" className="font-semibold text-primary-foreground/85 hover:text-gold">
+            Médecin : agrément des gens de mer
+          </Link>
           <Link
             to="/inscription/marin"
             className="font-semibold text-primary-foreground/85 hover:text-gold"

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { Navire } from "@/lib/dgmm/maritime";
 import { getInscriptions, useInscriptions } from "@/lib/dgmm/inscriptions";
+import { comptesMedecins } from "@/lib/dgmm/medecins";
 import type { Role } from "./rules";
 
 export interface Account {
@@ -82,6 +83,20 @@ export const ACCOUNTS: Account[] = [
   },
 ];
 
+/** Comptes du personnel : démonstration + médecins assermentés par la DGMM (agrément en cours). */
+let memoPersonnel: { source: unknown; liste: Account[] } = { source: null, liste: [] };
+export function comptesPersonnel(): Account[] {
+  const source = comptesMedecins();
+  if (memoPersonnel.source !== source) {
+    const fixes = new Set(ACCOUNTS.map((a) => a.username));
+    const medecins = source
+      .filter((m) => !fixes.has(m.username))
+      .map((m): Account => ({ username: m.username, password: m.password, nom: m.nom, role: "medecin", roleLabel: "Médecin des gens de mer agréé" }));
+    memoPersonnel = { source, liste: [...ACCOUNTS, ...medecins] };
+  }
+  return memoPersonnel.liste;
+}
+
 const KEY = "dgmm-session";
 const listeners = new Set<() => void>();
 let cached: string | null | undefined;
@@ -94,11 +109,11 @@ function read(): string | null {
 
 export function getSession(): Account | null {
   const u = read();
-  return ACCOUNTS.find((a) => a.username === u) ?? null;
+  return comptesPersonnel().find((a) => a.username === u) ?? null;
 }
 
 export function login(username: string, password: string): Account | null {
-  const acc = ACCOUNTS.find(
+  const acc = comptesPersonnel().find(
     (a) => a.username === username.trim().toLowerCase() && a.password === password,
   );
   if (!acc) return null;
@@ -123,7 +138,7 @@ export function useSession(): Account | null {
     read,
     () => null,
   );
-  return ACCOUNTS.find((a) => a.username === u) ?? null;
+  return comptesPersonnel().find((a) => a.username === u) ?? null;
 }
 
 /* ---------- Sessions des espaces externes (marins, armateurs) ---------- */
