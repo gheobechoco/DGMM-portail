@@ -27,7 +27,10 @@ import {
 } from "@/lib/dgmm/navires";
 
 export const Route = createFileRoute("/espace/navires")({
-  validateSearch: (s: Record<string, unknown>): { navire?: string | undefined } => ({ navire: typeof s["navire"] === "string" ? s["navire"] : undefined }),
+  validateSearch: (s: Record<string, unknown>): { navire?: string | undefined; inspecter?: boolean | undefined } => ({
+    navire: typeof s["navire"] === "string" ? s["navire"] : undefined,
+    inspecter: s["inspecter"] === true || s["inspecter"] === "true" ? true : undefined,
+  }),
   head: () => ({ meta: [{ title: "Navires et certificats de sécurité — GDM | DGMM" }] }),
   component: () => <RequirePerm perm="navires">{(s) => <Navires session={s} />}</RequirePerm>,
 });
@@ -36,14 +39,15 @@ const fr = (d: string) => new Date(d.length === 10 ? d + "T12:00:00" : d).toLoca
 type Filtre = "tous" | "attente_visa" | "a_surveiller" | "bloques";
 
 function Navires({ session }: { session: Account }) {
-  const { navire: initial } = Route.useSearch();
+  const { navire: initial, inspecter } = Route.useSearch();
   const { armateurs } = useInscriptions();
   const inspections = useInspections();
   const navires = useMemo(() => registreNavires(armateurs), [armateurs]);
   const lignes = navires.map((n) => ({ n, ...etatNavire(inspections, n.id) }));
-  const [filtre, setFiltre] = useState<Filtre>(can(session.role, "navires.viser") ? "attente_visa" : "tous");
+  const [filtre, setFiltre] = useState<Filtre>(initial ? "tous" : can(session.role, "navires.viser") ? "attente_visa" : "tous");
   const [choisi, setChoisi] = useState<string | null>(initial ?? null);
-  const [saisie, setSaisie] = useState(false);
+  // Arrivée depuis une alerte : le navire est choisi et, pour l'inspecteur, le formulaire est ouvert.
+  const [saisie, setSaisie] = useState(!!inspecter && !!initial && can(session.role, "navires.inspection"));
   const compte = (f: (e: EtatNavire) => boolean) => lignes.filter((l) => f(l.etat)).length;
   const bloque = (e: EtatNavire) => e === "expire" || e === "visa_refuse" || e === "non_inspecte";
   const visibles = lignes.filter((l) => filtre === "tous" || (filtre === "attente_visa" ? l.etat === "attente_visa" : filtre === "a_surveiller" ? l.etat === "a_surveiller" : bloque(l.etat)));

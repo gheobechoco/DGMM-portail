@@ -6,8 +6,6 @@ export type Role =
   | "medecin"
   | "gestionnaire_medical"
   | "admin_systeme"
-  | "inspecteur_travail"
-  | "delegue_syndical"
   | "inspecteur_securite";
 
 export type Permission =
@@ -98,13 +96,10 @@ const PERMISSIONS: Record<Role, Permission[]> = {
   ],
   // Administrateur système : supervision et réglages, sans acte métier (ni visa, ni signature).
   admin_systeme: ["dashboard", "marins", "visites", "roles.lecture", "systeme", "navires"],
-  // Inspection du travail maritime : contrôle des contrats et traitement des alertes.
-  inspecteur_travail: ["marins", "roles.lecture", "contrats", "contrats.valider", "alertes", "alertes.traiter"],
-  // Délégué syndical : suit les alertes adressées à son syndicat et les contrats, sans pouvoir de décision.
-  delegue_syndical: ["alertes", "contrats"],
-  // Inspecteur de la sécurité des navires : contrôle à bord, saisie et scellement des certificats.
-  // Le navire ne passe au vert qu'après le visa du RH de la DGMM (double verrouillage).
-  inspecteur_securite: ["navires", "navires.inspection", "roles.lecture", "alertes"],
+  // Inspecteur de la sécurité des navires (seul inspecteur du portail) : inspection à bord et
+  // scellement des certificats (le navire ne passe au vert qu'après le visa du RH), validation
+  // des contrats d'engagement, traitement des alertes des marins (inspection d'urgence, clôture).
+  inspecteur_securite: ["marins", "navires", "navires.inspection", "roles.lecture", "contrats", "contrats.valider", "alertes", "alertes.traiter"],
 };
 
 /** Profil de tableau de bord : pilotage administratif ou santé. */

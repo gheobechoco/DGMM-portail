@@ -15,7 +15,7 @@ export function PastilleStatut({ a }: { a: Alerte }) {
   return <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", style)}>{STATUT_ALERTE[a.statut]}</span>;
 }
 
-const QUI: Record<string, string> = { declarant: "Déclarant", dgmm: "Direction générale", inspection: "Inspection du travail maritime", syndicat: "Délégués syndicaux" };
+const QUI: Record<string, string> = { declarant: "Déclarant", dgmm: "Direction générale", inspection: "Inspecteur de la sécurité des navires" };
 
 /** Fil des échanges ; vue du déclarant : son message à droite. */
 export function FilAlerte({ a, vueDeclarant }: { a: Alerte; vueDeclarant?: boolean | undefined }) {

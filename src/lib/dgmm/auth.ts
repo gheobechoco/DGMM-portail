@@ -10,8 +10,6 @@ export interface Account {
   nom: string;
   role: Role;
   roleLabel: string;
-  /** Délégués syndicaux : syndicat représenté (reçoit les alertes qui le désignent). */
-  syndicat?: "OMEPR" | "SYNAMM" | undefined;
 }
 
 // Comptes de démonstration (identiques à la recette).
@@ -50,29 +48,6 @@ export const ACCOUNTS: Account[] = [
     nom: "Administrateur système",
     role: "admin_systeme",
     roleLabel: "Administrateur système",
-  },
-  {
-    username: "inspection",
-    password: "azerty",
-    nom: "Inspection du travail maritime",
-    role: "inspecteur_travail",
-    roleLabel: "Inspecteur du travail maritime",
-  },
-  {
-    username: "omepr",
-    password: "azerty",
-    nom: "Délégué OMEPR (démonstration)",
-    role: "delegue_syndical",
-    roleLabel: "Délégué syndical",
-    syndicat: "OMEPR",
-  },
-  {
-    username: "synamm",
-    password: "azerty",
-    nom: "Délégué SYNAMM (démonstration)",
-    role: "delegue_syndical",
-    roleLabel: "Délégué syndical",
-    syndicat: "SYNAMM",
   },
   {
     username: "securite",

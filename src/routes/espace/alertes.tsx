@@ -1,6 +1,6 @@
 import { Aide } from "@/components/dgmm/Aide";
 import { LienStatistiques } from "@/components/dgmm/Statistiques";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, ClipboardCheck, EyeOff, FileSignature, Hourglass, Send, ShieldAlert, Siren, Users } from "lucide-react";
@@ -15,6 +15,10 @@ import type { Account } from "@/lib/dgmm/auth";
 import { STATIONS } from "@/lib/dgmm/maritime";
 import { fullName, marinCertStatus, useMarins, useRoles, useVisites } from "@/lib/dgmm/store";
 import { statut as statutContrat, useContrats } from "@/lib/dgmm/contrats";
+import { useInscriptions } from "@/lib/dgmm/inscriptions";
+import { nomNormalise } from "@/lib/dgmm/registre";
+import { etatNavire, registreNavires, useInspections } from "@/lib/dgmm/navires";
+import { PastilleEtat } from "@/components/dgmm/NavireBits";
 import { cloturer, destinataires, emetteurDe, heuresSansReponse, marquerLu, programmerInspection, repondre, useAlertes, visiblePour, type Niveau, type StatutAlerte } from "@/lib/dgmm/alertes";
 
 export const Route = createFileRoute("/espace/alertes")({
@@ -43,7 +47,7 @@ function Alertes({ session }: { session: Account }) {
   return (
     <>
       <PageHeader
-        eyebrow={session.role === "delegue_syndical" ? `Délégués ${session.syndicat}` : "Sécurité et droits des marins"}
+        eyebrow="Sécurité et droits des marins"
         title="Alertes des gens de mer"
         subtitle={<span className="inline-flex flex-wrap items-center gap-1">Signalements reçus directement des marins, sans passer par les stations locales. Les alertes rouges appellent une inspection d'urgence au prochain port. <Aide terme="feux" /> <Aide terme="anonymat" /></span>}
       />
@@ -102,6 +106,12 @@ function Detail({ id, session, traiter }: { id: number; session: Account; traite
   const armateur = role?.armateur ?? a.armateur;
   const equipage = (role?.membres ?? []).map((mb) => ({ ...mb, m: marins.find((m) => m.id === mb.marinId) }));
   const contratsArmateur = contrats.filter((c) => armateur && c.armateur.toLowerCase() === armateur.toLowerCase());
+  // Navire signalé au registre : état de ses certificats et accès direct à son inspection.
+  const { armateurs: demandesArm } = useInscriptions();
+  const inspections = useInspections();
+  const ficheNavire = a.navire ? registreNavires(demandesArm).find((n) => nomNormalise(n.nom) === nomNormalise(a.navire)) : undefined;
+  const securite = ficheNavire ? etatNavire(inspections, ficheNavire.id) : null;
+  const inspecteur = can(session.role, "navires.inspection");
 
   return (
     <div className="space-y-4">
@@ -123,7 +133,7 @@ function Detail({ id, session, traiter }: { id: number; session: Account; traite
         )}
         <div className="mt-3 rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
           <div><strong className="text-foreground">Déclarant :</strong> {a.anonyme ? "anonyme (aucune donnée d'identité conservée)" : a.declarant}</div>
-          <div><strong className="text-foreground">Transmis à :</strong> {destinataires(a).join(" · ")}</div>
+          <div><strong className="text-foreground">Transmis à :</strong> {destinataires().join(" · ")}</div>
         </div>
       </Panel>
 
@@ -153,6 +163,21 @@ function Detail({ id, session, traiter }: { id: number; session: Account; traite
         )}
       </Panel>
 
+      <Panel title="Certificats de sécurité du navire" description={a.niveau === "vert" ? "Alerte sociale : le navire n'est pas forcément en cause." : "Alerte technique ou danger : vérifiez les certificats et inspectez le navire."}>
+        {ficheNavire && securite ? (
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="font-semibold text-primary">{ficheNavire.nom}</span>
+            <PastilleEtat etat={securite.etat} jours={securite.jours} />
+            {securite.derniere && <span className="text-xs text-muted-foreground">Dernière inspection le {new Date(securite.derniere.date + "T12:00:00").toLocaleDateString("fr-FR")} à {securite.derniere.port}</span>}
+            <Button asChild size="sm" variant={a.niveau === "rouge" ? "destructive" : "outline"} className="ml-auto">
+              <Link to="/espace/navires" search={{ navire: ficheNavire.id, inspecter: inspecteur && a.statut !== "cloturee" ? true : undefined }}><ClipboardCheck /> {inspecteur && a.statut !== "cloturee" ? "Ouvrir l'inspection du navire" : "Voir la fiche du navire"}</Link>
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Navire non trouvé au registre gabonais{a.navire ? ` (« ${a.navire} »)` : ""} : programmez l'inspection ci-dessous et identifiez le navire sur place.</p>
+        )}
+      </Panel>
+
       {traiter && a.statut !== "cloturee" && (
         <Panel title="Actions">
           <div className="grid gap-4 md:grid-cols-2">
@@ -173,7 +198,7 @@ function Detail({ id, session, traiter }: { id: number; session: Account; traite
         </Panel>
       )}
 
-      <Panel title="Échanges avec le déclarant" description={a.anonyme ? "Le déclarant lit vos réponses avec son code de suivi." : undefined} actions={session.role === "delegue_syndical" ? <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Users className="size-3.5" /> Vous suivez ce dossier</span> : undefined}>
+      <Panel title="Échanges avec le déclarant" description={a.anonyme ? "Le déclarant lit vos réponses avec son code de suivi." : undefined}>
         <FilAlerte a={a} />
         {a.statut !== "cloturee" && (
           <form onSubmit={(e) => { e.preventDefault(); if (texte.trim()) { repondre(a.id, qui, session.nom, texte.trim()); setTexte(""); toast.success("Réponse envoyée"); } }} className="mt-4 space-y-2">

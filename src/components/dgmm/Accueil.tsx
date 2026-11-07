@@ -28,8 +28,6 @@ export const FOND_ROLE: Record<Role, string> = {
   medecin: FONDS.medical,
   gestionnaire_medical: FONDS.medical,
   admin_systeme: FONDS.gestion,
-  inspecteur_travail: FONDS.armateur,
-  delegue_syndical: FONDS.marin,
   inspecteur_securite: FONDS.armateur,
 };
 
@@ -60,17 +58,9 @@ export const DEPARTEMENTS: { id: string; nom: string; texte: string; icon: typeo
     ],
   },
   {
-    id: "inspection", nom: "Inspection maritime et sécurité de la navigation", texte: "Contrôle des navires à bord et des conditions de travail des marins.", icon: ClipboardCheck, fond: FONDS.armateur,
+    id: "inspection", nom: "Inspection maritime et sécurité de la navigation", texte: "Un seul inspecteur : navires et certificats, contrats d'engagement et alertes des marins.", icon: ClipboardCheck, fond: FONDS.armateur,
     comptes: [
-      { role: "inspecteur_securite", titre: "Inspecteur de la sécurité des navires", username: "securite", mission: "Inspection à bord, saisie et scellement des certificats de sécurité.", icon: ClipboardCheck },
-      { role: "inspecteur_travail", titre: "Inspecteur du travail maritime", username: "inspection", mission: "Validation des contrats d'engagement, traitement des alertes.", icon: Scale },
-    ],
-  },
-  {
-    id: "representation", nom: "Représentation des marins", texte: "Délégués syndicaux : suivi des alertes adressées à leur syndicat.", icon: Users, fond: FONDS.marin,
-    comptes: [
-      { role: "delegue_syndical", titre: "Délégué OMEPR", username: "omepr", mission: "Alertes adressées à l'OMEPR, contrats en lecture.", icon: Users },
-      { role: "delegue_syndical", titre: "Délégué SYNAMM", username: "synamm", mission: "Alertes adressées au SYNAMM, contrats en lecture.", icon: Users },
+      { role: "inspecteur_securite", titre: "Inspecteur de la sécurité des navires", username: "securite", mission: "Inspection à bord et certificats de sécurité, validation des contrats d'engagement, traitement des alertes des marins.", icon: ClipboardCheck },
     ],
   },
   {

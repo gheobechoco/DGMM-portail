@@ -278,17 +278,16 @@ describe("contrats d'engagement maritime", () => {
 });
 
 describe("alertes des gens de mer", () => {
-  it("route vers la DG, l'inspection et le seul syndicat choisi", async () => {
+  it("route vers la DG et l'inspecteur de la sécurité des navires", async () => {
     const al = await import("@/lib/dgmm/alertes");
     const { ACCOUNTS } = await import("@/lib/dgmm/auth");
-    const a = { syndicat: "SYNAMM", statut: "recue", echanges: [], creeLe: new Date(Date.now() - 30 * 3600000).toISOString() } as unknown as import("@/lib/dgmm/alertes").Alerte;
+    const a = { statut: "recue", echanges: [], creeLe: new Date(Date.now() - 30 * 3600000).toISOString() } as unknown as import("@/lib/dgmm/alertes").Alerte;
     const compte = (u: string) => ACCOUNTS.find((x) => x.username === u)!;
     expect(al.visiblePour(a, compte("marin"))).toBe(true);
-    expect(al.visiblePour(a, compte("inspection"))).toBe(true);
-    expect(al.visiblePour(a, compte("synamm"))).toBe(true);
-    expect(al.visiblePour(a, compte("omepr"))).toBe(false);
+    expect(al.visiblePour(a, compte("securite"))).toBe(true);
     expect(al.visiblePour(a, compte("admin"))).toBe(false);
-    expect(al.destinataires(a)).toHaveLength(3);
+    expect(al.destinataires()).toHaveLength(2);
+    expect(al.emetteurDe(compte("securite"))).toBe("inspection");
     expect(al.heuresSansReponse(a)).toBeGreaterThanOrEqual(29);
     expect(al.heuresSansReponse({ ...a, echanges: [{ de: "dgmm", auteur: "x", texte: "y", le: "z" }] })).toBeNull();
   });

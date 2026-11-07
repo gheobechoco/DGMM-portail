@@ -9,16 +9,15 @@ import type { Account } from "@/lib/dgmm/auth";
  *   poste (navigateur, système) n'est pas inscrit au journal. Le déclarant suit son
  *   dossier avec un code personnel qu'il est seul à connaître.
  * - Routage sans intermédiaire : chaque alerte part en même temps à la Direction générale
- *   à Libreville, à l'Inspection du travail maritime et, si le marin le souhaite, au
- *   syndicat qu'il choisit.
+ *   à Libreville et à l'inspecteur de la sécurité des navires, sans passer par les
+ *   délégations locales.
  * - Feux tricolores : vert (social, réglementaire), orange (technique), rouge (danger
  *   grave) ; une alerte rouge appelle une inspection d'urgence au prochain port.
  */
 
 export type Niveau = "vert" | "orange" | "rouge";
 export type StatutAlerte = "recue" | "en_traitement" | "inspection_programmee" | "cloturee";
-export type Syndicat = "OMEPR" | "SYNAMM" | "aucun";
-export type Emetteur = "declarant" | "dgmm" | "inspection" | "syndicat";
+export type Emetteur = "declarant" | "dgmm" | "inspection";
 
 export interface Piece {
   nom: string;
@@ -44,13 +43,12 @@ export interface Alerte {
   /** Renseignés seulement si le marin a choisi de s'identifier. */
   marinId?: number | undefined;
   declarant?: string | undefined;
-  syndicat: Syndicat;
   statut: StatutAlerte;
   inspection?: { port: string; date: string; par: string } | undefined;
   conclusion?: string | undefined;
   echanges: { de: Emetteur; auteur: string; texte: string; le: string }[];
   /** Premières lectures, pour mesurer le délai de prise en charge. */
-  lu: Partial<Record<"dgmm" | "inspection" | "syndicat", string>>;
+  lu: Partial<Record<"dgmm" | "inspection", string>>;
 }
 
 export const NIVEAUX: Record<Niveau, { titre: string; texte: string; exemples: string; couleur: string }> = {
@@ -79,17 +77,17 @@ export const STATUT_ALERTE: Record<StatutAlerte, string> = {
   cloturee: "Clôturée",
 };
 
-export function destinataires(a: Pick<Alerte, "syndicat">): string[] {
-  return ["Direction générale de la Marine marchande (Libreville)", "Inspection du travail maritime", ...(a.syndicat !== "aucun" ? [`Délégués ${a.syndicat}`] : [])];
+/** Destinataires de toute alerte, quel que soit son contenu. */
+export function destinataires(): string[] {
+  return ["Direction générale de la Marine marchande (Libreville)", "Inspecteur de la sécurité des navires"];
 }
 
-/** Ce que chaque compte du personnel peut voir. */
-export function visiblePour(a: Alerte, s: Account): boolean {
-  if (s.role === "delegue_syndical") return !!s.syndicat && a.syndicat === s.syndicat;
-  return s.role === "directeur_gm" || s.role === "inspecteur_travail";
+/** Ce que chaque compte du personnel peut voir : le Directeur et l'inspecteur voient toutes les alertes. */
+export function visiblePour(_a: Alerte, s: Account): boolean {
+  return s.role === "directeur_gm" || s.role === "inspecteur_securite";
 }
 export function emetteurDe(s: Account): Exclude<Emetteur, "declarant"> {
-  return s.role === "delegue_syndical" ? "syndicat" : s.role === "inspecteur_travail" ? "inspection" : "dgmm";
+  return s.role === "inspecteur_securite" ? "inspection" : "dgmm";
 }
 
 /** Heures écoulées sans réponse aux déclarant (alerte non clôturée et sans échange du personnel). */
@@ -119,13 +117,13 @@ function exemples(): Alerte[] {
       id: 2, numero: `ALR-${new Date().getFullYear()}-0002`, code: "EXEMP-LE002", creeLe: il(30), niveau: "rouge", categorie: "Équipement de sécurité défectueux ou absent",
       description: "Exemple de démonstration : un des deux canots de sauvetage est hors service depuis deux semaines et le navire continue ses rotations vers les plateformes.",
       navire: "Navire de démonstration", armateur: "Compagnie de démonstration", lieu: "Au large de Port-Gentil", dateFaits: il(48).slice(0, 10), pieces: [], anonyme: true,
-      syndicat: "SYNAMM", statut: "recue", echanges: [], lu: {},
+      statut: "recue", echanges: [], lu: {},
     },
     {
       id: 1, numero: `ALR-${new Date().getFullYear()}-0001`, code: "EXEMP-LE001", creeLe: il(120), niveau: "vert", categorie: "Salaire ou cotisations non versés",
       description: "Exemple de démonstration : salaire du mois dernier non versé, l'employeur ne répond plus.",
       navire: "Navire de démonstration", armateur: "Compagnie de démonstration", lieu: "Port d'Owendo", dateFaits: il(240).slice(0, 10), pieces: [], anonyme: false, declarant: "Marin (exemple)",
-      syndicat: "OMEPR", statut: "en_traitement", lu: { dgmm: il(100) },
+      statut: "en_traitement", lu: { dgmm: il(100) },
       echanges: [{ de: "dgmm", auteur: "Direction générale", texte: "Votre signalement est pris en charge : l'armateur est convoqué.", le: il(96) }],
     },
   ];
@@ -185,10 +183,10 @@ function maj(id: number, f: (a: Alerte) => Alerte) {
   return lire().find((a) => a.id === id)!;
 }
 
-export function marquerLu(id: number, qui: "dgmm" | "inspection" | "syndicat") {
+export function marquerLu(id: number, qui: "dgmm" | "inspection") {
   const a = lire().find((x) => x.id === id);
   if (!a || a.lu[qui]) return;
-  maj(id, (x) => ({ ...x, lu: { ...x.lu, [qui]: new Date().toISOString() }, statut: x.statut === "recue" && qui !== "syndicat" ? "en_traitement" : x.statut }));
+  maj(id, (x) => ({ ...x, lu: { ...x.lu, [qui]: new Date().toISOString() }, statut: x.statut === "recue" ? "en_traitement" : x.statut }));
 }
 
 export function repondre(id: number, de: Emetteur, auteur: string, texte: string) {

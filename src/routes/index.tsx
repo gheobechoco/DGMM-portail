@@ -29,7 +29,7 @@ import { ACCOUNTS, comptesPersonnel, getSession, login } from "@/lib/dgmm/auth";
 import type { Role } from "@/lib/dgmm/rules";
 
 const ROLES_MEDICAUX: Role[] = ["medecin", "gestionnaire_medical"];
-const TOUS_ROLES: Role[] = ["directeur_gm", "rh_marine", "medecin", "gestionnaire_medical", "admin_systeme", "inspecteur_travail", "delegue_syndical", "inspecteur_securite"];
+const TOUS_ROLES: Role[] = ["directeur_gm", "rh_marine", "medecin", "gestionnaire_medical", "admin_systeme", "inspecteur_securite"];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -107,14 +107,12 @@ const ROLE_ICONS = {
   medecin: Stethoscope,
   gestionnaire_medical: ShieldCheck,
   admin_systeme: Settings2,
-  inspecteur_travail: Scale,
-  delegue_syndical: Users,
   inspecteur_securite: ClipboardCheck,
 };
 
 function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; role?: Role | undefined; compte?: string | undefined }) {
   const medical = profil === "medical";
-  // Espace de gestion : personnel DGMM, inspection du travail et délégués syndicaux.
+  // Espace de gestion : personnel DGMM et inspecteur de la sécurité des navires.
   const comptes = ACCOUNTS.filter((a) => (medical ? ROLES_MEDICAUX.includes(a.role) : !ROLES_MEDICAUX.includes(a.role)));
   const navigate = useNavigate();
   // Rôle choisi sur « Qui êtes-vous ? » : l'identifiant de démonstration est prérempli.

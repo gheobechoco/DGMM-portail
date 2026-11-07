@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { marinSession } from "@/lib/dgmm/auth";
 import { STATIONS, TOUS_NAVIRES } from "@/lib/dgmm/maritime";
 import { ENTREPRISES_CHOIX, fullName, useMarins } from "@/lib/dgmm/store";
-import { CATEGORIES, NIVEAUX, deposerAlerte, destinataires, lirePiece, type Alerte, type Niveau, type Piece, type Syndicat } from "@/lib/dgmm/alertes";
+import { CATEGORIES, NIVEAUX, deposerAlerte, destinataires, lirePiece, type Alerte, type Niveau, type Piece } from "@/lib/dgmm/alertes";
 
 export const Route = createFileRoute("/signaler/")({
   head: () => ({ meta: [{ title: "Signaler un danger ou un abus — DGMM" }] }),
@@ -23,7 +23,6 @@ function Signaler() {
   const [niveau, setNiveau] = useState<Niveau | "">("");
   const [f, setF] = useState({ categorie: "", navire: "", armateur: "", lieu: "", dateFaits: new Date().toISOString().slice(0, 10), description: "", nom: "", tel: "" });
   const [pieces, setPieces] = useState<Piece[]>([]);
-  const [syndicat, setSyndicat] = useState<Syndicat>("aucun");
   const [tente, setTente] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [fait, setFait] = useState<Alerte | null>(null);
@@ -53,7 +52,7 @@ function Signaler() {
     if (Object.keys(e).length || !niveau) return;
     const r = deposerAlerte({
       niveau, categorie: f.categorie, description: f.description.trim(), navire: f.navire.trim(), armateur: f.armateur.trim(), lieu: f.lieu.trim(), dateFaits: f.dateFaits,
-      pieces, anonyme, syndicat,
+      pieces, anonyme,
       marinId: !anonyme && marin ? marin.id : undefined,
       declarant: anonyme ? undefined : marin ? `${fullName(marin)} (${marin.nip})` : `${f.nom.trim()}${f.tel.trim() ? ` · ${f.tel.trim()}` : ""}`,
     });
@@ -77,7 +76,7 @@ function Signaler() {
             {copie && <p className="mt-2 text-xs text-success">Code copié.</p>}
           </div>
           <Panel title="Où part votre signalement ?">
-            <ul className="space-y-2 text-sm">{destinataires(fait).map((d) => <li key={d} className="flex gap-2"><Send className="mt-0.5 size-4 shrink-0 text-secondary" />{d}</li>)}</ul>
+            <ul className="space-y-2 text-sm">{destinataires().map((d) => <li key={d} className="flex gap-2"><Send className="mt-0.5 size-4 shrink-0 text-secondary" />{d}</li>)}</ul>
             <p className="mt-3 text-xs text-muted-foreground">Il est transmis directement, sans passer par la station maritime locale.</p>
             {fait.niveau === "rouge" && <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive">Danger grave : une inspection d'urgence est demandée au prochain port.</p>}
           </Panel>
@@ -96,14 +95,13 @@ function Signaler() {
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-destructive">Alerte et signalement</div>
           <h1 className="mt-1 font-display text-3xl font-bold text-primary">Signaler un danger ou un abus</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Sécurité à bord, salaire non versé, contrat absent, conditions de vie, pression ou menace : votre signalement part directement à la Direction générale à Libreville et à l'Inspection du travail maritime, sans passer par la station locale.</p>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Sécurité à bord, salaire non versé, contrat absent, conditions de vie, pression ou menace : votre signalement part directement à la Direction générale à Libreville et à l'inspecteur de la sécurité des navires, sans passer par la station locale.</p>
         </div>
         <div className="rounded-xl border bg-card p-4 text-sm shadow-card">
           <div className="flex items-center gap-2 font-semibold text-primary"><Lock className="size-4" /> Votre protection</div>
           <ul className="mt-2 space-y-1.5 text-muted-foreground">
             <li>En mode anonyme, votre nom, votre NIP et votre appareil ne sont pas enregistrés.</li>
             <li>Vous suivez la réponse avec un code que vous seul connaissez.</li>
-            <li>Vous pouvez aussi prévenir votre syndicat.</li>
           </ul>
         </div>
       </div>
@@ -163,7 +161,7 @@ function Signaler() {
           {erreur && <p className="mt-2 text-xs text-destructive">{erreur}</p>}
         </Panel>
 
-        <Panel title={<span className="inline-flex items-center gap-1.5">4. Votre identité et votre syndicat <Aide terme="anonymat" /></span>}>
+        <Panel title={<span className="inline-flex items-center gap-1.5">4. Votre identité <Aide terme="anonymat" /></span>}>
           <label className="choix flex cursor-pointer items-start gap-3" data-actif={anonyme}>
             <input id="al-anonyme" type="checkbox" className="mt-1" checked={anonyme} onChange={(x) => setAnonyme(x.target.checked)} />
             <span className="text-sm"><span className="flex items-center gap-1.5 font-semibold text-primary"><EyeOff className="choix-icone size-4" /> Signalement anonyme</span><span className="text-muted-foreground">Aucune donnée permettant de vous identifier n'est enregistrée.</span></span>
@@ -178,12 +176,6 @@ function Signaler() {
               </div>
             )
           )}
-          <div className="mt-4 text-sm font-medium">Prévenir aussi les délégués d'un syndicat</div>
-          <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Syndicat">
-            {(["aucun", "OMEPR", "SYNAMM"] as Syndicat[]).map((s) => (
-              <button key={s} type="button" role="radio" aria-checked={syndicat === s} onClick={() => setSyndicat(s)} className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", syndicat === s ? "border-gold bg-gold text-gold-foreground" : "hover:border-gold")}>{s === "aucun" ? "Aucun" : s}</button>
-            ))}
-          </div>
         </Panel>
 
         <div className="flex flex-wrap items-center gap-4">

@@ -13,8 +13,7 @@ function Accueil() {
   const navigate = useNavigate();
   const sansTableau = !!session && !can(session.role, "dashboard");
   useEffect(() => {
-    // Sans tableau de bord : l'inspecteur sécurité arrive sur les navires, l'inspection du
-    // travail et les délégués syndicaux sur les alertes.
+    // Sans tableau de bord : l'inspecteur de la sécurité des navires arrive sur les navires.
     if (sansTableau) navigate({ to: session && can(session.role, "navires.inspection") ? "/espace/navires" : "/espace/alertes" });
   }, [sansTableau, navigate, session]);
   if (!session || sansTableau) return null;
