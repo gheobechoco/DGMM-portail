@@ -154,7 +154,7 @@ function Journal() {
           </label>
         </div>
         <div className="max-h-[70vh] overflow-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead className="sticky top-0 bg-muted text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-2.5 font-semibold">N°</th>

@@ -123,6 +123,11 @@
 }
 
 @layer base {
+  /* Mobile : un élément de grille peut rétrécir sous la largeur de son contenu
+     (tableaux défilants), au lieu d'élargir toute la page. */
+  .grid > * {
+    min-width: 0;
+  }
   * {
     border-color: var(--color-border);
   }
@@ -802,3 +807,17 @@ input[type="radio"]:checked {
 /* Peinte derrière les textes de la page ; elle monte en opacité seulement après le délai réglé. */
 .ambiance-couche { will-change: opacity; }
 @media (prefers-reduced-motion: reduce) { .ambiance-couche { transition: none !important; } }
+
+/* Message d'accueil « Bonjour, … » */
+.bonjour { animation: bonjour-entree 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.15) both; }
+.bonjour[data-sortie="true"] { animation: bonjour-sortie 0.45s ease-in both; }
+.bonjour-lettre { display: inline-block; animation: monte 0.45s ease-out both; }
+.bonjour-main { transform-origin: 70% 85%; animation: bonjour-salut 1.4s ease-in-out 0.35s 2; }
+.bonjour-barre { width: 100%; animation: bonjour-temps linear both; }
+@keyframes bonjour-entree { from { opacity: 0; transform: translateY(-18px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes bonjour-sortie { to { opacity: 0; transform: translateY(-14px) scale(0.97); } }
+@keyframes bonjour-salut { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(16deg); } 30% { transform: rotate(-8deg); } 45% { transform: rotate(16deg); } 60% { transform: rotate(-4deg); } 75% { transform: rotate(10deg); } }
+@keyframes bonjour-temps { from { width: 100%; } to { width: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .bonjour, .bonjour[data-sortie="true"], .bonjour-lettre, .bonjour-main, .bonjour-barre { animation: none; }
+}

@@ -122,7 +122,6 @@ function MarinsList({ canCreate, session }: { canCreate: boolean; session: Accou
         <div className="border-b px-4 py-3">
           <ConformityGauge
             compact
-            sujet="de la sélection"
             niveaux={rows.map(({ m }) => niveauConformite(m, visites))}
           />
         </div>

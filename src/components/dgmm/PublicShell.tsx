@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { AmbianceLayer } from "@/components/dgmm/Ambiance";
+import { Salutation } from "@/components/dgmm/Salutation";
 
 /** Cadre des espaces externes (marins, armateurs). */
 export function PublicShell({
@@ -15,7 +16,10 @@ export function PublicShell({
   children,
   fond,
   actions,
+  salutation,
 }: {
+  /** Message d'accueil animé à l'arrivée (une fois par session). */
+  salutation?: { cle: string; nom: string; sous?: string | undefined } | undefined;
   titre: string;
   /** Boutons supplémentaires dans l'en-tête (ex. cloche des alertes). */
   actions?: ReactNode;
@@ -46,23 +50,24 @@ export function PublicShell({
         opacite={0.05}
       />
       <AmbianceLayer />
+      {salutation && <Salutation {...salutation} />}
       <Tricolor className="no-print" />
       <header className="no-print bg-sidebar text-primary-foreground">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6">
           <Link
             to="/"
-            className="flex cursor-pointer items-center gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            className="flex min-w-0 cursor-pointer items-center gap-2 sm:gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             aria-label="Retour à l'accueil DGMM"
           >
             <DgmmLogo className="size-10" />
-            <div className="leading-tight">
-              <div className="font-display text-sm font-bold">DGMM · {titre}</div>
-              <div className="text-[11px] text-primary-foreground/70">
+            <div className="min-w-0 leading-tight">
+              <div className="truncate font-display text-sm font-bold">DGMM · {titre}</div>
+              <div className="hidden text-[11px] text-primary-foreground/70 sm:block">
                 Direction Générale de la Marine Marchande
               </div>
             </div>
           </Link>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
             {utilisateur && <div className="hidden text-right text-xs sm:block">{utilisateur}</div>}
             {actions}
             <ThemeToggle light />
@@ -70,9 +75,10 @@ export function PublicShell({
               <button
                 type="button"
                 onClick={onLogout}
-                className="inline-flex items-center gap-1.5 rounded-md border border-primary-foreground/30 px-3 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10"
+                aria-label="Déconnexion"
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary-foreground/30 px-2.5 py-1.5 text-xs font-semibold hover:bg-primary-foreground/10 sm:px-3"
               >
-                <LogOut className="size-3.5" /> Déconnexion
+                <LogOut className="size-3.5" /> <span className="hidden sm:inline">Déconnexion</span>
               </button>
             ) : (
               <RepubliqueBlock light className="hidden sm:block" />

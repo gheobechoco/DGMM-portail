@@ -205,26 +205,26 @@ export function BarometreControle() {
   const taux = checks.total ? Math.round((checks.conformes / checks.total) * 100) : 0;
   return (
     <Panel
-      title="Baromètre de contrôle & anti-fraude"
-      description="Compteurs locaux de démonstration sur cet appareil; aucune donnée de localisation n'est collectée."
+      title="Mes vérifications sur cet appareil"
+      description="Ce que vous avez vérifié depuis ce navigateur. Rien n'est envoyé ni localisé."
     >
       <div className="grid items-center gap-5 sm:grid-cols-[auto_1fr]">
-        <CircularGauge value={taux} label="Part des contrôles conformes" size={104}>
+        <CircularGauge value={taux} label="Part des titres valides" size={104}>
           <div className="text-center">
             <div className="font-display text-xl font-bold text-primary">
               <CountUp value={checks.total} />
             </div>
-            <div className="text-[10px] text-muted-foreground">contrôles</div>
+            <div className="text-[10px] text-muted-foreground">vérification{checks.total > 1 ? "s" : ""}</div>
           </div>
         </CircularGauge>
         <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Conformes" value={checks.conformes} icon={Ship} tone="success" />
-          <StatCard label="Anomalies" value={checks.anomalies} icon={ShieldAlert} tone="danger" />
+          <StatCard label="Titres valides" value={checks.conformes} icon={Ship} tone="success" />
+          <StatCard label="Non valides ou introuvables" value={checks.anomalies} icon={ShieldAlert} tone="danger" />
         </div>
       </div>
       <div className="mt-5 border-t pt-4">
         <h3 className="mb-2 text-sm font-semibold text-primary">
-          Contrôles récents sur cet appareil
+          Dernières vérifications
         </h3>
         {verifications.length ? (
           <ul className="divide-y">
@@ -237,12 +237,12 @@ export function BarometreControle() {
                   className="flex items-center justify-between gap-3 py-2 text-xs"
                 >
                   <span className="text-muted-foreground">
-                    {new Date(verification.date).toLocaleString("fr-FR")} ·{" "}
+                    {new Date(verification.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} ·{" "}
                     {verification.canal === "qr"
-                      ? "QR"
+                      ? "par QR code"
                       : verification.canal === "nip"
-                        ? "NIP / livret"
-                        : "Certificat"}
+                        ? "par NIP ou livret"
+                        : "par n° de certificat"}
                   </span>
                   <span
                     className={
@@ -251,14 +251,14 @@ export function BarometreControle() {
                         : "font-semibold text-destructive"
                     }
                   >
-                    {verification.resultat === "conforme" ? "Conforme" : "Anomalie"}
+                    {verification.resultat === "conforme" ? "Valide" : "Non valide"}
                   </span>
                 </li>
               ))}
           </ul>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Aucun contrôle enregistré dans ce navigateur pour le moment.
+            Aucune vérification faite depuis ce navigateur pour le moment.
           </p>
         )}
       </div>

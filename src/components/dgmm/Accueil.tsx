@@ -20,6 +20,9 @@ export const FONDS: Record<Profil, string> = {
   medical: "/images/profils/sante.jpg",
 };
 
+/** Inspecteurs de la sécurité maritime en contrôle (casques, check-list). */
+export const FOND_INSPECTION = "/images/profils/inspection.jpg";
+
 /** Photographie associée à chaque rôle du personnel de la DGMM. */
 export const FOND_ROLE: Record<Role, string> = {
   directeur_gm: FONDS.gestion,
@@ -27,7 +30,7 @@ export const FOND_ROLE: Record<Role, string> = {
   medecin: FONDS.medical,
   gestionnaire_medical: FONDS.medical,
   admin_systeme: FONDS.gestion,
-  inspecteur_securite: FONDS.armateur,
+  inspecteur_securite: FOND_INSPECTION,
 };
 
 type Choix = { id: "marin" | "armateur"; titre: string; texte: string; demo: string; icon: typeof Anchor; fond: string };
@@ -58,7 +61,7 @@ export const DEPARTEMENTS: { id: IdDepartement; nom: string; texte: string; icon
     ],
   },
   {
-    id: "inspection", nom: "Inspection maritime et sécurité de la navigation", texte: "Un seul inspecteur : navires et certificats, contrats d'engagement et alertes des marins.", icon: ClipboardCheck, fond: FONDS.armateur,
+    id: "inspection", nom: "Inspection maritime et sécurité de la navigation", texte: "Un seul inspecteur : navires et certificats, contrats d'engagement et alertes des marins.", icon: ClipboardCheck, fond: FOND_INSPECTION,
     comptes: [
       { role: "inspecteur_securite", titre: "Inspecteur de la sécurité des navires", username: "securite", mission: "Inspection à bord et certificats de sécurité, validation des contrats d'engagement, traitement des alertes des marins.", icon: ClipboardCheck },
     ],
@@ -216,9 +219,6 @@ export function ChoixProfil({ onDepartement, onChoix }: { onDepartement: (d: IdD
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{DEPARTEMENTS.map(carteDepartement)}</div>
           </section>
         </div>
-        <Link to="/signaler" className="mt-6 inline-flex items-center gap-2 rounded-full border border-destructive/60 bg-destructive/20 px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-destructive/35">
-          <Siren className="size-4" /> Signaler un danger ou un abus — anonymat possible
-        </Link>
         <Link
           to="/verifier"
           className="mt-6 flex w-full max-w-5xl flex-col gap-4 rounded-2xl border border-gold/50 bg-[#0a192f]/70 p-5 text-left shadow-xl backdrop-blur-md transition hover:border-gold hover:bg-[#0a192f]/85 sm:flex-row sm:items-center sm:px-7"
@@ -228,14 +228,14 @@ export function ChoixProfil({ onDepartement, onChoix }: { onDepartement: (d: IdD
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-display text-base font-bold text-gold sm:text-lg">
-              🛡️ Contrôle public des titres maritimes (Port State Control — MoU d'Abuja)
+              Vérifier un titre maritime
             </span>
             <span className="mt-1 block text-sm text-primary-foreground/80">
-              Vérification immédiate sans compte par scan QR ou saisie du NIP / code certificat.
+              Sans compte : scannez le QR ou saisissez le NIP.
             </span>
           </span>
           <span className="inline-flex items-center gap-2 font-semibold text-primary-foreground">
-            Accéder au contrôle <ArrowRight className="size-4" />
+            Vérifier <ArrowRight className="size-4" />
           </span>
         </Link>
         <div className="mt-7 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
@@ -265,6 +265,13 @@ export function ChoixProfil({ onDepartement, onChoix }: { onDepartement: (d: IdD
             Suivre ma demande
           </Link>
         </div>
+        <Link
+          to="/signaler"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-primary-foreground/70 transition hover:bg-destructive/20 hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        >
+          <Siren className="size-3.5 text-destructive" aria-hidden /> Signaler un danger ou un abus
+          <span className="text-primary-foreground/50">· anonyme possible</span>
+        </Link>
       </main>
       <footer className="px-5 py-4 text-center text-xs text-primary-foreground/55">
         © {new Date().getFullYear()} Direction Générale de la Marine Marchande · République

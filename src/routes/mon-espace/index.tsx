@@ -77,6 +77,7 @@ function EspaceMarin() {
       }
       onLogout={() => marinSession.write(null)}
       actions={<AlertesExpirationMarin m={m} />}
+      salutation={{ cle: `marin-${m.id}`, nom: `${m.prenom} ${m.nom}`, sous: m.profession || "Gens de mer" }}
     >
       <Tableau m={m} />
     </PublicShell>
@@ -248,11 +249,10 @@ function Tableau({ m }: { m: Marin }) {
         </div>
       </section>
 
-      <div className="mb-6 grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {[
           { to: "/mon-espace/contrat" as const, icon: FileSignature, titre: "Mon contrat et ma paie", texte: "Signer, vérifier les versements, demander le rapatriement.", ton: "bg-primary/10 text-primary" },
           { to: "/mon-espace/trajet" as const, icon: MapPinned, titre: "Mon trajet en 3D", texte: "Domicile, lieu de travail et station, avec les temps de trajet.", ton: "bg-secondary/15 text-secondary" },
-          { to: "/signaler" as const, icon: Siren, titre: "Signaler un problème", texte: "Danger à bord ou abus : à la Direction générale, anonymement si besoin.", ton: "bg-destructive/12 text-destructive" },
         ].map(({ to, icon: Icon, titre, texte, ton }) => (
           <Link key={to} to={to} className="carte-survol flex items-start gap-3 rounded-xl border bg-card p-4 shadow-card">
             <span className={`grid size-10 shrink-0 place-items-center rounded-lg ${ton}`}><Icon className="size-5" /></span>
@@ -264,6 +264,13 @@ function Tableau({ m }: { m: Marin }) {
           </Link>
         ))}
       </div>
+      <p className="mb-6 mt-2 text-right text-xs text-muted-foreground">
+        Un danger à bord ou un abus ?{" "}
+        <Link to="/signaler" className="inline-flex items-center gap-1 font-semibold text-destructive hover:underline">
+          <Siren className="size-3.5" aria-hidden /> Signaler
+        </Link>{" "}
+        (anonymat possible)
+      </p>
 
       {jours !== null && jours <= 60 && (
         <div

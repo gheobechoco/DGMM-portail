@@ -150,7 +150,6 @@ export function RoleCard({
         <div className="min-w-0 flex-1">
           <ConformityGauge
             compact
-            sujet="d'équipage"
             niveaux={rows.map((x) =>
               x.m
                 ? niveauConformite(x.m, visites, new Date(`${r.appareillage}T12:00:00`))

@@ -96,6 +96,7 @@ function EspaceArmateur() {
         </>
       }
       onLogout={() => armateurSession.write(null)}
+      salutation={{ cle: `armateur-${a.username}`, nom: a.entreprise, sous: a.contact }}
     >
       <Tableau a={a} />
     </PublicShell>
@@ -427,7 +428,7 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                           <ConformityGauge
                             compact
                             niveaux={niveaux}
-                            sujet={`d'équipage (appareillage du ${formatDate(dernier.appareillage)})`}
+                            contexte={`appareillage du ${formatDate(dernier.appareillage)}`}
                           />
                         </div>
                       )}

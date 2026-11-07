@@ -31,6 +31,7 @@ import { useSysteme } from "@/lib/dgmm/systeme";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { logout, type Account } from "@/lib/dgmm/auth";
 import { Omnibar } from "@/components/dgmm/Omnibar";
+import { Salutation } from "@/components/dgmm/Salutation";
 import { Tour, type TourStep } from "@/components/dgmm/Tour";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -414,6 +415,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
         opacite={0.045}
       />
       <AmbianceLayer />
+      <Salutation cle={session.username} nom={session.nom} sous={session.roleLabel} />
       <aside
         data-ambiance-zone
         className="no-print fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block"
@@ -453,7 +455,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
       <div className="lg:pl-64 print:pl-0">
         <header className="no-print sticky top-0 z-20 border-b bg-card/90 backdrop-blur">
           <Tricolor className="lg:hidden" />
-          <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+          <div className="flex h-14 items-center gap-1.5 px-3 sm:gap-3 sm:px-6">
             {pathname !== "/espace" && pathname !== "/espace/" && (
               <button
                 type="button"
@@ -474,7 +476,7 @@ export function AppShell({ session, children }: { session: Account; children: Re
             >
               <Menu className="size-5" />
             </button>
-            <div className="flex items-center gap-2 lg:hidden">
+            <div className="hidden items-center gap-2 sm:flex lg:hidden">
               <Link
                 to="/espace"
                 className="flex cursor-pointer items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const NIVEAUX: { k: Niveau; label: string; bar: string; text: string; icon: LucideIcon }[] = [
   {
     k: "conforme",
-    label: "Conformes",
+    label: "Valides",
     bar: "bg-success",
     text: "text-success",
     icon: CheckCircle2,
@@ -35,16 +35,17 @@ const NIVEAUX: { k: Niveau; label: string; bar: string; text: string; icon: Luci
 ];
 
 /**
- * Mini-jauge de santé réglementaire : part d'un effectif en règle (certificat valide),
- * avec le détail Émeraude / Ambre / Rubis / Ardoise.
+ * Mini-jauge de santé réglementaire, dite en clair : « 11 marins sur 24 ont un
+ * certificat médical valide », avec le détail Valides / À renouveler / Expirés / En cours.
  */
 export function ConformityGauge({
   niveaux,
-  sujet = "d'équipage",
+  contexte,
   compact,
 }: {
   niveaux: Niveau[];
-  sujet?: string;
+  /** Précision affichée après la phrase (ex. « appareillage du 12/11/2026 »). */
+  contexte?: string | undefined;
   compact?: boolean | undefined;
 }) {
   const total = niveaux.length;
@@ -52,28 +53,29 @@ export function ConformityGauge({
   const enRegle = n("conforme") + n("alerte");
   const pct = total ? Math.round((enRegle / total) * 100) : 0;
   const alerte = n("alerte");
+  const ton = pct >= 90 ? "text-success" : pct >= 60 ? "text-warning" : "text-destructive";
   return (
     <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <div className="text-sm">
-          <span
-            className={cn(
-              "font-display text-2xl font-bold tabular-nums",
-              pct >= 90 ? "text-success" : pct >= 60 ? "text-warning" : "text-destructive",
-            )}
-          >
-            <CountUp value={pct} /> %
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm leading-snug">
+          <span className={cn("font-display text-lg font-bold tabular-nums", ton)}>
+            <CountUp value={enRegle} /> marin{enRegle > 1 ? "s" : ""} sur {total}
           </span>{" "}
-          <span className="font-medium text-foreground">{sujet} en règle</span>
+          <span className="text-foreground">
+            {enRegle > 1 ? "ont" : "a"} un certificat médical valide
+          </span>
+          {contexte && <span className="text-muted-foreground"> · {contexte}</span>}
           {alerte > 0 && (
-            <span className="text-muted-foreground">
-              {" "}
-              ({alerte} marin{alerte > 1 ? "s" : ""} avec visite expirant sous 60 jours)
+            <span className="block text-xs text-muted-foreground">
+              dont {alerte} à renouveler dans moins de 60 jours
             </span>
           )}
-        </div>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {enRegle}/{total}
+        </p>
+        <span
+          className={cn("shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums", ton)}
+          title="Part des marins avec un certificat médical valide"
+        >
+          {pct} %
         </span>
       </div>
       <div
@@ -82,7 +84,7 @@ export function ConformityGauge({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-label={`${pct} % ${sujet} en règle`}
+        aria-label={`${enRegle} marins sur ${total} avec un certificat médical valide (${pct} %)`}
       >
         {NIVEAUX.map((x) =>
           n(x.k) ? (

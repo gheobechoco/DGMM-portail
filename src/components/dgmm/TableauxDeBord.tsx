@@ -458,7 +458,6 @@ export function PilotageDashboard({ session, vue = "tableau" }: { session: Accou
             />
             <div className="w-full flex-1">
               <ConformityGauge
-                sujet="des gens de mer"
                 niveaux={marins.map((m) => niveauConformite(m, visites))}
               />
             </div>
@@ -881,11 +880,11 @@ export function MedicalDashboard({ session, vue = "tableau" }: { session: Accoun
             hint={`${d.brouillons.length} brouillon(s) à signer`}
           />
           <StatCard
-            label="File active"
+            label="Marins à examiner"
             value={d.fileActive.length}
             icon={Users}
             tone="warning"
-            hint="marins convoqués à examiner"
+            hint="inscrits, en attente de leur visite"
           />
           <StatCard
             label="Certificats à renouveler"
@@ -944,8 +943,8 @@ export function MedicalDashboard({ session, vue = "tableau" }: { session: Accoun
       {!stats && (<>
       <div className="mt-6">
         <Panel
-          title="File active"
-          description="Marins enrôlés convoqués pour la visite d'aptitude STCW"
+          title={`Marins à examiner (${d.fileActive.length})`}
+          description="Inscrits à la DGMM, ils attendent leur visite médicale d'aptitude. Les plus anciens d'abord."
           bodyClassName="p-0"
           actions={
             <Link to="/espace/marins" search={{ medical: "en_attente" }} className={seeAll}>
@@ -954,7 +953,7 @@ export function MedicalDashboard({ session, vue = "tableau" }: { session: Accoun
           }
         >
           {d.fileActive.length === 0 ? (
-            <EmptyState icon={CheckCircle2} title="File active vide">
+            <EmptyState icon={CheckCircle2} title="Personne à examiner">
               Aucun marin en attente de visite.
             </EmptyState>
           ) : (
@@ -979,7 +978,7 @@ export function MedicalDashboard({ session, vue = "tableau" }: { session: Accoun
                       <div className="truncate text-xs text-muted-foreground">
                         {m.profession} · {m.entreprise || "sans armateur"} ·{" "}
                         <span className={jours > 7 ? "font-semibold text-warning" : ""}>
-                          en attente depuis {jours} j
+                          attend depuis {jours} jour{jours > 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>
