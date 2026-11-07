@@ -22,6 +22,7 @@ import { Route as EspaceAuditRouteImport } from './routes/espace/audit'
 import { Route as EspaceContratsRouteImport } from './routes/espace/contrats'
 import { Route as EspaceDemandesRouteImport } from './routes/espace/demandes'
 import { Route as EspaceEquipagesRouteImport } from './routes/espace/equipages'
+import { Route as EspaceNaviresRouteImport } from './routes/espace/navires'
 import { Route as EspaceSystemeRouteImport } from './routes/espace/systeme'
 import { Route as InscriptionArmateurRouteImport } from './routes/inscription.armateur'
 import { Route as InscriptionMarinRouteImport } from './routes/inscription.marin'
@@ -108,6 +109,11 @@ const EspaceDemandesRoute = EspaceDemandesRouteImport.update({
 const EspaceEquipagesRoute = EspaceEquipagesRouteImport.update({
   id: '/equipages',
   path: '/equipages',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceNaviresRoute = EspaceNaviresRouteImport.update({
+  id: '/navires',
+  path: '/navires',
   getParentRoute: () => EspaceRoute,
 } as any)
 const EspaceSystemeRoute = EspaceSystemeRouteImport.update({
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/navires': typeof EspaceNaviresRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/navires': typeof EspaceNaviresRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
@@ -307,6 +315,7 @@ export interface FileRoutesById {
   '/espace/contrats': typeof EspaceContratsRoute
   '/espace/demandes': typeof EspaceDemandesRoute
   '/espace/equipages': typeof EspaceEquipagesRoute
+  '/espace/navires': typeof EspaceNaviresRoute
   '/espace/systeme': typeof EspaceSystemeRoute
   '/inscription/armateur': typeof InscriptionArmateurRoute
   '/inscription/marin': typeof InscriptionMarinRoute
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
+    | '/espace/navires'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
@@ -382,6 +392,7 @@ export interface FileRouteTypes {
     | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
+    | '/espace/navires'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
@@ -419,6 +430,7 @@ export interface FileRouteTypes {
     | '/espace/contrats'
     | '/espace/demandes'
     | '/espace/equipages'
+    | '/espace/navires'
     | '/espace/systeme'
     | '/inscription/armateur'
     | '/inscription/marin'
@@ -557,6 +569,13 @@ declare module '@tanstack/react-router' {
       path: '/equipages'
       fullPath: '/espace/equipages'
       preLoaderRoute: typeof EspaceEquipagesRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/espace/navires': {
+      id: '/espace/navires'
+      path: '/navires'
+      fullPath: '/espace/navires'
+      preLoaderRoute: typeof EspaceNaviresRouteImport
       parentRoute: typeof EspaceRoute
     }
     '/espace/systeme': {
@@ -722,6 +741,7 @@ interface EspaceRouteChildren {
   EspaceContratsRoute: typeof EspaceContratsRoute
   EspaceDemandesRoute: typeof EspaceDemandesRoute
   EspaceEquipagesRoute: typeof EspaceEquipagesRoute
+  EspaceNaviresRoute: typeof EspaceNaviresRoute
   EspaceSystemeRoute: typeof EspaceSystemeRoute
   EspaceIndexRoute: typeof EspaceIndexRoute
   EspaceLivretsIdRoute: typeof EspaceLivretsIdRoute
@@ -742,6 +762,7 @@ const EspaceRouteChildren: EspaceRouteChildren = {
   EspaceContratsRoute: EspaceContratsRoute,
   EspaceDemandesRoute: EspaceDemandesRoute,
   EspaceEquipagesRoute: EspaceEquipagesRoute,
+  EspaceNaviresRoute: EspaceNaviresRoute,
   EspaceSystemeRoute: EspaceSystemeRoute,
   EspaceIndexRoute: EspaceIndexRoute,
   EspaceLivretsIdRoute: EspaceLivretsIdRoute,

@@ -15,6 +15,7 @@ import {
   Settings2,
   Scale,
   Users,
+  ClipboardCheck,
 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { Sigle } from "@/components/dgmm/Sigle";
@@ -28,7 +29,7 @@ import { ACCOUNTS, getSession, login } from "@/lib/dgmm/auth";
 import type { Role } from "@/lib/dgmm/rules";
 
 const ROLES_MEDICAUX: Role[] = ["medecin", "gestionnaire_medical"];
-const TOUS_ROLES: Role[] = ["directeur_gm", "rh_marine", "medecin", "gestionnaire_medical", "admin_systeme", "inspecteur_travail", "delegue_syndical"];
+const TOUS_ROLES: Role[] = ["directeur_gm", "rh_marine", "medecin", "gestionnaire_medical", "admin_systeme", "inspecteur_travail", "delegue_syndical", "inspecteur_securite"];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -107,6 +108,7 @@ const ROLE_ICONS = {
   admin_systeme: Settings2,
   inspecteur_travail: Scale,
   delegue_syndical: Users,
+  inspecteur_securite: ClipboardCheck,
 };
 
 function LoginPage({ profil, role }: { profil: "gestion" | "medical"; role?: Role | undefined }) {

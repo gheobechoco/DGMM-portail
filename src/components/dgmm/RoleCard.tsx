@@ -16,6 +16,10 @@ import {
 import { cn } from "@/lib/utils";
 import { TOUS_NAVIRES } from "@/lib/dgmm/maritime";
 import { effectifMinimal } from "@/lib/dgmm/conformite";
+import { useInscriptions } from "@/lib/dgmm/inscriptions";
+import { nomNormalise } from "@/lib/dgmm/registre";
+import { etatNavire, peutAppareiller, registreNavires, useInspections } from "@/lib/dgmm/navires";
+import { PastilleEtat } from "@/components/dgmm/NavireBits";
 
 /** Aptitude d'un marin à la date d'appareillage. */
 export function aptitudeAu(
@@ -48,8 +52,14 @@ export function RoleCard({
   const navire = TOUS_NAVIRES.find((n) => n.nom === r.navire);
   const minimum = navire ? effectifMinimal(navire.jauge) : 0;
   const sousEffectif = rows.length < minimum;
-  const ok = bloquants.length === 0 && rows.length > 0 && !sousEffectif;
   const passe = r.appareillage < new Date().toISOString().slice(0, 10);
+  // Certificats de sécurité du navire (inspection scellée puis visée par le RH).
+  const { armateurs } = useInscriptions();
+  const inspections = useInspections();
+  const fiche = registreNavires(armateurs).find((n) => nomNormalise(n.nom) === nomNormalise(r.navire));
+  const securite = fiche ? etatNavire(inspections, fiche.id) : null;
+  const navireBloque = !passe && !!securite && !peutAppareiller(securite.etat);
+  const ok = bloquants.length === 0 && rows.length > 0 && !sousEffectif && !navireBloque;
   return (
     <article
       className={cn(
@@ -75,6 +85,11 @@ export function RoleCard({
               </span>
             )}
           </div>
+          {securite && !passe && (
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              Certificats du navire : <PastilleEtat etat={securite.etat} jours={securite.jours} />
+            </div>
+          )}
         </div>
         <span
           className={cn(
@@ -87,7 +102,9 @@ export function RoleCard({
           {ok ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
           {ok
             ? "Conforme — appareillage autorisé"
-            : sousEffectif && !bloquants.length
+            : navireBloque && !bloquants.length
+              ? "Non conforme — certificats du navire"
+              : sousEffectif && !bloquants.length
               ? `Non conforme — effectif minimal ${minimum} non atteint`
               : `Non conforme — ${bloquants.length} marin(s) bloquant(s)`}
         </span>

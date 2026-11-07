@@ -32,6 +32,8 @@ import { StatusPill } from "@/components/dgmm/Brand";
 import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { RoleCard, aptitudeAu } from "@/components/dgmm/RoleCard";
 import { ArmateurOutils } from "@/components/dgmm/ArmateurOutils";
+import { PastilleEtat } from "@/components/dgmm/NavireBits";
+import { ETAT_NAVIRE, etatNavire, idNavire, peutAppareiller, useInspections } from "@/lib/dgmm/navires";
 import { ConformityGauge } from "@/components/dgmm/ConformityGauge";
 import { CircularGauge, CountUp } from "@/components/dgmm/Anim";
 import { Aide } from "@/components/dgmm/Aide";
@@ -220,6 +222,9 @@ function Tableau({ a }: { a: ArmateurAccount }) {
     return s === "valide" || s === "expire_bientot";
   }).length;
   const [edit, setEdit] = useState<RoleEquipage | "new" | null>(null);
+  const inspections = useInspections();
+  const securite = flotte.map((n) => ({ n, ...etatNavire(inspections, idNavire(n.imo, n.nom)) }));
+  const aSignaler = securite.filter((x) => x.etat !== "autorise");
   const allRoles = useRoles();
   const alertes = useMemo(() => {
     const ids = new Set([
@@ -301,6 +306,21 @@ function Tableau({ a }: { a: ArmateurAccount }) {
           <TableauArmateur entreprise={a.entreprise} />
         </div>
       </SectionStatistiques>
+
+      {aSignaler.length > 0 && (
+        <Panel title="Certificats de sécurité de vos navires" description="Alertes de la DGMM : un navire non autorisé ne peut pas recevoir de rôle d'équipage." className="mb-6">
+          <ul className="space-y-2 text-sm">
+            {aSignaler.map((x) => (
+              <li key={x.n.nom} className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-primary">{x.n.nom}</span>
+                <PastilleEtat etat={x.etat} jours={x.jours} />
+                {x.critique && <span className="text-xs text-muted-foreground">{x.critique.titre} : échéance le {new Date(x.critique.echeance + "T12:00:00").toLocaleDateString("fr-FR")}</span>}
+                {x.etat === "non_inspecte" && <span className="text-xs text-muted-foreground">Demandez une visite de sécurité à la DGMM.</span>}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
 
       <ArmateurOutils />
 
@@ -386,6 +406,10 @@ function Tableau({ a }: { a: ArmateurAccount }) {
                       <div className="text-xs text-muted-foreground">
                         {n.type} · {n.jauge.toLocaleString("fr-FR")} GT · pavillon {n.pavillon}
                       </div>
+                      {(() => {
+                        const sec = securite.find((x) => x.n.nom === n.nom);
+                        return sec ? <div className="mt-1"><PastilleEtat etat={sec.etat} jours={sec.jours} /></div> : null;
+                      })()}
                       <div className="mt-1 text-xs">
                         {aBord.length ? (
                           <span>
@@ -757,6 +781,10 @@ function RoleDialog({
   const [fonction, setFonction] = useState("Matelot");
   const [err, setErr] = useState<string | null>(null);
   const navireRole = flotte.find((n) => n.nom === navire);
+  // Le navire doit être au vert (inspection scellée et visée par le RH) pour préparer un rôle.
+  const inspectionsRole = useInspections();
+  const etatRole = navireRole ? etatNavire(inspectionsRole, idNavire(navireRole.imo, navireRole.nom)).etat : null;
+  const navireInterdit = !!etatRole && !peutAppareiller(etatRole);
 
   const ajouter = () => {
     const m = marins.find((x) => x.nip.toUpperCase() === nip.trim().toUpperCase());
@@ -783,7 +811,7 @@ function RoleDialog({
           Liste nominative de l'équipage embarqué pour l'appareillage.
         </DialogDescription>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Navire" htmlFor="r-navire">
+          <Field label="Navire" htmlFor="r-navire" error={navireInterdit && etatRole ? `${ETAT_NAVIRE[etatRole].libelle} : rôle d'équipage impossible tant que la DGMM n'a pas validé les certificats.` : undefined}>
             <select
               id="r-navire"
               className={selectClass}
@@ -883,7 +911,7 @@ function RoleDialog({
           </Button>
           <Button
             variant="gold"
-            disabled={!navire || !date || membres.length === 0}
+            disabled={!navire || !date || membres.length === 0 || navireInterdit}
             onClick={() => {
               const inaptes = membres
                 .map((x) => marins.find((y) => y.id === x.marinId))

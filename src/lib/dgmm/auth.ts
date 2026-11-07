@@ -73,6 +73,13 @@ export const ACCOUNTS: Account[] = [
     roleLabel: "Délégué syndical",
     syndicat: "SYNAMM",
   },
+  {
+    username: "securite",
+    password: "azerty",
+    nom: "NZE OBIANG Hervé",
+    role: "inspecteur_securite",
+    roleLabel: "Inspecteur de la sécurité des navires",
+  },
 ];
 
 const KEY = "dgmm-session";

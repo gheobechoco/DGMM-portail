@@ -57,9 +57,10 @@ function Accueil() {
   const navigate = useNavigate();
   const sansTableau = !!session && !can(session.role, "dashboard");
   useEffect(() => {
-    // Inspection et délégués syndicaux arrivent directement sur les alertes.
-    if (sansTableau) navigate({ to: "/espace/alertes" });
-  }, [sansTableau, navigate]);
+    // Sans tableau de bord : l'inspecteur sécurité arrive sur les navires, l'inspection du
+    // travail et les délégués syndicaux sur les alertes.
+    if (sansTableau) navigate({ to: session && can(session.role, "navires.inspection") ? "/espace/navires" : "/espace/alertes" });
+  }, [sansTableau, navigate, session]);
   if (!session || sansTableau) return null;
   return profil(session.role) === "medical" ? (
     <MedicalDashboard session={session} />

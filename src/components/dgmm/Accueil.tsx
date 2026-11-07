@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Anchor, ArrowRight, Building2, FolderArchive, LayoutDashboard, Scale, Settings2, ShieldCheck, Siren, Stethoscope, Users } from "lucide-react";
+import { Anchor, ArrowRight, Building2, ClipboardCheck, FolderArchive, LayoutDashboard, Scale, Settings2, ShieldCheck, Siren, Stethoscope, Users } from "lucide-react";
 import type { Role } from "@/lib/dgmm/rules";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { appliquerPrefs } from "@/lib/dgmm/prefs";
@@ -30,6 +30,7 @@ export const FOND_ROLE: Record<Role, string> = {
   admin_systeme: FONDS.gestion,
   inspecteur_travail: FONDS.armateur,
   delegue_syndical: FONDS.marin,
+  inspecteur_securite: FONDS.armateur,
 };
 
 type Choix = { id: "marin" | "armateur" | Role; titre: string; texte: string; icon: typeof Anchor; fond: string };
@@ -43,6 +44,7 @@ const PERSONNEL: Choix[] = [
   { id: "rh_marine", titre: "Agent DGMM — RH Marine", texte: "Pré-inscriptions, dossiers des marins, équipages.", icon: FolderArchive, fond: FOND_ROLE.rh_marine },
   { id: "medecin", titre: "Médecin des gens de mer", texte: "Visites d'aptitude et signature des certificats.", icon: Stethoscope, fond: FOND_ROLE.medecin },
   { id: "gestionnaire_medical", titre: "Gestionnaire médical", texte: "Accueil, file du jour et préparation des visites.", icon: ShieldCheck, fond: FOND_ROLE.gestionnaire_medical },
+  { id: "inspecteur_securite", titre: "Inspecteur sécurité des navires", texte: "Visites à bord et certificats de sécurité.", icon: ClipboardCheck, fond: FOND_ROLE.inspecteur_securite },
   { id: "admin_systeme", titre: "Administrateur système", texte: "Réglages, sauvegardes et état du portail.", icon: Settings2, fond: FOND_ROLE.admin_systeme },
 ];
 const CONTROLE: Choix[] = [
@@ -188,7 +190,7 @@ export function ChoixProfil({ onRole, onChoix }: { onRole: (r: Role) => void; on
           </section>
           <section aria-label="Personnel de la DGMM">
             <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/60">Personnel de la <Sigle s="DGMM" /></h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{PERSONNEL.map((c) => carte(c, false))}</div>
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">{PERSONNEL.map((c) => carte(c, false))}</div>
           </section>
           <section aria-label="Contrôle et représentation des marins">
             <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/60">Contrôle et représentation des marins</h2>
