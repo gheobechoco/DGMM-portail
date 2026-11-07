@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { DgmmLogo, SceauFiligrane } from "@/components/dgmm/Logo";
 import { Sigle } from "@/components/dgmm/Sigle";
-import { Chargement, ChoixProfil, FONDS } from "@/components/dgmm/Accueil";
+import { Chargement, ChoixProfil, DEPARTEMENTS, FONDS, type IdDepartement } from "@/components/dgmm/Accueil";
 import { ThemeToggle } from "@/components/dgmm/ThemeToggle";
 import { RepubliqueBlock, Tricolor } from "@/components/dgmm/Brand";
 import { AmbianceLayer } from "@/components/dgmm/Ambiance";
@@ -48,7 +48,8 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { profil?: "gestion" | "medical" | undefined; role?: Role | undefined; compte?: string | undefined } => ({
+  validateSearch: (s: Record<string, unknown>): { profil?: "gestion" | "medical" | undefined; role?: Role | undefined; compte?: string | undefined; dep?: IdDepartement | undefined } => ({
+    dep: DEPARTEMENTS.some((d) => d.id === s["dep"]) ? (s["dep"] as IdDepartement) : undefined,
     compte: typeof s["compte"] === "string" ? s["compte"] : undefined,
     profil: s["profil"] === "gestion" || s["profil"] === "medical" ? s["profil"] : undefined,
     role: TOUS_ROLES.includes(s["role"] as Role) ? (s["role"] as Role) : undefined,
@@ -61,7 +62,7 @@ const VU = "dgmm-accueil-vu";
 /** Accueil : écran de chargement (une fois par session), choix du profil, puis connexion. */
 function Accueil() {
   const navigate = useNavigate();
-  const { profil, role, compte } = Route.useSearch();
+  const { profil, role, compte, dep } = Route.useSearch();
   const [etape, setEtape] = useState<"init" | "chargement" | "profil">("init");
   useEffect(() => {
     if (getSession()) {
@@ -76,13 +77,13 @@ function Accueil() {
     }
     setEtape(vu ? "profil" : "chargement");
   }, [navigate]);
-  if (profil === "gestion" || profil === "medical") return <LoginPage profil={profil} role={role} compte={compte} />;
+  if (profil === "gestion" || profil === "medical") return <LoginPage profil={profil} role={role} compte={compte} dep={dep} />;
   if (etape === "init") return <div className="min-h-screen bg-navy-gradient" />;
   // Le choix du profil est déjà en place sous l'écran de chargement, qui s'efface par-dessus.
   return (
     <>
       <ChoixProfil
-        onCompte={(r, username) => navigate({ to: "/", search: { profil: ROLES_MEDICAUX.includes(r) ? "medical" : "gestion", role: r, compte: username } })}
+        onDepartement={(d) => navigate({ to: "/", search: { profil: d === "sante" ? "medical" : "gestion", dep: d } })}
         onChoix={(p) => navigate({ to: p === "marin" ? "/mon-espace" : "/armateur" })}
       />
       {etape === "chargement" && (
@@ -110,10 +111,14 @@ const ROLE_ICONS = {
   inspecteur_securite: ClipboardCheck,
 };
 
-function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; role?: Role | undefined; compte?: string | undefined }) {
+function LoginPage({ profil, role, compte, dep: depId }: { profil: "gestion" | "medical"; role?: Role | undefined; compte?: string | undefined; dep?: IdDepartement | undefined }) {
   const medical = profil === "medical";
+  // Arrivée depuis la carte d'un département : seules ses fonctions sont proposées et acceptées.
+  const dep = DEPARTEMENTS.find((d) => d.id === depId);
+  const rolesDep = dep ? dep.comptes.map((c) => c.role) : null;
+  const dansEspace = (r: Role) => (rolesDep ? rolesDep.includes(r) : medical ? ROLES_MEDICAUX.includes(r) : !ROLES_MEDICAUX.includes(r));
   // Espace de gestion : personnel DGMM et inspecteur de la sécurité des navires.
-  const comptes = ACCOUNTS.filter((a) => (medical ? ROLES_MEDICAUX.includes(a.role) : !ROLES_MEDICAUX.includes(a.role)));
+  const comptes = ACCOUNTS.filter((a) => dansEspace(a.role));
   const navigate = useNavigate();
   // Rôle choisi sur « Qui êtes-vous ? » : l'identifiant de démonstration est prérempli.
   const [username, setUsername] = useState(() => (compte && comptes.some((a) => a.username === compte) ? compte : role ? (comptes.find((a) => a.role === role)?.username ?? "") : ""));
@@ -136,7 +141,7 @@ function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; ro
     setLoading(true);
     setTimeout(() => {
       // Contrôle sur tous les comptes de l'espace, y compris les médecins assermentés en ligne.
-      const compteAutorise = comptesPersonnel().filter((a) => (medical ? ROLES_MEDICAUX.includes(a.role) : !ROLES_MEDICAUX.includes(a.role))).some(
+      const compteAutorise = comptesPersonnel().filter((a) => dansEspace(a.role)).some(
         (a) => a.username === username.trim().toLowerCase() && a.password === password,
       );
       if (!compteAutorise) {
@@ -165,7 +170,7 @@ function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; ro
         <div
           aria-hidden
           className="profil-fond profil-fond-actif absolute inset-0 -z-20 bg-cover bg-center"
-          style={{ backgroundImage: `url(${FONDS[profil]})` }}
+          style={{ backgroundImage: `url(${dep?.fond ?? FONDS[profil]})` }}
         />
         <div
           aria-hidden
@@ -190,7 +195,9 @@ function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; ro
               Direction Générale de la <span className="text-gold">Marine Marchande</span>
             </h1>
             <p className="mt-4 text-base text-primary-foreground/75">
-              {medical
+              {dep
+                ? dep.texte
+                : medical
                 ? "Espace réservé au médecin du travail et au gestionnaire médical pour le suivi des visites et certificats d'aptitude."
                 : "Espace réservé au Directeur des Gens de Mer, aux agents de la DGMM et à l'administrateur système."}
             </p>
@@ -226,10 +233,12 @@ function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; ro
                 ← Changer de profil
               </Link>
               <h2 className="font-display text-3xl font-bold text-primary">
-                {medical ? "Connexion — Espace médical" : "Connexion professionnelle DGMM"}
+                {dep ? dep.nom : medical ? "Connexion — Espace médical" : "Connexion professionnelle DGMM"}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {medical
+                {dep
+                  ? `Connexion réservée aux fonctions du département : ${dep.comptes.map((c) => c.titre).join(", ")}.`
+                  : medical
                   ? "Réservée au médecin du travail et au gestionnaire médical."
                   : "Réservée au Directeur des Gens de Mer, aux agents DGMM et à l'administrateur système."}
               </p>
@@ -312,12 +321,13 @@ function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; ro
 
             <div className="mt-10">
               <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <span className="h-px flex-1 bg-border" /> Comptes de démonstration{" "}
+                <span className="h-px flex-1 bg-border" /> {dep ? "Fonctions du département · comptes de démonstration" : "Comptes de démonstration"}{" "}
                 <span className="h-px flex-1 bg-border" />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className={dep ? "grid gap-2" : "grid grid-cols-2 gap-2"}>
                 {comptes.map((a) => {
                   const Icon = ROLE_ICONS[a.role];
+                  const fonction = dep?.comptes.find((c) => c.username === a.username);
                   return (
                     <button
                       key={a.username}
@@ -334,10 +344,11 @@ function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; ro
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-semibold text-primary">
-                          {a.roleLabel}
+                          {fonction?.titre ?? a.roleLabel}
                         </span>
-                        <span className="block truncate text-[11px] text-muted-foreground">
-                          {a.username}
+                        {fonction && <span className="block text-[11px] text-muted-foreground">{fonction.mission}</span>}
+                        <span className="block truncate font-mono text-[11px] text-muted-foreground">
+                          {a.username} · azerty
                         </span>
                       </span>
                     </button>

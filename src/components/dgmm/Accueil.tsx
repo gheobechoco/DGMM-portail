@@ -40,8 +40,9 @@ const EXTERNES: Choix[] = [
 /** Compte de démonstration d'un rôle (mot de passe commun : azerty). */
 export interface CompteDemo { role: Role; titre: string; username: string; mission: string; icon: typeof Anchor }
 
-/** Départements du personnel : une carte par département, avec les comptes de démonstration de ses rôles. */
-export const DEPARTEMENTS: { id: string; nom: string; texte: string; icon: typeof Anchor; fond: string; comptes: CompteDemo[] }[] = [
+/** Départements du personnel : une carte par département ; ses fonctions sont proposées sur sa page de connexion. */
+export type IdDepartement = "dgm" | "sante" | "inspection";
+export const DEPARTEMENTS: { id: IdDepartement; nom: string; texte: string; icon: typeof Anchor; fond: string; comptes: CompteDemo[] }[] = [
   {
     id: "dgm", nom: "Direction des Gens de Mer", texte: "Enrôlement, visa régalien, fascicules, équipages et pilotage national.", icon: LayoutDashboard, fond: FONDS.gestion,
     comptes: [
@@ -60,12 +61,6 @@ export const DEPARTEMENTS: { id: string; nom: string; texte: string; icon: typeo
     id: "inspection", nom: "Inspection maritime et sécurité de la navigation", texte: "Un seul inspecteur : navires et certificats, contrats d'engagement et alertes des marins.", icon: ClipboardCheck, fond: FONDS.armateur,
     comptes: [
       { role: "inspecteur_securite", titre: "Inspecteur de la sécurité des navires", username: "securite", mission: "Inspection à bord et certificats de sécurité, validation des contrats d'engagement, traitement des alertes des marins.", icon: ClipboardCheck },
-    ],
-  },
-  {
-    id: "systeme", nom: "Administration du portail", texte: "Réglages, comptes, sauvegardes et état du système.", icon: Settings2, fond: FONDS.gestion,
-    comptes: [
-      { role: "admin_systeme", titre: "Administrateur système", username: "admin", mission: "Réglages, demandes d'ouverture de compte armateur, sauvegardes ; aucun acte métier.", icon: Settings2 },
     ],
   },
 ];
@@ -123,7 +118,7 @@ export function Chargement({ onFini }: { onFini: () => void }) {
 }
 
 /** Choix du profil : le fond change selon la carte survolée ; chaque choix ouvre sa page de connexion. */
-export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, username: string) => void; onChoix: (p: "marin" | "armateur") => void }) {
+export function ChoixProfil({ onDepartement, onChoix }: { onDepartement: (d: IdDepartement) => void; onChoix: (p: "marin" | "armateur") => void }) {
   const [survol, setSurvol] = useState<string>(EXTERNES[0]!.fond);
   const [choisi, setChoisi] = useState<string | null>(null);
   const actif = { fond: survol };
@@ -155,45 +150,20 @@ export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, usernam
   const carteDepartement = (d: (typeof DEPARTEMENTS)[number]) => {
     const Icon = d.icon;
     return (
-      <section
+      <button
         key={d.id}
-        aria-label={d.nom}
+        type="button"
         onMouseEnter={() => setSurvol(d.fond)}
-        className="profil-carte group relative isolate flex flex-col overflow-hidden rounded-2xl border border-primary-foreground/20 bg-[#0a192f]/55 p-5 text-left backdrop-blur-md"
+        onFocus={() => setSurvol(d.fond)}
+        onClick={() => partir(d.id, () => onDepartement(d.id))}
+        className={cn("profil-carte group relative isolate flex flex-col overflow-hidden rounded-2xl border border-primary-foreground/20 bg-[#0a192f]/55 p-6 text-left backdrop-blur-md", choisi === d.id && "border-gold")}
       >
-        <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center opacity-20 transition-opacity duration-500 group-hover:opacity-40" style={{ backgroundImage: `url(${d.fond})` }} />
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gold text-[#0a192f] shadow-lg"><Icon className="size-5" /></span>
-          <div className="min-w-0">
-            <h3 className="font-display text-base font-bold leading-tight">{d.nom}</h3>
-            <p className="mt-0.5 text-xs text-primary-foreground/75">{d.texte}</p>
-          </div>
-        </div>
-        <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/55">Choisissez votre fonction</div>
-        <ul className="mt-2 space-y-2">
-          {d.comptes.map((c) => {
-            const IconC = c.icon;
-            const cle = `${d.id}-${c.username}`;
-            return (
-              <li key={c.username}>
-                <button
-                  type="button"
-                  onFocus={() => setSurvol(d.fond)}
-                  onClick={() => partir(cle, () => onCompte(c.role, c.username))}
-                  className={cn("group/c flex w-full items-start gap-3 rounded-xl border border-primary-foreground/15 bg-[#0a192f]/50 p-3 text-left transition hover:border-gold hover:bg-[#0a192f]/75", choisi === cle && "border-gold")}
-                >
-                  <IconC className="mt-0.5 size-4 shrink-0 text-gold" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">{c.titre}</span>
-                    <span className="block text-[11px] text-primary-foreground/70">{c.mission}</span>
-                  </span>
-                  <ArrowRight className="mt-0.5 size-4 shrink-0 text-primary-foreground/50 transition-transform group-hover/c:translate-x-1 group-hover/c:text-gold" aria-label="Se connecter" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
+        <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center opacity-25 transition-opacity duration-500 group-hover:opacity-50" style={{ backgroundImage: `url(${d.fond})` }} />
+        <span className="grid size-12 place-items-center rounded-xl bg-gold text-[#0a192f] shadow-lg"><Icon className="size-6" /></span>
+        <span className="mt-5 block font-display text-lg font-bold leading-tight">{d.nom}</span>
+        <span className="mt-1 block flex-1 text-sm text-primary-foreground/80">{d.texte}</span>
+        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold">Se connecter <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+      </button>
     );
   };
   return (
@@ -233,7 +203,7 @@ export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, usernam
           </div>
           <h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Qui êtes-vous ?</h1>
           <p className="mt-2 text-sm text-primary-foreground/75">
-            Choisissez votre profil ou votre département, puis votre fonction : vous arrivez directement sur sa page de connexion.
+            Choisissez votre profil ou votre département : votre fonction se choisit ensuite sur la page de connexion.
           </p>
         </div>
         <div className="w-full max-w-6xl space-y-6">
@@ -241,8 +211,8 @@ export function ChoixProfil({ onCompte, onChoix }: { onCompte: (r: Role, usernam
             <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/60">Gens de mer et compagnies</h2>
             <div className="grid gap-4 md:grid-cols-2">{EXTERNES.map(carteExterne)}</div>
           </section>
-          <section aria-label="Départements de la DGMM et partenaires">
-            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/60">Départements de la <Sigle s="DGMM" /> et partenaires</h2>
+          <section aria-label="Départements de la DGMM">
+            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/60">Départements de la <Sigle s="DGMM" /></h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{DEPARTEMENTS.map(carteDepartement)}</div>
           </section>
         </div>
