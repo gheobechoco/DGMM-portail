@@ -48,7 +48,8 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { profil?: "gestion" | "medical" | undefined; role?: Role | undefined } => ({
+  validateSearch: (s: Record<string, unknown>): { profil?: "gestion" | "medical" | undefined; role?: Role | undefined; compte?: string | undefined } => ({
+    compte: typeof s["compte"] === "string" ? s["compte"] : undefined,
     profil: s["profil"] === "gestion" || s["profil"] === "medical" ? s["profil"] : undefined,
     role: TOUS_ROLES.includes(s["role"] as Role) ? (s["role"] as Role) : undefined,
   }),
@@ -60,7 +61,7 @@ const VU = "dgmm-accueil-vu";
 /** Accueil : écran de chargement (une fois par session), choix du profil, puis connexion. */
 function Accueil() {
   const navigate = useNavigate();
-  const { profil, role } = Route.useSearch();
+  const { profil, role, compte } = Route.useSearch();
   const [etape, setEtape] = useState<"init" | "chargement" | "profil">("init");
   useEffect(() => {
     if (getSession()) {
@@ -75,13 +76,13 @@ function Accueil() {
     }
     setEtape(vu ? "profil" : "chargement");
   }, [navigate]);
-  if (profil === "gestion" || profil === "medical") return <LoginPage profil={profil} role={role} />;
+  if (profil === "gestion" || profil === "medical") return <LoginPage profil={profil} role={role} compte={compte} />;
   if (etape === "init") return <div className="min-h-screen bg-navy-gradient" />;
   // Le choix du profil est déjà en place sous l'écran de chargement, qui s'efface par-dessus.
   return (
     <>
       <ChoixProfil
-        onRole={(r) => navigate({ to: "/", search: { profil: ROLES_MEDICAUX.includes(r) ? "medical" : "gestion", role: r } })}
+        onCompte={(r, username) => navigate({ to: "/", search: { profil: ROLES_MEDICAUX.includes(r) ? "medical" : "gestion", role: r, compte: username } })}
         onChoix={(p) => navigate({ to: p === "marin" ? "/mon-espace" : "/armateur" })}
       />
       {etape === "chargement" && (
@@ -111,13 +112,13 @@ const ROLE_ICONS = {
   inspecteur_securite: ClipboardCheck,
 };
 
-function LoginPage({ profil, role }: { profil: "gestion" | "medical"; role?: Role | undefined }) {
+function LoginPage({ profil, role, compte }: { profil: "gestion" | "medical"; role?: Role | undefined; compte?: string | undefined }) {
   const medical = profil === "medical";
   // Espace de gestion : personnel DGMM, inspection du travail et délégués syndicaux.
   const comptes = ACCOUNTS.filter((a) => (medical ? ROLES_MEDICAUX.includes(a.role) : !ROLES_MEDICAUX.includes(a.role)));
   const navigate = useNavigate();
   // Rôle choisi sur « Qui êtes-vous ? » : l'identifiant de démonstration est prérempli.
-  const [username, setUsername] = useState(() => (role ? (comptes.find((a) => a.role === role)?.username ?? "") : ""));
+  const [username, setUsername] = useState(() => (compte && comptes.some((a) => a.username === compte) ? compte : role ? (comptes.find((a) => a.role === role)?.username ?? "") : ""));
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [caps, setCaps] = useState(false);
