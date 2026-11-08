@@ -131,60 +131,49 @@ export function ChoixProfil({ onDepartement, onChoix }: { onDepartement: (d: IdD
     window.setTimeout(action, 420);
   };
   const fonds = [...new Set([...EXTERNES.map((c) => c.fond), ...DEPARTEMENTS.map((d) => d.fond)])];
-  /** Bandeau visuel en tête de carte : la photo (ou le sceau) ne passe plus derrière le texte. */
-  const visuel = (fond: string, Icon: typeof Anchor, logo?: boolean, position = "center") => (
-    <div className="relative h-32 shrink-0 overflow-hidden sm:h-36">
-      {logo ? (
-        <div className="grid h-full place-items-center bg-gradient-to-br from-[#13294B] via-[#0f2140] to-[#0a192f]">
-          <img src="/dgmm-sceau.svg" alt="" className="h-24 w-24 drop-shadow-xl transition-transform duration-500 group-hover:scale-105 sm:h-28 sm:w-28" />
-        </div>
-      ) : (
-        <div aria-hidden className="h-full bg-cover transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: `url(${fond})`, backgroundPosition: position }} />
-      )}
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a192f]" />
-      <span className="absolute bottom-3 left-5 grid size-10 place-items-center rounded-xl bg-gold text-[#0a192f] shadow-lg"><Icon className="size-5" /></span>
-    </div>
-  );
-  const carteClasse = (cle: string) =>
-    cn(
-      "profil-carte group flex flex-col overflow-hidden rounded-2xl border border-primary-foreground/15 bg-[#0a192f]/85 text-left shadow-xl backdrop-blur-md transition-colors hover:border-gold/70",
-      choisi === cle && "border-gold",
+  const carteExterne = (c: Choix) => {
+    const Icon = c.icon;
+    return (
+      <button
+        key={c.id}
+        type="button"
+        onMouseEnter={() => setSurvol(c.fond)}
+        onFocus={() => setSurvol(c.fond)}
+        onClick={() => partir(c.id, () => onChoix(c.id))}
+        className={cn("profil-carte group relative isolate overflow-hidden rounded-2xl border border-primary-foreground/20 bg-[#0a192f]/45 p-6 text-left backdrop-blur-md", choisi === c.id && "border-gold")}
+      >
+        <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center opacity-30 transition-opacity duration-500 group-hover:opacity-60" style={{ backgroundImage: `url(${c.fond})` }} />
+        <span className="grid size-12 place-items-center rounded-xl bg-gold text-[#0a192f] shadow-lg"><Icon className="size-6" /></span>
+        <span className="mt-5 block font-display text-xl font-bold">{c.titre}</span>
+        <span className="mt-1 block text-sm text-primary-foreground/80">{c.texte}</span>
+        <span className="mt-3 block font-mono text-[11px] text-primary-foreground/65">{c.demo}</span>
+        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold">Se connecter <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+      </button>
     );
-  const carteExterne = (c: Choix) => (
-    <button
-      key={c.id}
-      type="button"
-      onMouseEnter={() => setSurvol(c.fond)}
-      onFocus={() => setSurvol(c.fond)}
-      onClick={() => partir(c.id, () => onChoix(c.id))}
-      className={carteClasse(c.id)}
-    >
-      {visuel(c.fond, c.icon, false, c.id === "marin" ? "center 25%" : "center")}
-      <span className="flex flex-1 flex-col px-5 pb-5 pt-3">
-        <span className="block font-display text-xl font-bold">{c.titre}</span>
-        <span className="mt-1 block flex-1 text-sm leading-relaxed text-primary-foreground/85">{c.texte}</span>
-        <span className="mt-3 block font-mono text-[11px] text-primary-foreground/60">{c.demo}</span>
-        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold">Se connecter <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
-      </span>
-    </button>
-  );
-  const carteDepartement = (d: (typeof DEPARTEMENTS)[number]) => (
-    <button
-      key={d.id}
-      type="button"
-      onMouseEnter={() => setSurvol(d.fond)}
-      onFocus={() => setSurvol(d.fond)}
-      onClick={() => partir(d.id, () => onDepartement(d.id))}
-      className={carteClasse(d.id)}
-    >
-      {visuel(d.fond, d.icon, d.logo)}
-      <span className="flex flex-1 flex-col px-5 pb-5 pt-3">
-        <span className="block font-display text-lg font-bold leading-snug">{d.nom}</span>
-        <span className="mt-1 block flex-1 text-sm leading-relaxed text-primary-foreground/85">{d.texte}</span>
-        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold">Se connecter <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
-      </span>
-    </button>
-  );
+  };
+  const carteDepartement = (d: (typeof DEPARTEMENTS)[number]) => {
+    const Icon = d.icon;
+    return (
+      <button
+        key={d.id}
+        type="button"
+        onMouseEnter={() => setSurvol(d.fond)}
+        onFocus={() => setSurvol(d.fond)}
+        onClick={() => partir(d.id, () => onDepartement(d.id))}
+        className={cn("profil-carte group relative isolate flex flex-col overflow-hidden rounded-2xl border border-primary-foreground/20 bg-[#0a192f]/55 p-6 text-left backdrop-blur-md", choisi === d.id && "border-gold")}
+      >
+        {d.logo ? (
+          <img src="/dgmm-sceau.svg" alt="Sceau officiel de la DGMM" className="absolute right-6 top-6 size-16 drop-shadow-xl transition-transform duration-500 group-hover:scale-110" />
+        ) : (
+          <div aria-hidden className="absolute inset-0 -z-10 bg-cover bg-center opacity-25 transition-opacity duration-500 group-hover:opacity-50" style={{ backgroundImage: `url(${d.fond})` }} />
+        )}
+        <span className="grid size-12 place-items-center rounded-xl bg-gold text-[#0a192f] shadow-lg"><Icon className="size-6" /></span>
+        <span className="mt-5 block font-display text-lg font-bold leading-tight">{d.nom}</span>
+        <span className="mt-1 block flex-1 text-sm text-primary-foreground/80">{d.texte}</span>
+        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold">Se connecter <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+      </button>
+    );
+  };
   return (
     <div className="profils relative isolate flex min-h-screen flex-col overflow-hidden text-primary-foreground">
       {fonds.map((f) => (

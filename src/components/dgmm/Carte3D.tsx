@@ -1,7 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Map as CarteML, Marker, StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { BLEU_TRACE, STYLE_MAQUETTE, STYLE_PLAN, STYLE_SATELLITE } from "@/lib/dgmm/styleCarte";
+import { Cloud, CloudFog, CloudLightning, CloudRain, Sun, Wind } from "lucide-react";
+import { AMBIANCES, BLEU_TRACE, STYLE_MAQUETTE, STYLE_PLAN, STYLE_SATELLITE } from "@/lib/dgmm/styleCarte";
+import { decrireMeteo, meteoActuelle, type Ciel, type Meteo } from "@/lib/dgmm/meteo";
+
+const ICONE_CIEL: Record<Ciel, typeof Sun> = { degage: Sun, nuageux: Cloud, brouillard: CloudFog, pluie: CloudRain, orage: CloudLightning };
 
 /**
  * Carte 3D (MapLibre) : fond « Maquette 3D » (blanc minimaliste, par défaut), « Plan »
@@ -107,8 +111,10 @@ export const Carte3D = forwardRef<
     onCarteClic?: ((p: { lat: number; lng: number }) => void) | undefined;
     onPointClic?: ((id: string) => void) | undefined;
     className?: string | undefined;
+    /** Météo réelle du lieu : la maquette passe en ambiance « tempête » s'il pleut ou s'il y a de l'orage. */
+    meteo?: { lat: number; lng: number; lieu: string } | undefined;
   }
->(function Carte3D({ points, traces = [], recit, onCarteClic, onPointClic, className }, ref) {
+>(function Carte3D({ points, traces = [], recit, onCarteClic, onPointClic, className, meteo }, ref) {
   const boite = useRef<HTMLDivElement>(null);
   const carte = useRef<CarteML | null>(null);
   const marqueurs = useRef<Marker[]>([]);
@@ -122,6 +128,14 @@ export const Carte3D = forwardRef<
   fondRef.current = fond;
   /** Vrai dès qu'un fond réel a fini de charger son style (les tuiles peuvent encore arriver). */
   const fondCharge = useRef(false);
+  // Météo réelle (seulement si la page la demande) et simulation pour la démonstration.
+  const [releve, setReleve] = useState<Meteo | null>(null);
+  const [statutMeteo, setStatutMeteo] = useState<"chargement" | "ok" | "indispo">("chargement");
+  const [simule, setSimule] = useState(false);
+  const ciel = simule ? "orage" : releve ? decrireMeteo(releve.code).ciel : null;
+  const tempete = !!meteo && (simule || (!!releve && decrireMeteo(releve.code).mauvais));
+  const tempeteRef = useRef(false);
+  tempeteRef.current = tempete;
   const etat = useRef({ points, traces, recit, onCarteClic, onPointClic });
   etat.current = { points, traces, recit, onCarteClic, onPointClic };
 
@@ -135,6 +149,18 @@ export const Carte3D = forwardRef<
     pts.forEach((p) => b.extend([p.lng, p.lat]));
     etat.current.traces.forEach((t) => t.coords.forEach((c) => b.extend(c)));
     m.fitBounds(b, { padding: 90, pitch: 50, bearing: -15, duration: reduit() ? 0 : duree, maxZoom: 15 });
+  };
+
+  /** Couleurs de la maquette selon la météo (sans recharger le style : les tracés restent). */
+  const appliquerAmbiance = () => {
+    const m = carte.current;
+    if (!m || fondRef.current !== "maquette" || secoursActif.current) return;
+    const a = AMBIANCES[tempeteRef.current ? "tempete" : "calme"];
+    for (const [couche, peinture] of Object.entries(a.couches)) {
+      if (!m.getLayer(couche)) continue;
+      for (const [prop, valeur] of Object.entries(peinture)) m.setPaintProperty(couche, prop, valeur);
+    }
+    m.setLight({ anchor: "viewport", position: [1.4, 215, 35], ...a.lumiere });
   };
 
   const dessinerTraces = (t: number | null, enCours?: string) => {
@@ -203,7 +229,8 @@ export const Carte3D = forwardRef<
         dessinerTraces(t, tr.id);
         if (suivre && t > 0) {
           const p = portion(tr.coords, cumul, t);
-          m.jumpTo({ center: p[p.length - 1]! });
+          // Légère rotation continue de la caméra : le relief des blocs se lit mieux.
+          m.jumpTo({ center: p[p.length - 1]!, bearing: -20 + t * 40 });
         }
         if (t < 1) anim.current = requestAnimationFrame(pas);
         else window.setTimeout(ensuite, 500);
@@ -267,6 +294,7 @@ export const Carte3D = forwardRef<
           m.addLayer({ id: "tete", type: "circle", source: "tete", paint: { "circle-radius": 8, "circle-color": BLEU_TRACE, "circle-stroke-color": "#ffffff", "circle-stroke-width": 3.5, "circle-pitch-alignment": "map" } });
         }
         dessinerTraces(null);
+        appliquerAmbiance();
         setPret(true);
       };
       m.on("style.load", preparer);
@@ -329,6 +357,22 @@ export const Carte3D = forwardRef<
     m.setStyle(STYLE_DE[fond]);
   }, [fond]);
 
+  // Météo réelle du lieu (Open-Meteo). Sans réseau : la carte reste en maquette blanche.
+  useEffect(() => {
+    if (!meteo) return;
+    const ctrl = new AbortController();
+    setStatutMeteo("chargement");
+    meteoActuelle(meteo.lat, meteo.lng, ctrl.signal)
+      .then((r) => { setReleve(r); setStatutMeteo("ok"); })
+      .catch(() => { if (!ctrl.signal.aborted) setStatutMeteo("indispo"); });
+    return () => ctrl.abort();
+  }, [meteo?.lat, meteo?.lng]);
+
+  useEffect(() => {
+    if (pret) appliquerAmbiance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tempete, pret]);
+
   // Premier affichage : vue d'ensemble, puis récit animé dès que les itinéraires sont prêts
   // (ils arrivent souvent après le chargement de la carte : on attend le récit au lieu d'y renoncer).
   const lance = useRef(false);
@@ -368,6 +412,10 @@ export const Carte3D = forwardRef<
           ))}
         </div>
       )}
+      {tempete && fond === "maquette" && !secours && (
+        <div aria-hidden className={`carte-pluie pointer-events-none absolute inset-0 ${ciel === "orage" ? "carte-orage" : ""}`} />
+      )}
+      {meteo && pret && <BadgeMeteo lieu={meteo.lieu} releve={releve} statut={statutMeteo} simule={simule} onSimule={setSimule} maquette={fond === "maquette" && !secours} />}
       {secours && (
         <div className="pointer-events-none absolute left-3 top-3 max-w-xs rounded-md bg-card/95 px-3 py-2 text-xs shadow-card">
           Fond de carte indisponible sur ce réseau : les lieux et les trajets restent affichés.
@@ -376,3 +424,57 @@ export const Carte3D = forwardRef<
     </div>
   );
 });
+
+/** Encart météo de la carte du trajet : relevé réel et bouton de simulation pour la démonstration. */
+function BadgeMeteo({
+  lieu,
+  releve,
+  statut,
+  simule,
+  onSimule,
+  maquette,
+}: {
+  lieu: string;
+  releve: Meteo | null;
+  statut: "chargement" | "ok" | "indispo";
+  simule: boolean;
+  onSimule: (v: boolean) => void;
+  maquette: boolean;
+}) {
+  const d = simule ? { ciel: "orage" as Ciel, libelle: "Orage (simulation)", mauvais: true } : releve ? decrireMeteo(releve.code) : null;
+  const Icone = d ? ICONE_CIEL[d.ciel] : Cloud;
+  const sombre = !!d?.mauvais;
+  return (
+    <div
+      className={`absolute bottom-3 left-3 w-60 rounded-xl p-3 text-white shadow-xl backdrop-blur-md transition-colors duration-700 ${
+        sombre ? "bg-gradient-to-br from-[#2c3e50]/95 to-[#1f4f7a]/95" : "bg-gradient-to-br from-[#1673ff]/95 to-[#38b6ff]/95"
+      }`}
+    >
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-white/80">Météo · {lieu}</div>
+      {statut === "chargement" && !simule ? (
+        <div className="mt-1 text-sm text-white/85">Lecture de la météo…</div>
+      ) : statut === "indispo" && !simule ? (
+        <div className="mt-1 text-sm text-white/85">Météo en direct indisponible sur ce réseau.</div>
+      ) : (
+        <div className="mt-1 flex items-center gap-3">
+          <Icone className="size-8 shrink-0" aria-hidden />
+          <div className="min-w-0">
+            {releve && <div className="font-display text-2xl font-bold leading-none">{releve.temperature} °C</div>}
+            <div className="mt-1 truncate text-xs text-white/90">
+              {d?.libelle}
+              {releve && (
+                <span className="ml-1 inline-flex items-center gap-0.5"><Wind className="size-3" aria-hidden /> {releve.vent} km/h</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {maquette && (
+        <label className="mt-2 flex cursor-pointer items-center gap-2 border-t border-white/20 pt-2 text-[11px] text-white/85">
+          <input type="checkbox" checked={simule} onChange={(e) => onSimule(e.target.checked)} className="size-3.5 accent-white" />
+          Simuler un orage
+        </label>
+      )}
+    </div>
+  );
+}

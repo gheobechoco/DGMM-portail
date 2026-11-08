@@ -147,3 +147,46 @@ export const STYLE_MAQUETTE = {
     { id: "noms-villes", type: "symbol", source: "osm", "source-layer": "place", filter: filtreClasse("city"), layout: { "text-field": NOM, "text-font": POLICE_GRAS, "text-size": ["interpolate", ["linear"], ["zoom"], 5, 12, 12, 17] }, paint: { "text-color": "#3a3f47", "text-halo-color": "rgba(255,255,255,0.9)", "text-halo-width": 1.8 } },
   ],
 } as unknown as StyleSpecification;
+
+/**
+ * Ambiances de la maquette blanche : mêmes couches, couleurs changées à chaud
+ * (setPaintProperty) selon la météo réelle. « calme » reprend exactement STYLE_MAQUETTE.
+ */
+export type Ambiance = "calme" | "tempete";
+export const AMBIANCES: Record<Ambiance, { lumiere: { color: string; intensity: number }; couches: Record<string, Record<string, unknown>> }> = {
+  calme: {
+    lumiere: { color: "#ffffff", intensity: 0.42 },
+    couches: {
+      sol: { "background-color": "#eceef1" },
+      verdure: { "fill-color": "#d5e6cc", "fill-opacity": 0.85 },
+      parcs: { "fill-color": "#cfe3c3" },
+      sable: { "fill-color": "#f1ead6" },
+      eau: { "fill-color": "#bcd8f0" },
+      "cours-eau": { "line-color": "#bcd8f0" },
+      rues: { "line-color": "#f8f8f9" },
+      axes: { "line-color": "#f3e6c2" },
+      "batiments-3d": { "fill-extrusion-color": "#ffffff", "fill-extrusion-opacity": 0.96 },
+      "noms-quartiers": { "text-color": "#4b5058", "text-halo-color": "rgba(255,255,255,0.9)" },
+      "noms-villes": { "text-color": "#3a3f47", "text-halo-color": "rgba(255,255,255,0.9)" },
+      "traces-halo": { "line-color": "#ffffff", "line-opacity": 0.7 },
+    },
+  },
+  // Ciel d'orage : sol gris anthracite, bâtiments ardoise, mer sombre ; le tracé bleu ressort davantage.
+  tempete: {
+    lumiere: { color: "#a9bccf", intensity: 0.3 },
+    couches: {
+      sol: { "background-color": "#2b2e33" },
+      verdure: { "fill-color": "#2f3d35", "fill-opacity": 0.85 },
+      parcs: { "fill-color": "#324236" },
+      sable: { "fill-color": "#47443a" },
+      eau: { "fill-color": "#1c2f42" },
+      "cours-eau": { "line-color": "#1c2f42" },
+      rues: { "line-color": "#3d4148" },
+      axes: { "line-color": "#4b4a40" },
+      "batiments-3d": { "fill-extrusion-color": "#5a6068", "fill-extrusion-opacity": 0.9 },
+      "noms-quartiers": { "text-color": "#d3d8df", "text-halo-color": "rgba(20,22,26,0.85)" },
+      "noms-villes": { "text-color": "#e6e9ee", "text-halo-color": "rgba(20,22,26,0.85)" },
+      "traces-halo": { "line-color": "#9cc7ff", "line-opacity": 0.35 },
+    },
+  },
+};

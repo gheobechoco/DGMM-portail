@@ -47,6 +47,14 @@ function MonTrajet() {
     return out;
   }, [m]);
 
+  // Météo réelle à la station du marin (à défaut, à son lieu de travail) : ambiance de la carte.
+  const lieuMeteo = useMemo(() => {
+    const e = etapes.find((x) => x.id === "station") ?? etapes.find((x) => x.id === "travail") ?? etapes[0];
+    if (!e) return undefined;
+    const ville = STATIONS.find((s) => s.code === m?.station)?.nom.replace(/^Station (maritime |fluviale )?(de |d'|du )?/i, "");
+    return { lat: e.lat, lng: e.lng, lieu: ville || e.nom };
+  }, [etapes, m?.station]);
+
   // Itinéraires voiture et à pied pour chaque tronçon.
   useEffect(() => {
     let annule = false;
@@ -108,6 +116,7 @@ function MonTrajet() {
           points={points}
           traces={traces}
           recit={pret ? etapes.map((e) => e.id) : undefined}
+          meteo={lieuMeteo}
           className={`relative h-[560px] overflow-hidden rounded-xl border ${placer ? "cursor-crosshair ring-2 ring-gold" : ""}`}
           onPointClic={(pid) => carte.current?.allerA(pid)}
           onCarteClic={(p) => {

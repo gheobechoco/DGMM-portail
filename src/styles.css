@@ -822,3 +822,21 @@ input[type="radio"]:checked {
   background: currentColor; animation: tape-clignote 0.8s steps(1) infinite;
 }
 @keyframes tape-clignote { 50% { opacity: 0; } }
+
+/* Ambiance « tempête » de la carte du trajet : pluie fine en diagonale, éclairs si orage. */
+.carte-pluie {
+  background-image:
+    repeating-linear-gradient(105deg, transparent 0 14px, rgba(190, 215, 240, 0.16) 14px 15px, transparent 15px 31px),
+    repeating-linear-gradient(105deg, transparent 0 22px, rgba(190, 215, 240, 0.1) 22px 23px, transparent 23px 47px);
+  background-size: 200px 200px, 260px 260px;
+  animation: carte-pluie-tombe 0.6s linear infinite;
+}
+.carte-orage::after {
+  content: ""; position: absolute; inset: 0; background: rgba(220, 232, 255, 0.55); opacity: 0;
+  animation: carte-eclair 9s ease-out infinite;
+}
+@keyframes carte-pluie-tombe { to { background-position: -40px 200px, -30px 260px; } }
+@keyframes carte-eclair { 0%, 91%, 100% { opacity: 0; } 92% { opacity: 0.7; } 93% { opacity: 0.1; } 94% { opacity: 0.5; } 97% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .carte-pluie, .carte-orage::after { animation: none; }
+}
