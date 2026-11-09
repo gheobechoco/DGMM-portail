@@ -1,4 +1,5 @@
 import { BarreFiltres, FiltreSelect, Pagination, usePagination } from "@/components/dgmm/Listes";
+import { lienRecepisse, lireCodeScanne } from "@/lib/dgmm/jetonQr";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -68,10 +69,9 @@ function Demandes({ session }: { session: Account }) {
   const n = (s: StatutPre) => pre.filter((p) => p.statut === s).length;
   const pg = usePagination(liste, 8);
   const ouvrirCode = (code: string) => {
-    const numero = code
-      .trim()
-      .toUpperCase()
-      .replace(/^DGMM-PRE:/, "");
+    // Accepte le lien du QR (récépissé, livret, certificat), l'ancien format « DGMM-PRE:… » ou une saisie.
+    const lu = lireCodeScanne(code);
+    const numero = lu.id;
     const marin = marins.find((m) => m.nip.toUpperCase() === numero);
     if (marin) {
       navigate({ to: "/espace/marins/$id", params: { id: String(marin.id) } });
@@ -201,7 +201,7 @@ function Demandes({ session }: { session: Account }) {
             {demonstrations.map((demo) => (
               <div key={demo.numero} className="flex items-center gap-3 rounded-lg border p-3">
                 <div className="shrink-0 rounded bg-white p-1.5">
-                  <QRCodeSVG value={`DGMM-PRE:${demo.numero}`} size={76} />
+                  <QRCodeSVG value={lienRecepisse({ t: "p", num: demo.numero, nom: `${demo.nom} ${demo.prenom}`, fct: demo.profession, st: demo.station, le: demo.creeLe.slice(0, 10) })} size={112} level="L" marginSize={2} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-primary">

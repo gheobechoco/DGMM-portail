@@ -17,6 +17,7 @@ import {
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
 import { enregistrerVerificationPublique } from "@/lib/dgmm/statistiques";
+import { decoderJeton } from "@/lib/dgmm/jetonQr";
 
 export const Route = createFileRoute("/verifier/certificat/$code")({
   ssr: false,
@@ -55,6 +56,9 @@ const T = {
     visa: "Visa DGMM",
     visaAttente: "En attente",
     verifie: (d: string) => `Vérifié le ${d} dans le registre de la DGMM.`,
+    depuisQr: "Données lues dans le QR code du certificat : sceau d'intégrité intact (document non modifié depuis sa délivrance).",
+    altere: "QR code MODIFIÉ",
+    altereD: "Les données de ce QR code ne correspondent pas à leur sceau : document suspect.",
     verdicts: {
       apte: "Apte sans restriction",
       apte_restrictions: "Apte avec restrictions",
@@ -85,6 +89,9 @@ const T = {
     visa: "DGMM endorsement",
     visaAttente: "Pending",
     verifie: (d: string) => `Checked on ${d} against the DGMM register.`,
+    depuisQr: "Data read from the certificate QR code: integrity seal intact (not altered since issue).",
+    altere: "QR code ALTERED",
+    altereD: "The data in this QR code does not match its seal: suspicious document.",
     verdicts: {
       apte: "Fit without restriction",
       apte_restrictions: "Fit with limitations",
@@ -101,13 +108,13 @@ const T = {
  */
 function VerifierCertificat() {
   const { code } = Route.useParams();
-  const { lang = "fr", source } = Route.useSearch();
+  const { lang = "fr", source, d } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const t = T[lang];
   const loc = lang === "fr" ? "fr-FR" : "en-GB";
-  const fmt = (d?: string) =>
-    d
-      ? new Date(d).toLocaleDateString(loc, { day: "2-digit", month: "long", year: "numeric" })
+  const fmt = (x?: string) =>
+    x
+      ? new Date(x).toLocaleDateString(loc, { day: "2-digit", month: "long", year: "numeric" })
       : "—";
   const marins = useMarins();
   const visites = useVisites();
@@ -116,10 +123,40 @@ function VerifierCertificat() {
     return x.signee && m && codeValidation(x, m.nip) === code;
   });
   const m = marins.find((x) => x.id === v?.marinId);
-  const etat = v ? etatCertificat(v) : null;
+  // Certificat absent de ce poste (téléphone d'un contrôleur…) : on lit les données scellées du QR.
+  const lu = !v ? decoderJeton(d) : null;
+  const jt = lu && lu.jeton.t === "c" ? lu.jeton : null;
   const visa = visaDgmm(m);
-  const conforme =
-    !!v && (etat === "valide" || etat === "expire_bientot") && v.signee && !v.revoquee;
+  const doc = v && m
+    ? {
+        numero: v.numero, nom: fullName(m), nip: m.nip, fct: m.profession, nee: m.dateNaissance, nat: m.nationalite,
+        verdict: v.stcw.verdict, del: v.stcw.dateDelivrance || v.traiteLe, fin: v.stcw.validJusquau,
+        res: v.stcw.verdict === "apte_restrictions" ? v.stcw.details : "", med: v.signataire,
+        visa: visa ? `${visa.auteur} · ${fmt(visa.date)}` : "", revoque: !!v.revoquee, motif: v.motifRevocation ?? "",
+      }
+    : jt && lu?.intact
+      ? {
+          numero: jt.num, nom: jt.nom, nip: jt.nip, fct: jt.fct ?? "", nee: jt.nee ?? "", nat: jt.nat ?? "",
+          verdict: jt.v as Verdict, del: jt.del, fin: jt.fin, res: jt.res ?? "", med: jt.med,
+          visa: jt.visa ? `${jt.visa.split(" · ")[0]} · ${fmt(jt.visa.split(" · ")[1])}` : "", revoque: !!jt.rev, motif: "",
+        }
+      : null;
+  const depuisQr = !v && !!doc;
+  const altere = !v && !!d && !doc;
+  const etat = v
+    ? etatCertificat(v)
+    : doc
+      ? doc.revoque
+        ? "revoque"
+        : doc.verdict === "inapte" || doc.verdict === "inapte_temporaire"
+          ? "inapte"
+          : new Date(`${doc.fin}T23:59:59`).getTime() < Date.now()
+            ? "expire"
+            : new Date(`${doc.fin}T23:59:59`).getTime() - Date.now() <= 30 * 86_400_000
+              ? "expire_bientot"
+              : "valide"
+      : null;
+  const conforme = !!doc && (etat === "valide" || etat === "expire_bientot");
   const logKey = useRef("");
   useEffect(() => {
     const key = `${code}:${source ?? "manual"}`;
@@ -138,37 +175,21 @@ function VerifierCertificat() {
   }, [code, conforme, source]);
 
   const banner =
-    !v || !etat
+    altere
+      ? { cls: "bg-destructive/10 text-destructive", icon: ShieldX, t: t.altere, d: t.altereD }
+      : !doc || !etat
       ? { cls: "bg-destructive/10 text-destructive", icon: ShieldX, t: t.inconnu, d: t.inconnuD }
       : etat === "revoque"
-        ? {
-            cls: "bg-destructive/10 text-destructive",
-            icon: Ban,
-            t: t.revoque,
-            d: v.motifRevocation ?? "",
-          }
+        ? { cls: "bg-destructive/10 text-destructive", icon: Ban, t: t.revoque, d: doc.motif }
         : etat === "expire"
-          ? {
-              cls: "bg-destructive/10 text-destructive",
-              icon: ShieldAlert,
-              t: t.expire,
-              d: t.expireD(fmt(v.stcw.validJusquau)),
-            }
+          ? { cls: "bg-destructive/10 text-destructive", icon: ShieldAlert, t: t.expire, d: t.expireD(fmt(doc.fin)) }
           : etat === "inapte"
-            ? {
-                cls: "bg-destructive/10 text-destructive",
-                icon: ShieldAlert,
-                t: t.inapte,
-                d: t.verdicts[v.stcw.verdict],
-              }
+            ? { cls: "bg-destructive/10 text-destructive", icon: ShieldAlert, t: t.inapte, d: t.verdicts[doc.verdict] }
             : {
                 cls: "bg-success/12 text-success",
                 icon: CheckCircle2,
                 t: t.valide,
-                d:
-                  etat === "expire_bientot"
-                    ? t.bientot(fmt(v.stcw.validJusquau))
-                    : t.valideD(fmt(v.stcw.validJusquau)),
+                d: etat === "expire_bientot" ? t.bientot(fmt(doc.fin)) : t.valideD(fmt(doc.fin)),
               };
   const Icon = banner.icon;
 
@@ -191,55 +212,59 @@ function VerifierCertificat() {
             {banner.d && <div className="text-sm opacity-90">{banner.d}</div>}
           </div>
         </div>
-        {v && m && (
+        {doc && (
           <div className="space-y-5 p-5">
             <div className="flex items-center gap-4">
-              <MarinPhoto m={m} className="h-24 w-[75px] shrink-0 rounded-lg text-xl" />
+              {m ? (
+                <MarinPhoto m={m} className="h-24 w-[75px] shrink-0 rounded-lg text-xl" />
+              ) : (
+                <div className="grid h-24 w-[75px] shrink-0 place-items-center rounded-lg bg-primary-soft font-display text-xl font-bold text-primary">
+                  {doc.nom.split(" ").map((x) => x[0]).slice(0, 2).join("")}
+                </div>
+              )}
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">{t.titulaire}</div>
-                <div className="font-display text-lg font-bold text-primary">{fullName(m)}</div>
+                <div className="font-display text-lg font-bold text-primary">{doc.nom}</div>
                 <div className="text-sm text-muted-foreground">
-                  {m.profession} · {t.ne} {fmt(m.dateNaissance)}
+                  {doc.fct}{doc.nee ? ` · ${t.ne} ${fmt(doc.nee)}` : ""}
                 </div>
-                <div className="text-sm text-muted-foreground">{m.nationalite}</div>
+                <div className="text-sm text-muted-foreground">{doc.nat}</div>
               </div>
             </div>
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <dt className="text-xs text-muted-foreground">{t.numero}</dt>
-                <dd className="font-mono">{v.numero}</dd>
+                <dd className="font-mono">{doc.numero}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">{t.nip}</dt>
-                <dd className="font-mono">{m.nip}</dd>
+                <dd className="font-mono">{doc.nip}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">{t.verdict}</dt>
-                <dd className="font-semibold">{t.verdicts[v.stcw.verdict]}</dd>
+                <dd className="font-semibold">{t.verdicts[doc.verdict]}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">{t.delivre}</dt>
-                <dd>{fmt(v.stcw.dateDelivrance || v.traiteLe)}</dd>
+                <dd>{fmt(doc.del)}</dd>
               </div>
-              {v.stcw.verdict === "apte_restrictions" && v.stcw.details && (
+              {doc.res && (
                 <div className="col-span-2">
                   <dt className="text-xs text-muted-foreground">{t.restrictions}</dt>
-                  <dd>{v.stcw.details}</dd>
+                  <dd>{doc.res}</dd>
                 </div>
               )}
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">{t.medecin}</dt>
-                <dd className="font-semibold text-primary">
-                  {v.signataire} · Polyclinique EDELWEISS
-                </dd>
+                <dd className="font-semibold text-primary">{doc.med} · Polyclinique EDELWEISS</dd>
               </div>
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">{t.visa}</dt>
-                <dd>{visa ? `${visa.auteur} · ${fmt(visa.date)}` : t.visaAttente}</dd>
+                <dd>{doc.visa || t.visaAttente}</dd>
               </div>
             </dl>
             <p className="border-t pt-3 text-[11px] text-muted-foreground">
-              {t.verifie(new Date().toLocaleString(loc))}
+              {depuisQr ? t.depuisQr : t.verifie(new Date().toLocaleString(loc))}
             </p>
             <p className="-mt-3 flex items-center gap-1 text-[11px] text-muted-foreground">
               {lang === "fr"

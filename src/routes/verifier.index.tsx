@@ -5,6 +5,7 @@ import { VerifyShell, validateLang, type Lang } from "@/components/dgmm/VerifySh
 import { CarteSkeleton } from "@/components/dgmm/Skeletons";
 import { Aide } from "@/components/dgmm/Aide";
 import { BarometreControle } from "@/components/dgmm/Statistiques";
+import { lireCodeScanne } from "@/lib/dgmm/jetonQr";
 import { Button } from "@/components/ui/button";
 import { codeValidation, useMarins, useVisites } from "@/lib/dgmm/store";
 
@@ -160,6 +161,8 @@ function VerifierAccueil() {
   const ouvrir = (valeur: string) => {
     const v = valeur.trim().toUpperCase();
     if (!v) return setMsg(t.vide);
+    if (v.startsWith("PRE-") || v.startsWith("DGMM-PRE:"))
+      return navigate({ to: "/suivi-demande", search: { numero: v.replace(/^DGMM-PRE:/, ""), lang: search.lang } });
     if (v.startsWith("GAB-DGMM-"))
       return navigate({ to: "/verifier/certificat/$code", params: { code: v }, search });
     const parLivret = marins.find((m) => m.livret && m.livret.toUpperCase() === v);
@@ -192,29 +195,16 @@ function VerifierAccueil() {
             const codes = await detector.detect(video.current);
             const raw = codes[0]?.rawValue;
             if (raw) {
-              const url = (() => {
-                try {
-                  return new URL(raw, window.location.origin);
-                } catch {
-                  return null;
-                }
-              })();
-              const m = url?.pathname.match(/\/verifier\/(certificat\/)?([^/?#]+)/);
-              if (m) {
+              // Lien du QR (certificat, livret, récépissé) ou ancien format : on ouvre la bonne page.
+              const lu = lireCodeScanne(raw);
+              const fiable = lu.d || /\/verifier\/|suivi-demande|^DGMM-PRE:/i.test(raw) || /^(GAB-|PRE-)/.test(lu.id);
+              if (lu.id && fiable) {
                 setScan(false);
-                const id = decodeURIComponent(m[2]!);
-                if (m[1])
-                  navigate({
-                    to: "/verifier/certificat/$code",
-                    params: { code: id },
-                    search: { ...search, source: "qr" },
-                  });
-                else
-                  navigate({
-                    to: "/verifier/$nip",
-                    params: { nip: id },
-                    search: { ...search, source: "qr" },
-                  });
+                if (lu.type === "recepisse")
+                  navigate({ to: "/suivi-demande", search: { numero: lu.id, d: lu.d, lang: search.lang } });
+                else if (lu.type === "certificat")
+                  navigate({ to: "/verifier/certificat/$code", params: { code: lu.id }, search: { ...search, source: "qr", d: lu.d } });
+                else navigate({ to: "/verifier/$nip", params: { nip: lu.id }, search: { ...search, source: "qr", d: lu.d } });
                 return;
               }
               setMsg(t.inconnu);

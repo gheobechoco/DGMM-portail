@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { STATIONS } from "@/lib/dgmm/maritime";
 import { useInscriptions } from "@/lib/dgmm/inscriptions";
 import { useMarins } from "@/lib/dgmm/store";
+import { decoderJeton, lienRecepisse, lireCodeScanne } from "@/lib/dgmm/jetonQr";
 
 export const Route = createFileRoute("/suivi-demande")({
   ssr: false,
@@ -18,12 +19,13 @@ export const Route = createFileRoute("/suivi-demande")({
   component: SuiviDemande,
 });
 
+/** Numéro du récépissé, que l'on colle le numéro, l'ancien code ou le lien complet du QR. */
 function normaliserNumero(value: string) {
-  return value.trim().toUpperCase().replace(/^DGMM-PRE:/, "");
+  return lireCodeScanne(value).id;
 }
 
 function SuiviDemande() {
-  const { lang = "fr", numero } = Route.useSearch();
+  const { lang = "fr", numero, d } = Route.useSearch();
   const navigate = useNavigate();
   const [saisie, setSaisie] = useState(numero ?? "");
   const [recherche, setRecherche] = useState(numero ?? "");
@@ -31,7 +33,10 @@ function SuiviDemande() {
   const marins = useMarins();
   const demande = pre.find((p) => p.numero === normaliserNumero(recherche));
   const marin = demande?.marinId ? marins.find((m) => m.id === demande.marinId) : undefined;
-  const station = demande ? STATIONS.find((s) => s.code === demande.station) : undefined;
+  // Récépissé scanné sur un autre appareil : la demande n'y est pas, on lit les données scellées du QR.
+  const lu = !demande ? decoderJeton(d) : null;
+  const recu = lu && lu.jeton.t === "p" && lu.intact && lu.jeton.num === normaliserNumero(recherche) ? lu.jeton : null;
+  const station = demande ? STATIONS.find((s) => s.code === demande.station) : recu ? STATIONS.find((s) => s.code === recu.st) : undefined;
   const loc = lang === "fr" ? "fr-FR" : "en-GB";
   const date = (value: string) =>
     value ? new Date(value).toLocaleDateString(loc, { day: "numeric", month: "long", year: "numeric" }) : "";
@@ -90,10 +95,46 @@ function SuiviDemande() {
           </form>
         </section>
 
-        {recherche && !demande && (
+        {recherche && !demande && !recu && d && (
+          <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive">
+            <AlertCircle className="mr-2 inline size-4" />
+            {lang === "fr" ? "QR code modifié : les données de ce récépissé ne correspondent pas à leur sceau. Document suspect." : "Altered QR code: this receipt's data does not match its seal. Suspicious document."}
+          </p>
+        )}
+        {recherche && !demande && !recu && !d && (
           <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/8 p-4 text-sm text-destructive">
             <AlertCircle className="mr-2 inline size-4" />{t.notFound}
           </p>
+        )}
+
+        {recu && (
+          <section className="rounded-xl border bg-card p-5 shadow-card">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="size-6 shrink-0 text-success" />
+              <div>
+                <div className="font-display text-lg font-bold text-primary">
+                  {lang === "fr" ? "Récépissé de pré-inscription authentique" : "Authentic pre-registration receipt"}
+                </div>
+                <div className="font-mono text-sm font-semibold">{recu.num}</div>
+              </div>
+            </div>
+            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <div><dt className="text-xs text-muted-foreground">{lang === "fr" ? "Demandeur" : "Applicant"}</dt><dd className="font-semibold">{recu.nom}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{lang === "fr" ? "Fonction visée" : "Intended capacity"}</dt><dd>{recu.fct ?? "—"}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{lang === "fr" ? "Déposée le" : "Submitted on"}</dt><dd>{date(recu.le)}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{lang === "fr" ? "Station maritime" : "Maritime station"}</dt><dd>{station?.nom ?? recu.st}{station?.contact ? ` · ${station.contact}` : ""}</dd></div>
+              {recu.rdv && <div><dt className="text-xs text-muted-foreground">{lang === "fr" ? "Rendez-vous souhaité" : "Requested appointment"}</dt><dd>{date(recu.rdv)}</dd></div>}
+            </dl>
+            <p className="mt-4 flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-sm text-primary">
+              <MapPin className="mt-0.5 size-4 shrink-0" />
+              {lang === "fr"
+                ? "Présentez ce récépissé à la station avec les originaux de vos pièces (pièce d'identité, acte de naissance, casier judiciaire, diplômes). L'agent scanne ce code et crée votre dossier officiel."
+                : "Bring this receipt to the station with your original documents. The officer scans this code and opens your official file."}
+            </p>
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              {lang === "fr" ? "Données lues dans le QR code : sceau d'intégrité intact." : "Data read from the QR code: integrity seal intact."}
+            </p>
+          </section>
         )}
 
         {demande && (
@@ -106,7 +147,7 @@ function SuiviDemande() {
                   <div className="mt-1 text-sm text-muted-foreground">{demande.nom} {demande.prenom}</div>
                 </div>
                 <div className="rounded-lg bg-white p-2">
-                  <QRCodeSVG value={`DGMM-PRE:${demande.numero}`} size={104} />
+                  <QRCodeSVG value={lienRecepisse({ t: "p", num: demande.numero, nom: `${demande.nom} ${demande.prenom}`, fct: demande.profession, nee: demande.dateNaissance, st: demande.station, le: demande.creeLe.slice(0, 10), rdv: demande.rdv || undefined })} size={140} level="L" marginSize={2} />
                 </div>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">

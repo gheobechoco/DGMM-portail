@@ -65,6 +65,8 @@ import {
   type DocKey,
   type Evenement,
   type Marin,
+  updateMarin,
+  journaliser,
   type Visite,
 } from "@/lib/dgmm/store";
 import { cn } from "@/lib/utils";
@@ -261,6 +263,7 @@ function Fiche({ session }: { session: Account }) {
               <Info label="Identifiant marin">{m.login}</Info>
             </dl>
           </Panel>
+          {ecriture && <AccesEspaceMarin m={m} auteur={session.nom} />}
           <Panel
             title={
               <span className="inline-flex items-center gap-1.5">
@@ -880,5 +883,38 @@ function LivretPanel({ m, canIssue, auteur }: { m: Marin; canIssue: boolean; aut
         </div>
       </Panel>
     </div>
+  );
+}
+
+/**
+ * Remise des accès à l'Espace Marin : l'agent communique au marin son NIP et un mot de passe
+ * provisoire (affiché à la demande), et peut en générer un nouveau en cas d'oubli.
+ */
+function AccesEspaceMarin({ m, auteur }: { m: Marin; auteur: string }) {
+  const [voir, setVoir] = useState(false);
+  const regenerer = () => {
+    const mdp = Math.random().toString(36).slice(2, 8);
+    updateMarin(m.id, { mdp });
+    journaliser(auteur, "Nouveau mot de passe Espace Marin remis au marin", `${m.nom} ${m.prenom} (${m.nip})`);
+    setVoir(true);
+    toast.success("Nouveau mot de passe généré", { description: `À remettre au marin : NIP ${m.nip} · mot de passe ${mdp}` });
+  };
+  return (
+    <Panel title="Accès à l'Espace Marin" description="À remettre au marin : il se connecte sur « Je suis marin » avec son NIP et ce mot de passe.">
+      <dl className="grid grid-cols-2 gap-4">
+        <Info label="NIP (identifiant de connexion)"><span className="font-mono">{m.nip}</span></Info>
+        <Info label="Mot de passe provisoire">
+          <span className="font-mono">{voir ? m.mdp : "••••••"}</span>
+        </Info>
+      </dl>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={() => setVoir((v) => !v)}>
+          {voir ? "Masquer" : "Afficher le mot de passe"}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={regenerer}>
+          Générer un nouveau mot de passe
+        </Button>
+      </div>
+    </Panel>
   );
 }

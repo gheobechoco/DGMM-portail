@@ -111,9 +111,12 @@ export function VerifyShell({
 export function validateLang(s: Record<string, unknown>): {
   lang?: Lang | undefined;
   source?: "qr" | undefined;
+  /** Jeton scellé transporté par le QR code (données du document). */
+  d?: string | undefined;
 } {
   return {
     lang: s["lang"] === "en" ? "en" : undefined,
     source: s["source"] === "qr" ? "qr" : undefined,
+    d: typeof s["d"] === "string" && s["d"].length < 1500 ? s["d"] : undefined,
   };
 }

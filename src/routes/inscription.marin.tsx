@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { lienRecepisse } from "@/lib/dgmm/jetonQr";
 import { useState, type FormEvent } from "react";
 import {
   CalendarCheck2,
@@ -253,7 +254,7 @@ function PreInscriptionMarin() {
           <Panel title="Récépissé à présenter au guichet">
             <div className="flex flex-col items-center gap-4 sm:flex-row">
               <div className="rounded-lg bg-card p-2 ring-1 ring-border">
-                <QRCodeSVG value={`DGMM-PRE:${fait.numero}`} size={120} />
+                <QRCodeSVG value={lienRecepisse({ t: "p", num: fait.numero, nom: `${fait.nom} ${fait.prenom}`, fct: fait.profession, nee: fait.dateNaissance, st: fait.station, le: fait.creeLe.slice(0, 10), rdv: fait.rdv || undefined })} size={148} level="L" marginSize={2} />
               </div>
               <div className="text-sm">
                 <div className="font-semibold">
@@ -264,8 +265,8 @@ function PreInscriptionMarin() {
                   {new Date(fait.dateNaissance).toLocaleDateString("fr-FR")}
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  Statut : pré-inscription en ligne. L'agent scanne ce code puis vérifie vos
-                  originaux, prend vos empreintes et votre photo.
+                  Statut : pré-inscription en ligne. L'agent scanne ce code, vérifie vos
+                  originaux, prend votre photo et votre signature, puis crée votre dossier.
                 </div>
                 <Button
                   type="button"

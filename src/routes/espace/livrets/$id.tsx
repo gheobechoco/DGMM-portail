@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { lienLivret } from "@/lib/dgmm/jetonQr";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, BookX, Check } from "lucide-react";
 import { RequirePerm } from "@/components/dgmm/Guard";
@@ -8,7 +9,7 @@ import { MarinPhoto } from "@/components/dgmm/MarinBits";
 import { ExportButton } from "@/components/dgmm/Anim";
 import { SceauFiligrane } from "@/components/dgmm/Logo";
 import { station as stationRef } from "@/lib/dgmm/maritime";
-import { formatDate, lastCertificate, useMarins, useVisites } from "@/lib/dgmm/store";
+import { formatDate, joursEmbarquement, lastCertificate, useMarins, useVisites } from "@/lib/dgmm/store";
 
 export const Route = createFileRoute("/espace/livrets/$id")({
   head: () => ({ meta: [{ title: "Attestation de délivrance du livret — GDM | DGMM" }] }),
@@ -29,10 +30,17 @@ function Attestation() {
   const cert = lastCertificate(visites, m.id);
   const evt = m.historique?.find((e) => e.type === "livret");
   const dateDeliv = evt?.date ?? m.modifieLe;
-  const url =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/verifier/${encodeURIComponent(m.nip)}?source=qr`
-      : "";
+  const url = lienLivret({
+    t: "l",
+    nip: m.nip,
+    nom: `${m.nom} ${m.prenom}`,
+    nat: m.nationalite,
+    fct: m.profession,
+    liv: m.livret,
+    fin: cert?.stcw.validJusquau,
+    ok: m.validationAdmin === "validee" ? 1 : undefined,
+    mer: (m.embarquements ?? []).reduce((s, e) => s + (e.statut === "valide_dgmm" ? joursEmbarquement(e) : 0), 0),
+  });
   return (
     <>
       <div className="no-print mb-4 flex items-center justify-between gap-3">
@@ -64,7 +72,7 @@ function Attestation() {
         <div className="grid gap-6 p-6 sm:grid-cols-[140px_1fr]">
           <div className="flex flex-col items-center gap-3">
             <MarinPhoto m={m} className="aspect-[3/4] w-full rounded-md border text-2xl" />
-            {url && <QRCodeSVG value={url} size={120} fgColor="#0a192f" level="M" />}
+            {url && <QRCodeSVG value={url} size={148} fgColor="#0a192f" level="L" marginSize={2} />}
             <span className="text-center text-[10px] text-muted-foreground">
               Scanner pour vérifier
             </span>

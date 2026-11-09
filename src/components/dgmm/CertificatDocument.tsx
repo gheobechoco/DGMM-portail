@@ -1,4 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
+import { lienCertificat } from "@/lib/dgmm/jetonQr";
 import { Check, Minus } from "lucide-react";
 import { Info } from "@/components/dgmm/Page";
 import { SceauFiligrane } from "@/components/dgmm/Logo";
@@ -83,9 +84,25 @@ export function visaDgmm(m: Marin | undefined) {
 export function CertificatDocument({ v, m }: { v: Visite; m: Marin | undefined }) {
   const etat = etatCertificat(v);
   const code = m ? codeValidation(v, m.nip) : "";
-  const verifyPath = `/verifier/certificat/${encodeURIComponent(code)}?source=qr`;
-  const verifyUrl =
-    typeof window !== "undefined" ? `${window.location.origin}${verifyPath}` : verifyPath;
+  // Le QR ouvre la page publique de vérification et transporte l'essentiel du certificat
+  // (scellé) : il s'affiche même sur un téléphone qui n'a pas les données du poste émetteur.
+  const visaQr = visaDgmm(m);
+  const verifyUrl = lienCertificat(code, {
+    t: "c",
+    num: v.numero,
+    nom: m ? `${m.nom} ${m.prenom}` : "",
+    nip: m?.nip ?? "",
+    fct: m?.profession,
+    nee: m?.dateNaissance,
+    nat: m?.nationalite,
+    v: v.stcw.verdict,
+    del: v.stcw.dateDelivrance || v.traiteLe.slice(0, 10),
+    fin: v.stcw.validJusquau,
+    res: v.stcw.verdict === "apte_restrictions" ? v.stcw.details?.slice(0, 80) : undefined,
+    med: v.signataire,
+    visa: visaQr ? `${visaQr.auteur} · ${visaQr.date.slice(0, 10)}` : undefined,
+    rev: v.revoquee ? 1 : undefined,
+  });
   const bmi = imc(v.examens.taille, v.examens.poids);
   const signature = v.signee
     ? empreinte(
@@ -209,7 +226,7 @@ export function CertificatDocument({ v, m }: { v: Visite; m: Marin | undefined }
           </div>
           {v.signee && code && (
             <div className="flex flex-col items-center gap-1 justify-self-center">
-              <QRCodeSVG value={verifyUrl} size={120} fgColor="#0a192f" level="M" />
+              <QRCodeSVG value={verifyUrl} size={148} fgColor="#0a192f" level="L" marginSize={2} />
               <span className="font-mono text-[10px] text-muted-foreground">{code}</span>
               <span className="text-[10px] text-muted-foreground">
                 Scanner pour vérifier · Scan to verify

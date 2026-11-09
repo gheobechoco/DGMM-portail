@@ -87,7 +87,7 @@ function Nouveau() {
                   );
                 }
                 toast.success(`Dossier ${m.nip} créé`, {
-                  description: `Identifiants du marin : ${m.login} / ${m.mdp}`,
+                  description: `Accès Espace Marin à remettre : NIP ${m.nip} · mot de passe ${m.mdp} (visible ensuite sur la fiche)`,
                   duration: 10000,
                 });
                 navigate({ to: "/espace/marins/$id", params: { id: String(m.id) } });
